@@ -20,7 +20,9 @@ export default function LoginPage() {
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
-      setError('Email o password non corretti.')
+      setError(error.message === 'Email not confirmed'
+        ? 'Devi confermare la tua email prima di accedere. Controlla la tua casella.'
+        : 'Email o password non corretti.')
       setLoading(false)
     } else {
       router.push('/bacheca')
