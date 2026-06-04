@@ -27,32 +27,29 @@ export default function RegisterPage() {
     setError('')
     const supabase = createClient()
 
-    const { data, error: authError } = await supabase.auth.signUp({
+    // Passiamo tutti i dati del profilo come metadata —
+    // il trigger handle_new_user li usa per creare il profilo automaticamente,
+    // aggirando il problema di sessione non ancora attiva post-signUp.
+    const { error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
+      options: {
+        data: {
+          full_name: form.full_name,
+          city: form.city,
+          level: form.level,
+          pace_min: form.pace_min,
+          pace_max: form.pace_max,
+          bio: form.bio,
+          strava_url: form.strava_url,
+          garmin_url: form.garmin_url,
+          instagram_url: form.instagram_url,
+        },
+      },
     })
 
-    if (authError || !data.user) {
-      setError(authError?.message || 'Errore durante la registrazione.')
-      setLoading(false)
-      return
-    }
-
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: data.user.id,
-      full_name: form.full_name,
-      city: form.city || null,
-      level: form.level,
-      pace_min: form.pace_min ? parseFloat(form.pace_min) : null,
-      pace_max: form.pace_max ? parseFloat(form.pace_max) : null,
-      bio: form.bio || null,
-      strava_url: form.strava_url || null,
-      garmin_url: form.garmin_url || null,
-      instagram_url: form.instagram_url || null,
-    })
-
-    if (profileError) {
-      setError('Profilo non creato: ' + profileError.message)
+    if (authError) {
+      setError(authError.message)
       setLoading(false)
       return
     }
@@ -93,8 +90,8 @@ export default function RegisterPage() {
                     <option value="avanzato">Avanzato</option>
                   </Select>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="Ritmo min (min/km)" type="number" step="0.1" min="3" max="12" value={form.pace_min} onChange={update('pace_min')} placeholder="es. 5.5" hint="es. 5.5 = 5:30/km" />
-                    <Input label="Ritmo max (min/km)" type="number" step="0.1" min="3" max="12" value={form.pace_max} onChange={update('pace_max')} placeholder="es. 6.5" />
+                    <Input label="Ritmo min (min/km)" type="number" step="0.1" min="3" max="12" value={form.pace_min} onChange={update('pace_min')} placeholder="es. 4.5" hint="es. 4.5 = 4:30/km" />
+                    <Input label="Ritmo max (min/km)" type="number" step="0.1" min="3" max="12" value={form.pace_max} onChange={update('pace_max')} placeholder="es. 5.5" />
                   </div>
                   <Textarea label="Bio" value={form.bio} onChange={update('bio')} placeholder="Racconta qualcosa di te come runner..." rows={3} />
                 </div>
@@ -110,7 +107,7 @@ export default function RegisterPage() {
               </div>
 
               {error && <p className="text-sm text-error bg-error-container px-3 py-2 rounded-lg">{error}</p>}
-              <Button type="submit" loading={loading} size="lg" className="w-full mt-2">
+              <Button type="submit" loading={loading} size="lg" className="mt-2 w-full">
                 Crea profilo e accedi
               </Button>
             </form>
