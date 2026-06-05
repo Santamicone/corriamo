@@ -18,10 +18,13 @@ const LEVEL_COLORS: Record<string, { badge: string }> = {
 export function RunCard({ run, className }: RunCardProps) {
   const lc = LEVEL_COLORS[run.level] ?? LEVEL_COLORS.tutti
   const count = run.participants_count ?? 0
-  // Accent: verde se ha già partecipanti confermati, arancio altrimenti
-  const accentClass = count > 0
-    ? 'from-green-500 to-emerald-400'
-    : 'from-orange-500 to-orange-400'
+  const isSpot = (run as Run & { is_spot?: boolean }).is_spot === true
+  // Accent: rosso pulsante per spot, verde se partecipanti, arancio default
+  const accentClass = isSpot
+    ? 'from-red-500 to-orange-500'
+    : count > 0
+      ? 'from-green-500 to-emerald-400'
+      : 'from-orange-500 to-orange-400'
 
   return (
     <Link href={`/corse/${run.id}`} className={cn('group block h-full', className)}>
@@ -42,6 +45,15 @@ export function RunCard({ run, className }: RunCardProps) {
                 <span className="inline-flex items-center gap-0.5 rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 text-xs font-semibold text-green-700">
                   <span className="material-symbols-filled text-sm">favorite</span>
                   No drop
+                </span>
+              )}
+              {isSpot && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-bold text-red-600">
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                  </span>
+                  Adesso
                 </span>
               )}
               {run.series_id && (
