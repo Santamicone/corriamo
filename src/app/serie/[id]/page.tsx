@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import { Footer } from '@/components/Footer'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { RunCard } from '@/components/RunCard'
@@ -34,7 +35,7 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
   const upcomingRuns = (runs ?? []) as unknown as Run[]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <main className="max-w-5xl mx-auto px-4 md:px-12 py-8">
         <Link href="/bacheca?tab=serie" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-on-surface mb-6 transition-colors">
@@ -125,6 +126,7 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   )
 }

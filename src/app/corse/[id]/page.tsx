@@ -1,13 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
-import { Badge } from '@/components/ui/Badge'
+import { Footer } from '@/components/Footer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { formatDate, LEVEL_LABELS, formatPace } from '@/lib/utils'
+import { formatDate, LEVEL_LABELS } from '@/lib/utils'
 import type { Run, Participation } from '@/lib/types'
 import { JoinButton } from './JoinButton'
 import { ParticipantsList } from './ParticipantsList'
+
+const LEVEL_COLORS: Record<string, string> = {
+  tutti:        'bg-gray-100 text-gray-600',
+  principiante: 'bg-green-100 text-green-700',
+  intermedio:   'bg-blue-100 text-blue-700',
+  avanzato:     'bg-orange-100 text-orange-700',
+}
 
 export default async function CorsaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -21,17 +28,14 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
     .single()
 
   if (!run) notFound()
-
   const typedRun = run as unknown as Run
 
   const { data: participations } = await supabase
-    .from('participations')
-    .select('*, user:profiles(*)')
-    .eq('run_id', id)
-    .order('created_at')
+    .from('participations').select('*, user:profiles(*)')
+    .eq('run_id', id).order('created_at')
 
   const approved = participations?.filter(p => p.status === 'approvata') ?? []
-  const pending = participations?.filter(p => p.status === 'in_attesa') ?? []
+  const pending  = participations?.filter(p => p.status === 'in_attesa') ?? []
 
   const myParticipation = user
     ? participations?.find(p => p.user_id === user.id) ?? null
@@ -39,145 +43,201 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
 
   const isOrganizer = user?.id === typedRun.organizer_id
   const isPast = new Date(`${typedRun.date}T${typedRun.time}`) < new Date()
+  const levelColor = LEVEL_COLORS[typedRun.level] ?? LEVEL_COLORS.tutti
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="max-w-5xl mx-auto px-4 md:px-12 py-8">
-        <Link href="/bacheca" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-on-surface mb-6 transition-colors">
-          <span className="material-symbols-outlined text-base">arrow_back</span>
-          Bacheca
-        </Link>
+      <main className="flex-1">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main */}
-          <div className="lg:col-span-2 flex flex-col gap-5">
-            {/* Title card */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden">
-              <div className="h-1.5 bg-primary" />
-              <div className="p-6 flex flex-col gap-4">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant={typedRun.level === 'tutti' ? 'default' : typedRun.level === 'principiante' ? 'green' : 'orange'}>
-                    {LEVEL_LABELS[typedRun.level]}
-                  </Badge>
-                  {typedRun.is_no_drop && <Badge variant="green">No Drop</Badge>}
-                  {typedRun.series_id && <Badge variant="muted">Serie: {typedRun.series?.title}</Badge>}
-                  {isPast && <Badge variant="muted">Passata</Badge>}
-                </div>
-                <h1 className="text-2xl font-extrabold text-on-surface">{typedRun.title}</h1>
-                {typedRun.description && (
-                  <p className="text-sm text-on-surface-variant leading-relaxed">{typedRun.description}</p>
-                )}
+        {/* Hero header */}
+        <div className="bg-white border-b border-gray-100">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <Link href="/bacheca" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 mb-6 transition-colors group">
+              <span className="material-symbols-outlined text-base group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+              Torna alla bacheca
+            </Link>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${levelColor}`}>
+                {LEVEL_LABELS[typedRun.level]}
+              </span>
+              {typedRun.is_no_drop && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                  <span className="material-symbols-filled text-sm">favorite</span>No drop
+                </span>
+              )}
+              {typedRun.series_id && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+                  <span className="material-symbols-outlined text-sm">event_repeat</span>Serie ricorrente
+                </span>
+              )}
+              {isPast && (
+                <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">
+                  Corsa passata
+                </span>
+              )}
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
+              {typedRun.title}
+            </h1>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
+
+            {/* ── Main column ── */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+
+              {/* Dettagli appuntamento */}
+              <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Dettagli dell&apos;appuntamento</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { icon: 'calendar_today', label: 'Data', value: formatDate(typedRun.date) },
-                    { icon: 'schedule', label: 'Orario', value: typedRun.time.slice(0, 5) },
-                    { icon: 'place', label: 'Luogo', value: typedRun.location },
-                    { icon: 'route', label: 'Distanza', value: typedRun.distance_km ? `${typedRun.distance_km} km` : 'Libera' },
+                    { icon: 'calendar_today', label: 'Data',      value: formatDate(typedRun.date) },
+                    { icon: 'schedule',       label: 'Orario',    value: typedRun.time.slice(0, 5) },
+                    { icon: 'place',          label: 'Luogo',     value: typedRun.location },
+                    { icon: 'route',          label: 'Distanza',  value: typedRun.distance_km ? `${typedRun.distance_km} km` : 'Libera' },
                   ].map(item => (
-                    <div key={item.label} className="bg-surface-container p-3 rounded-xl flex flex-col gap-1">
+                    <div key={item.label} className="flex flex-col gap-2 bg-gray-50 rounded-2xl p-4">
                       <span className="material-symbols-outlined text-primary text-xl">{item.icon}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{item.label}</span>
-                      <span className="text-sm font-semibold text-on-surface leading-tight">{item.value}</span>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{item.label}</p>
+                        <p className="text-sm font-bold text-gray-800 leading-tight mt-0.5">{item.value}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
 
                 {typedRun.pace_target && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-lg">
-                    <span className="material-symbols-outlined text-primary text-lg">speed</span>
-                    <span className="text-sm font-medium text-on-surface">Ritmo target: <strong>{typedRun.pace_target}</strong></span>
+                  <div className="flex items-center gap-3 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
+                    <span className="material-symbols-outlined text-primary text-xl">speed</span>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-orange-400">Ritmo target</p>
+                      <p className="text-sm font-bold text-orange-800">{typedRun.pace_target}</p>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
+              </section>
 
-            {/* Partecipanti */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-on-surface">
-                  Partecipanti approvati
+              {/* Descrizione */}
+              {typedRun.description && (
+                <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col gap-3">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Com&apos;è la corsa</h2>
+                  <p className="text-sm text-gray-600 leading-relaxed">{typedRun.description}</p>
+                </section>
+              )}
+
+              {/* Nota rassicurante */}
+              <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3.5">
+                <span className="material-symbols-outlined text-blue-400 text-xl shrink-0">info</span>
+                <p className="text-sm text-blue-700 leading-relaxed">
+                  Presentati qualche minuto prima della partenza. Se hai dubbi sul ritmo, scrivi all&apos;organizzatore prima di iscriverti.
+                </p>
+              </div>
+
+              {/* Chi corre */}
+              <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Chi corre</h2>
                   {typedRun.max_participants && (
-                    <span className="text-on-surface-variant font-normal ml-1">
-                      ({approved.length}/{typedRun.max_participants})
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full font-medium">
+                      {approved.length}/{typedRun.max_participants} posti
                     </span>
                   )}
-                </h2>
-              </div>
-              {approved.length > 0 ? (
-                <div className="flex flex-col gap-3">
-                  {approved.map(p => (
-                    <ParticipantRow key={p.id} participation={p as unknown as Participation} />
-                  ))}
                 </div>
-              ) : (
-                <p className="text-sm text-on-surface-variant">Nessun partecipante ancora.</p>
+                {approved.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {approved.map(p => (
+                      <ParticipantRow key={p.id} participation={p as unknown as Participation} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <span className="material-symbols-outlined text-3xl text-gray-200">group</span>
+                    <p className="text-sm text-gray-400 mt-2">Ancora nessun partecipante.</p>
+                    <p className="text-sm text-gray-400">Sii il primo a unirti.</p>
+                  </div>
+                )}
+              </section>
+
+              {/* Richieste in attesa — solo organizzatore */}
+              {isOrganizer && pending.length > 0 && (
+                <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                    Richieste in attesa
+                    <span className="ml-2 bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold">{pending.length}</span>
+                  </h2>
+                  <ParticipantsList runId={id} participations={pending as unknown as Participation[]} />
+                </section>
               )}
             </div>
 
-            {/* Richieste in attesa (solo organizzatore) */}
-            {isOrganizer && pending.length > 0 && (
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6">
-                <h2 className="text-base font-bold text-on-surface mb-4">
-                  Richieste in attesa ({pending.length})
-                </h2>
-                <ParticipantsList runId={id} participations={pending as unknown as Participation[]} />
-              </div>
-            )}
-          </div>
+            {/* ── Sidebar ── */}
+            <div className="flex flex-col gap-5">
 
-          {/* Sidebar */}
-          <div className="flex flex-col gap-5">
-            {/* Organizzatore */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-3">Organizzatore</p>
-              <Link href={`/profilo/${typedRun.organizer_id}`} className="flex items-center gap-3 group">
-                <Avatar name={typedRun.organizer.full_name} src={typedRun.organizer.avatar_url} size="md" />
-                <div>
-                  <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">
-                    {typedRun.organizer.full_name}
-                  </p>
-                  {typedRun.organizer.city && (
-                    <p className="text-xs text-on-surface-variant">{typedRun.organizer.city}</p>
-                  )}
-                </div>
-              </Link>
-            </div>
+              {/* CTA */}
+              {!isPast && !isOrganizer && (
+                <JoinButton
+                  runId={id}
+                  userId={user?.id ?? null}
+                  myParticipation={myParticipation as Participation | null}
+                  isFull={typedRun.max_participants !== null && approved.length >= typedRun.max_participants}
+                />
+              )}
 
-            {/* CTA iscrizione */}
-            {!isPast && !isOrganizer && (
-              <JoinButton
-                runId={id}
-                userId={user?.id ?? null}
-                myParticipation={myParticipation as Participation | null}
-                isFull={typedRun.max_participants !== null && approved.length >= typedRun.max_participants}
-              />
-            )}
-
-            {isOrganizer && (
-              <div className="bg-tertiary/10 border border-tertiary/20 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="material-symbols-filled text-tertiary text-lg">verified</span>
-                  <span className="text-sm font-bold text-tertiary">Sei l&apos;organizzatore</span>
-                </div>
-                <p className="text-xs text-on-surface-variant">
-                  Puoi approvare o rifiutare le richieste di partecipazione dal pannello qui a sinistra.
-                </p>
-              </div>
-            )}
-
-            {typedRun.series && (
-              <div className="bg-surface-container border border-outline-variant rounded-2xl p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">Parte della serie</p>
-                <Link href={`/serie/${typedRun.series_id}`} className="text-sm font-semibold text-primary hover:underline">
-                  {typedRun.series.title} →
+              {/* Organizzatore */}
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Organizzatore</h3>
+                <Link href={`/profilo/${typedRun.organizer_id}`} className="flex items-center gap-3 group">
+                  <Avatar name={typedRun.organizer.full_name} src={typedRun.organizer.avatar_url} size="md" />
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">
+                      {typedRun.organizer.full_name}
+                    </p>
+                    {typedRun.organizer.city && (
+                      <p className="text-xs text-gray-400">{typedRun.organizer.city}</p>
+                    )}
+                  </div>
+                  <span className="material-symbols-outlined text-gray-200 group-hover:text-primary ml-auto transition-colors">
+                    chevron_right
+                  </span>
                 </Link>
               </div>
-            )}
+
+              {/* Organizzatore badge */}
+              {isOrganizer && (
+                <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
+                  <span className="material-symbols-filled text-green-600 text-xl shrink-0">verified</span>
+                  <div>
+                    <p className="text-sm font-bold text-green-800">Sei l&apos;organizzatore</p>
+                    <p className="text-xs text-green-600 mt-0.5 leading-relaxed">
+                      Approva o rifiuta le richieste dal pannello qui sotto.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Serie collegata */}
+              {typedRun.series && (
+                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-2">Parte della serie</p>
+                  <Link href={`/serie/${typedRun.series_id}`}
+                    className="flex items-center gap-2 text-sm font-semibold text-purple-700 hover:text-purple-900 transition-colors">
+                    <span className="material-symbols-outlined text-base">event_repeat</span>
+                    {typedRun.series.title}
+                    <span className="material-symbols-outlined text-sm ml-auto">arrow_forward</span>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   )
 }
@@ -185,15 +245,14 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
 function ParticipantRow({ participation }: { participation: Participation }) {
   if (!participation.user) return null
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
       <Avatar name={participation.user.full_name} src={participation.user.avatar_url} size="sm" />
       <div>
-        <Link href={`/profilo/${participation.user_id}`} className="text-sm font-semibold text-on-surface hover:text-primary transition-colors">
+        <Link href={`/profilo/${participation.user_id}`}
+          className="text-sm font-semibold text-gray-900 hover:text-primary transition-colors">
           {participation.user.full_name}
         </Link>
-        {participation.user.city && (
-          <p className="text-xs text-on-surface-variant">{participation.user.city}</p>
-        )}
+        {participation.user.city && <p className="text-xs text-gray-400">{participation.user.city}</p>}
       </div>
     </div>
   )
