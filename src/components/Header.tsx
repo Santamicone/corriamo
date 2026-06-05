@@ -7,11 +7,36 @@ import { cn } from '@/lib/utils'
 import { Avatar } from './ui/Avatar'
 import type { Profile } from '@/lib/types'
 
+function useUnreadMessages(userId: string | null) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!userId) return
+    const supabase = createClient()
+    const fetch = async () => {
+      const { count: c } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', userId)
+        .is('read_at', null)
+      setCount(c ?? 0)
+    }
+    fetch()
+    // Realtime subscription per aggiornamento live
+    const channel = supabase
+      .channel('messages-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `recipient_id=eq.${userId}` }, fetch)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [userId])
+  return count
+}
+
 export function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const unreadMessages = useUnreadMessages(profile?.id ?? null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -78,7 +103,12 @@ export function Header() {
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-50 transition-colors"
               >
-                <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" />
+                <div className="relative">
+                  <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-white" />
+                  )}
+                </div>
                 <span className="hidden md:block text-sm font-semibold text-gray-700 max-w-[120px] truncate">
                   {profile.full_name.split(' ')[0]}
                 </span>
@@ -102,6 +132,16 @@ export function Header() {
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       <span className="material-symbols-outlined text-base text-gray-400">dashboard</span>
                       Area personale
+                    </Link>
+                    <Link href="/messaggi" onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      <span className="material-symbols-outlined text-base text-gray-400">mail</span>
+                      Messaggi
+                      {unreadMessages > 0 && (
+                        <span className="ml-auto bg-primary text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full">
+                          {unreadMessages}
+                        </span>
+                      )}
                     </Link>
                     <hr className="my-1 border-gray-100" />
                     <button onClick={handleLogout}
