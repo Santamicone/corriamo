@@ -6,6 +6,7 @@ import { SeriesCard } from '@/components/SeriesCard'
 import Link from 'next/link'
 import { format, addDays, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
+import { RunMapWrapper } from '@/components/RunMapWrapper'
 import type { Run, Series } from '@/lib/types'
 
 /* ─── Tipi ─── */
@@ -16,6 +17,7 @@ interface SearchParams {
   q?:     string
   from?:  string   // YYYY-MM-DD
   to?:    string   // YYYY-MM-DD
+  view?:  'lista' | 'mappa'
 }
 
 /* ─── Helpers date ─── */
@@ -56,6 +58,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
   const { data: { user } } = await supabase.auth.getUser()
 
   const today = todayStr()
+  const view = params.view === 'mappa' ? 'mappa' : 'lista'
   let runs: Run[] = []
   let series: Series[] = []
 
@@ -141,23 +144,49 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
 
-          {/* Tabs */}
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-full w-fit">
-            {[
-              { value: 'corse', label: 'Corse singole',    icon: 'directions_run' },
-              { value: 'serie', label: 'Serie ricorrenti', icon: 'event_repeat' },
-            ].map(t => (
-              <Link
-                key={t.value}
-                href={`/bacheca?tab=${t.value}`}
-                className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-                  tab === t.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <span className="material-symbols-outlined text-base">{t.icon}</span>
-                {t.label}
-              </Link>
-            ))}
+          {/* Tabs + view toggle */}
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-full w-fit">
+              {[
+                { value: 'corse', label: 'Corse singole',    icon: 'directions_run' },
+                { value: 'serie', label: 'Serie ricorrenti', icon: 'event_repeat' },
+              ].map(t => (
+                <Link
+                  key={t.value}
+                  href={buildUrl(params, { tab: t.value, view: undefined })}
+                  className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                    tab === t.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">{t.icon}</span>
+                  {t.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* View toggle Lista / Mappa — solo tab corse */}
+            {tab === 'corse' && (
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                {[
+                  { value: 'lista', icon: 'view_list',    label: 'Lista' },
+                  { value: 'mappa', icon: 'map',          label: 'Mappa' },
+                ].map(v => (
+                  <Link
+                    key={v.value}
+                    href={buildUrl(params, { view: v.value as 'lista' | 'mappa' })}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      view === v.value
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    title={v.label}
+                  >
+                    <span className="material-symbols-outlined text-base">{v.icon}</span>
+                    <span className="hidden sm:inline">{v.label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Filter bar */}
@@ -177,12 +206,18 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             </p>
           )}
 
-          {/* Grid */}
+          {/* Contenuto principale */}
           {tab === 'corse' ? (
             runs.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {runs.map(run => <RunCard key={run.id} run={run} />)}
-              </div>
+              view === 'mappa' ? (
+                /* Vista mappa */
+                <RunMapWrapper runs={runs} height="520px" />
+              ) : (
+                /* Vista lista */
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {runs.map(run => <RunCard key={run.id} run={run} />)}
+                </div>
+              )
             ) : (
               <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
             )
