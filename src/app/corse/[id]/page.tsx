@@ -4,10 +4,11 @@ import { Footer } from '@/components/Footer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { formatDate, LEVEL_LABELS } from '@/lib/utils'
+import { formatDate, LEVEL_LABELS, formatPaceTarget } from '@/lib/utils'
 import type { Run, Participation } from '@/lib/types'
 import { JoinButton } from './JoinButton'
 import { ParticipantsList } from './ParticipantsList'
+import { ContactButton } from './ContactButton'
 
 const LEVEL_COLORS: Record<string, string> = {
   tutti:        'bg-gray-100 text-gray-600',
@@ -117,7 +118,7 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                     <span className="material-symbols-outlined text-primary text-xl">speed</span>
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-orange-400">Ritmo target</p>
-                      <p className="text-sm font-bold text-orange-800">{typedRun.pace_target}</p>
+                      <p className="text-sm font-bold text-orange-800">{formatPaceTarget(typedRun.pace_target)}</p>
                     </div>
                   </div>
                 )}
@@ -158,8 +159,10 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                 ) : (
                   <div className="text-center py-8">
                     <span className="material-symbols-outlined text-3xl text-gray-200">group</span>
-                    <p className="text-sm text-gray-400 mt-2">Ancora nessun partecipante.</p>
-                    <p className="text-sm text-gray-400">Sii il primo a unirti.</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      {isPast ? 'Nessun partecipante registrato.' : 'Ancora nessun partecipante.'}
+                    </p>
+                    {!isPast && <p className="text-sm text-gray-400">Sii il primo a unirti.</p>}
                   </div>
                 )}
               </section>
@@ -179,13 +182,23 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
             {/* ── Sidebar ── */}
             <div className="flex flex-col gap-5">
 
-              {/* CTA */}
+              {/* CTA iscrizione */}
               {!isPast && !isOrganizer && (
                 <JoinButton
                   runId={id}
                   userId={user?.id ?? null}
                   myParticipation={myParticipation as Participation | null}
                   isFull={typedRun.max_participants !== null && approved.length >= typedRun.max_participants}
+                />
+              )}
+
+              {/* Contatta organizzatore — sempre visibile ai non-organizzatori */}
+              {!isOrganizer && (
+                <ContactButton
+                  runId={id}
+                  organizerId={typedRun.organizer_id}
+                  userId={user?.id ?? null}
+                  organizerName={typedRun.organizer.full_name}
                 />
               )}
 

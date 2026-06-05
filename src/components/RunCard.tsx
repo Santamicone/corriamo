@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Run } from '@/lib/types'
-import { formatDate, LEVEL_LABELS, cn } from '@/lib/utils'
+import { formatDate, LEVEL_LABELS, formatPaceTarget, cn } from '@/lib/utils'
 import { Avatar } from './ui/Avatar'
 
 interface RunCardProps {
@@ -8,23 +8,27 @@ interface RunCardProps {
   className?: string
 }
 
-const LEVEL_COLORS: Record<string, { badge: string; accent: string }> = {
-  tutti:         { badge: 'bg-gray-100 text-gray-600',   accent: 'from-gray-400 to-gray-300' },
-  principiante:  { badge: 'bg-green-100 text-green-700', accent: 'from-green-500 to-green-400' },
-  intermedio:    { badge: 'bg-blue-100 text-blue-700',   accent: 'from-blue-500 to-blue-400' },
-  avanzato:      { badge: 'bg-orange-100 text-orange-700', accent: 'from-orange-500 to-orange-400' },
+const LEVEL_COLORS: Record<string, { badge: string }> = {
+  tutti:        { badge: 'bg-gray-100 text-gray-600' },
+  principiante: { badge: 'bg-green-100 text-green-700' },
+  intermedio:   { badge: 'bg-blue-100 text-blue-700' },
+  avanzato:     { badge: 'bg-orange-100 text-orange-700' },
 }
 
 export function RunCard({ run, className }: RunCardProps) {
   const lc = LEVEL_COLORS[run.level] ?? LEVEL_COLORS.tutti
   const count = run.participants_count ?? 0
+  // Accent: verde se ha già partecipanti confermati, arancio altrimenti
+  const accentClass = count > 0
+    ? 'from-green-500 to-emerald-400'
+    : 'from-orange-500 to-orange-400'
 
   return (
     <Link href={`/corse/${run.id}`} className={cn('group block h-full', className)}>
       <article className="h-full bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-orange-100/40 transition-all duration-200 hover:-translate-y-1 overflow-hidden flex flex-col">
 
-        {/* Accent gradient top */}
-        <div className={cn('h-1 bg-gradient-to-r', lc.accent)} />
+        {/* Accent gradient top — arancio se aperta, verde se ci sono già runner */}
+        <div className={cn('h-1 bg-gradient-to-r', accentClass)} />
 
         <div className="p-5 flex flex-col flex-1 gap-4">
 
@@ -67,7 +71,7 @@ export function RunCard({ run, className }: RunCardProps) {
           {run.pace_target && (
             <div className="flex items-center gap-2 bg-orange-50 rounded-xl px-3 py-2">
               <span className="material-symbols-outlined text-primary text-base">speed</span>
-              <span className="text-xs font-semibold text-orange-800">{run.pace_target}</span>
+              <span className="text-xs font-semibold text-orange-800">{formatPaceTarget(run.pace_target)}</span>
             </div>
           )}
 

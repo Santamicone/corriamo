@@ -63,6 +63,27 @@ export interface Series {
   upcoming_runs?: Run[]
 }
 
+export interface Message {
+  id: string
+  run_id: string | null
+  run?: Run
+  sender_id: string
+  sender?: Profile
+  recipient_id: string
+  recipient?: Profile
+  body: string
+  read_at: string | null
+  created_at: string
+}
+
+export interface MessageThread {
+  run_id: string | null
+  run?: Pick<Run, 'id' | 'title' | 'date' | 'city'>
+  other_user: Profile
+  last_message: Message
+  unread_count: number
+}
+
 export interface Participation {
   id: string
   run_id: string
