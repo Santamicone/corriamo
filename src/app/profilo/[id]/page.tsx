@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { Avatar } from '@/components/ui/Avatar'
+import { AvatarLightbox } from '@/components/ui/AvatarLightbox'
 import { RunCard } from '@/components/RunCard'
 import { ReviewCard } from '@/components/ReviewCard'
 import { RatingBadge, StarsDisplay } from '@/components/ui/Stars'
@@ -66,9 +67,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <div className="relative">
-                <Avatar name={p.full_name} src={p.avatar_url} size="xl" />
+                <AvatarLightbox name={p.full_name} src={p.avatar_url} size="xl" />
                 {p.strava_url && (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white">
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white pointer-events-none">
                     <span className="material-symbols-filled text-white text-xs">verified</span>
                   </div>
                 )}
