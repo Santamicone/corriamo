@@ -14,6 +14,9 @@ import { ReviewForm } from './ReviewForm'
 import { CancelRunButton } from './CancelRunButton'
 import { MomentoSection } from './MomentoSection'
 import { MomentoCard } from '@/components/MomentoCard'
+import { ShareButton } from './ShareButton'
+import { ShareLanding } from './ShareLanding'
+import type { Metadata } from 'next'
 
 const LEVEL_COLORS: Record<string, string> = {
   tutti:        'bg-gray-100 text-gray-600',
@@ -22,8 +25,62 @@ const LEVEL_COLORS: Record<string, string> = {
   avanzato:     'bg-orange-100 text-orange-700',
 }
 
-export default async function CorsaDetailPage({ params }: { params: Promise<{ id: string }> }) {
+/* ── OG meta tags ── */
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
   const { id } = await params
+  const supabase = await createClient()
+  const { data: run } = await supabase
+    .from('runs')
+    .select('title, date, time, city, level, distance_km, is_no_drop')
+    .eq('id', id)
+    .single()
+
+  if (!run) return { title: 'Corsa — Vieni a correre?' }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://vieniacorrere.it'
+  const desc = [
+    LEVEL_LABELS[run.level],
+    run.distance_km ? `${run.distance_km} km` : null,
+    `Ore ${run.time.slice(0, 5)}`,
+    run.city,
+    run.is_no_drop ? 'No drop' : null,
+  ].filter(Boolean).join(' · ')
+
+  const ogImage = `${siteUrl}/api/og/corse/${id}`
+
+  return {
+    title: `${run.title} — Vieni a correre?`,
+    description: desc,
+    openGraph: {
+      title: run.title,
+      description: desc,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: run.title }],
+      url: `${siteUrl}/corse/${id}`,
+      type: 'website',
+      siteName: 'Vieni a correre?',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: run.title,
+      description: desc,
+      images: [ogImage],
+    },
+  }
+}
+
+export default async function CorsaDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ ref?: string }>
+}) {
+  const { id } = await params
+  const { ref } = await searchParams
+  const isShareView = ref === 'share'
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -35,6 +92,14 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
 
   if (!run) notFound()
   const typedRun = run as unknown as Run
+
+  // ── Share landing (visitatori da link condiviso) ──
+  // Carichiamo il minimo indispensabile e mostriamo la landing pulita
+  if (isShareView && !user) {
+    const { data: parts } = await supabase
+      .from('participations').select('id').eq('run_id', id).eq('status', 'approvata')
+    return <ShareLanding run={typedRun as Run & { tags?: string[] }} approvedCount={parts?.length ?? 0} />
+  }
 
   const { data: participations } = await supabase
     .from('participations').select('*, user:profiles(*)')
@@ -287,6 +352,19 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                   isFull={typedRun.max_participants !== null && approved.length >= typedRun.max_participants}
                 />
               )}
+
+              {/* Condividi */}
+              <ShareButton
+                runId={id}
+                title={typedRun.title}
+                date={typedRun.date}
+                time={typedRun.time}
+                location={typedRun.location}
+                city={typedRun.city}
+                distanceKm={typedRun.distance_km}
+                level={typedRun.level}
+                isNoDrop={typedRun.is_no_drop}
+              />
 
               {/* Contatta organizzatore */}
               {!isOrganizer && (
