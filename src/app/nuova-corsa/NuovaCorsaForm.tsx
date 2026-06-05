@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { geocodeAddress } from '@/lib/geocoding'
 
 interface Props {
   userId: string
@@ -40,6 +41,10 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    // Geocoding non bloccante — se fallisce si salva senza coordinate
+    const coords = await geocodeAddress(form.location, form.city)
+
     const supabase = createClient()
     const { data, error: err } = await supabase.from('runs').insert({
       organizer_id: userId,
@@ -56,6 +61,8 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
       is_no_drop: form.is_no_drop,
       status: 'aperta',
       series_id: form.series_id || null,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
     }).select('id').single()
 
     if (err) { setError(err.message); setLoading(false); return }
@@ -69,7 +76,7 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
       {/* Dove e quando */}
-      <FormSection title="Dove e quando" desc="Indica un punto di ritrovo facile da trovare.">
+      <FormSection title="Dove e quando" desc="Indica un punto di ritrovo facile da trovare. Verrà usato per geolocalizzare la corsa sulla mappa.">
         <div>
           <label className={labelCls}>Luogo di ritrovo *</label>
           <input className={inputCls} value={form.location} onChange={set('location')} placeholder="es. Ingresso Arco della Pace" required />
@@ -107,14 +114,12 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
         </div>
         <div>
           <label className={labelCls}>Livello</label>
-          <div className="relative">
-            <select className={inputCls} value={form.level} onChange={set('level')}>
-              <option value="tutti">Tutti i livelli</option>
-              <option value="principiante">Principiante</option>
-              <option value="intermedio">Intermedio</option>
-              <option value="avanzato">Avanzato</option>
-            </select>
-          </div>
+          <select className={inputCls} value={form.level} onChange={set('level')}>
+            <option value="tutti">Tutti i livelli</option>
+            <option value="principiante">Principiante</option>
+            <option value="intermedio">Intermedio</option>
+            <option value="avanzato">Avanzato</option>
+          </select>
         </div>
         <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-gray-50 transition-colors">
           <input type="checkbox" checked={form.is_no_drop}
@@ -167,9 +172,11 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
         <button type="submit" disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-primary text-white font-semibold text-base px-6 py-4 rounded-2xl hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200 disabled:opacity-60">
           <span className="material-symbols-outlined text-lg">{loading ? 'hourglass_empty' : 'add_circle'}</span>
-          {loading ? 'Pubblicazione…' : 'Pubblica la corsa'}
+          {loading ? 'Pubblicazione e geolocalizzazione…' : 'Pubblica la corsa'}
         </button>
-        <p className="text-xs text-gray-400 text-center">Potrai modificarla se qualcosa cambia.</p>
+        <p className="text-xs text-gray-400 text-center">
+          Il punto di ritrovo verrà geolocalizzato automaticamente per la mappa.
+        </p>
       </div>
     </form>
   )
