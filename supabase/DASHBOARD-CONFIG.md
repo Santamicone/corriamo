@@ -85,13 +85,25 @@ Aggiungere:
 
 ## 5. SQL aggiuntivi da eseguire
 
-Oltre allo schema base, esegui questi file nell'SQL Editor:
+Oltre allo schema base, esegui questi file nell'SQL Editor nell'ordine indicato:
 
-| File | Contenuto |
-|---|---|
-| `supabase/trigger-new-user.sql` | Trigger profilo automatico alla registrazione |
-| `supabase/messages.sql` | Tabella messaggistica interna |
-| `supabase/reviews.sql` | Tabella recensioni organizzatori |
+| Ordine | File | Contenuto |
+|---|---|---|
+| 1 | `supabase/schema.sql` | Schema principale |
+| 2 | `supabase/trigger-new-user.sql` | Trigger profilo automatico |
+| 3 | `supabase/messages.sql` | Tabella messaggistica |
+| 4 | `supabase/reviews.sql` | Tabella recensioni |
+| 5 | `supabase/add-coordinates.sql` | Colonne lat/lng su runs |
+| 6 | `supabase/storage-avatars.sql` | Bucket Storage per avatar |
+
+## 6. Storage bucket avatars
+
+Dopo aver eseguito `storage-avatars.sql`, verifica in **Storage → Buckets** che:
+- Il bucket `avatars` esista
+- Sia impostato come **Public**
+- Le 4 policy RLS siano presenti
+
+Il path di upload è `avatars/{user_id}/avatar.{ext}` — ogni utente scrive solo nella propria cartella.
 
 ---
 

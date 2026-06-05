@@ -1,10 +1,14 @@
 import { cn } from '@/lib/utils'
 
-interface AvatarProps {
-  name: string
-  src?: string | null
-  size?: 'sm' | 'md' | 'lg' | 'xl'
-  className?: string
+/* ── Preset icons: colori e label ── */
+export const PRESET_OPTIONS = [
+  { id: 'preset:1', bg: 'bg-primary',          label: 'Arancio' },
+  { id: 'preset:2', bg: 'bg-tertiary',          label: 'Verde' },
+  { id: 'preset:3', bg: 'bg-[#2563EB]',         label: 'Blu' },
+] as const
+
+function getPresetBg(src: string): string {
+  return PRESET_OPTIONS.find(p => p.id === src)?.bg ?? 'bg-primary'
 }
 
 function getInitials(name: string) {
@@ -12,13 +16,15 @@ function getInitials(name: string) {
 }
 
 function getColorClass(name: string) {
-  const colors = [
-    'bg-primary/20 text-primary',
-    'bg-tertiary/20 text-tertiary',
-    'bg-secondary/20 text-secondary',
-  ]
-  const index = name.charCodeAt(0) % colors.length
-  return colors[index]
+  const colors = ['bg-primary/20 text-primary', 'bg-tertiary/20 text-tertiary', 'bg-blue-100 text-blue-700']
+  return colors[name.charCodeAt(0) % colors.length]
+}
+
+interface AvatarProps {
+  name: string
+  src?: string | null
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  className?: string
 }
 
 export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
@@ -29,15 +35,23 @@ export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
     xl: 'w-20 h-20 text-2xl',
   }
 
+  const iconSizes = { sm: 'text-sm', md: 'text-base', lg: 'text-2xl', xl: 'text-4xl' }
+  const isPreset = src?.startsWith('preset:')
+  const isUrl    = src && !isPreset
+
   return (
     <div className={cn(
-      'rounded-full flex items-center justify-center font-bold shrink-0 overflow-hidden border-2 border-surface-container-lowest',
+      'rounded-full flex items-center justify-center font-bold shrink-0 overflow-hidden border-2 border-white',
       sizeClasses[size],
-      !src && getColorClass(name),
+      isPreset ? getPresetBg(src!) : (!isUrl && getColorClass(name)),
       className
     )}>
-      {src ? (
-        <img src={src} alt={name} className="w-full h-full object-cover" />
+      {isUrl ? (
+        <img src={src!} alt={name} className="w-full h-full object-cover" />
+      ) : isPreset ? (
+        <span className={cn('material-symbols-filled text-white select-none', iconSizes[size])}>
+          directions_run
+        </span>
       ) : (
         getInitials(name)
       )}
