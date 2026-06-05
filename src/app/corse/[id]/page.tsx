@@ -132,10 +132,10 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
               <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Dettagli dell&apos;appuntamento</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Data */}
                   {[
                     { icon: 'calendar_today', label: 'Data',     value: formatDate(typedRun.date) },
                     { icon: 'schedule',       label: 'Orario',   value: typedRun.time.slice(0, 5) },
-                    { icon: 'place',          label: 'Luogo',    value: typedRun.location },
                     { icon: 'route',          label: 'Distanza', value: typedRun.distance_km ? `${typedRun.distance_km} km` : 'Libera' },
                   ].map(item => (
                     <div key={item.label} className="flex flex-col gap-2 bg-gray-50 rounded-2xl p-4">
@@ -146,6 +146,32 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                       </div>
                     </div>
                   ))}
+
+                  {/* Luogo — card speciale con link Google Maps */}
+                  {(() => {
+                    const run = typedRun as Run & { lat?: number; lng?: number }
+                    const mapsUrl = run.lat && run.lng
+                      ? `https://www.google.com/maps?q=${run.lat},${run.lng}`
+                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${typedRun.location}, ${typedRun.city}`)}`
+                    return (
+                      <div className="flex flex-col gap-2 bg-gray-50 rounded-2xl p-4">
+                        <span className="material-symbols-outlined text-primary text-xl">place</span>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Luogo</p>
+                          <p className="text-sm font-bold text-gray-800 leading-tight mt-0.5">{typedRun.location}</p>
+                          <a
+                            href={mapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-semibold text-primary hover:underline"
+                          >
+                            <span className="material-symbols-outlined text-sm">open_in_new</span>
+                            Apri su Google Maps
+                          </a>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
                 {typedRun.pace_target && (
                   <div className="flex items-center gap-3 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
