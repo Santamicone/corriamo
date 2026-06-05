@@ -95,6 +95,7 @@ Oltre allo schema base, esegui questi file nell'SQL Editor nell'ordine indicato:
 | 4 | `supabase/reviews.sql` | Tabella recensioni |
 | 5 | `supabase/add-coordinates.sql` | Colonne lat/lng su runs |
 | 6 | `supabase/storage-avatars.sql` | Bucket Storage per avatar |
+| 7 | `supabase/notifications.sql` | Tabella notifiche + 4 trigger automatici |
 
 ## 6. Storage bucket avatars
 

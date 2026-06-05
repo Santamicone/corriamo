@@ -63,6 +63,28 @@ export interface Series {
   upcoming_runs?: Run[]
 }
 
+export type NotificationType =
+  | 'nuova_richiesta'
+  | 'richiesta_approvata'
+  | 'richiesta_rifiutata'
+  | 'nuovo_messaggio'
+  | 'promemoria_corsa'
+  | 'corsa_annullata'
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string | null
+  run_id: string | null
+  actor_id: string | null
+  actor?: Profile
+  read: boolean
+  show_after: string
+  created_at: string
+}
+
 export interface Review {
   id: string
   run_id: string
