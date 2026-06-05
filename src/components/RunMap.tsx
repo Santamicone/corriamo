@@ -83,7 +83,8 @@ export default function RunMap({ runs, height = '480px' }: RunMapProps) {
       // Crea marker per ogni gruppo
       grouped.forEach((group) => {
         const first = group[0]
-        const color = LEVEL_COLORS[first.level] ?? LEVEL_COLORS.tutti
+        const isSpot = (first as Run & { is_spot?: boolean }).is_spot === true
+        const color = isSpot ? '#EF4444' : LEVEL_COLORS[first.level] ?? LEVEL_COLORS.tutti
         const icon = L.divIcon({
           html: pinSvg(color, group.length),
           className: '',

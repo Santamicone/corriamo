@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { format, addDays, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { RunMapWrapper } from '@/components/RunMapWrapper'
+import { SpotRunsStrip } from '@/components/SpotRunsStrip'
 import type { Run, Series } from '@/lib/types'
 
 /* ─── Tipi ─── */
@@ -116,6 +117,9 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1">
+
+        {/* Striscia corse dell'ultimo momento */}
+        <SpotRunsStrip />
 
         {/* Page header */}
         <div className="bg-white border-b border-gray-100">
