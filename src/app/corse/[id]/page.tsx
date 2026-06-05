@@ -5,10 +5,11 @@ import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate, LEVEL_LABELS, formatPaceTarget } from '@/lib/utils'
-import type { Run, Participation } from '@/lib/types'
+import type { Run, Participation, Review } from '@/lib/types'
 import { JoinButton } from './JoinButton'
 import { ParticipantsList } from './ParticipantsList'
 import { ContactButton } from './ContactButton'
+import { ReviewForm } from './ReviewForm'
 
 const LEVEL_COLORS: Record<string, string> = {
   tutti:        'bg-gray-100 text-gray-600',
@@ -45,6 +46,25 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
   const isOrganizer = user?.id === typedRun.organizer_id
   const isPast = new Date(`${typedRun.date}T${typedRun.time}`) < new Date()
   const levelColor = LEVEL_COLORS[typedRun.level] ?? LEVEL_COLORS.tutti
+
+  // Recupera recensione esistente dell'utente loggato per questa corsa
+  const myReview = (user && isPast && !isOrganizer && myParticipation?.status === 'approvata')
+    ? await supabase
+        .from('reviews')
+        .select('*')
+        .eq('run_id', id)
+        .eq('reviewer_id', user.id)
+        .maybeSingle()
+        .then(r => r.data as Review | null)
+    : null
+
+  // Mostra form recensione solo se: corsa passata + partecipante approvato + non organizzatore
+  const canReview = !!(
+    user &&
+    isPast &&
+    !isOrganizer &&
+    myParticipation?.status === 'approvata'
+  )
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -98,10 +118,10 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                 <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Dettagli dell&apos;appuntamento</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { icon: 'calendar_today', label: 'Data',      value: formatDate(typedRun.date) },
-                    { icon: 'schedule',       label: 'Orario',    value: typedRun.time.slice(0, 5) },
-                    { icon: 'place',          label: 'Luogo',     value: typedRun.location },
-                    { icon: 'route',          label: 'Distanza',  value: typedRun.distance_km ? `${typedRun.distance_km} km` : 'Libera' },
+                    { icon: 'calendar_today', label: 'Data',     value: formatDate(typedRun.date) },
+                    { icon: 'schedule',       label: 'Orario',   value: typedRun.time.slice(0, 5) },
+                    { icon: 'place',          label: 'Luogo',    value: typedRun.location },
+                    { icon: 'route',          label: 'Distanza', value: typedRun.distance_km ? `${typedRun.distance_km} km` : 'Libera' },
                   ].map(item => (
                     <div key={item.label} className="flex flex-col gap-2 bg-gray-50 rounded-2xl p-4">
                       <span className="material-symbols-outlined text-primary text-xl">{item.icon}</span>
@@ -112,7 +132,6 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                     </div>
                   ))}
                 </div>
-
                 {typedRun.pace_target && (
                   <div className="flex items-center gap-3 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
                     <span className="material-symbols-outlined text-primary text-xl">speed</span>
@@ -132,13 +151,15 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                 </section>
               )}
 
-              {/* Nota rassicurante */}
-              <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3.5">
-                <span className="material-symbols-outlined text-blue-400 text-xl shrink-0">info</span>
-                <p className="text-sm text-blue-700 leading-relaxed">
-                  Presentati qualche minuto prima della partenza. Se hai dubbi sul ritmo, scrivi all&apos;organizzatore prima di iscriverti.
-                </p>
-              </div>
+              {/* Nota rassicurante — solo corse future */}
+              {!isPast && (
+                <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3.5">
+                  <span className="material-symbols-outlined text-blue-400 text-xl shrink-0">info</span>
+                  <p className="text-sm text-blue-700 leading-relaxed">
+                    Presentati qualche minuto prima della partenza. Se hai dubbi sul ritmo, scrivi all&apos;organizzatore prima di iscriverti.
+                  </p>
+                </div>
+              )}
 
               {/* Chi corre */}
               <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
@@ -177,6 +198,18 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                   <ParticipantsList runId={id} participations={pending as unknown as Participation[]} />
                 </section>
               )}
+
+              {/* ── Recensione (solo partecipanti approvati, corsa passata) ── */}
+              {canReview && (
+                <ReviewForm
+                  runId={id}
+                  reviewedId={typedRun.organizer_id}
+                  reviewedName={typedRun.organizer.full_name}
+                  reviewedAvatar={typedRun.organizer.avatar_url}
+                  reviewerId={user!.id}
+                  existingReview={myReview}
+                />
+              )}
             </div>
 
             {/* ── Sidebar ── */}
@@ -192,7 +225,7 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                 />
               )}
 
-              {/* Contatta organizzatore — sempre visibile ai non-organizzatori */}
+              {/* Contatta organizzatore */}
               {!isOrganizer && (
                 <ContactButton
                   runId={id}
@@ -221,7 +254,6 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                 </Link>
               </div>
 
-              {/* Organizzatore badge */}
               {isOrganizer && (
                 <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
                   <span className="material-symbols-filled text-green-600 text-xl shrink-0">verified</span>
@@ -234,7 +266,6 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
 
-              {/* Serie collegata */}
               {typedRun.series && (
                 <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-2">Parte della serie</p>

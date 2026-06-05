@@ -63,6 +63,24 @@ export interface Series {
   upcoming_runs?: Run[]
 }
 
+export interface Review {
+  id: string
+  run_id: string
+  run?: Pick<Run, 'id' | 'title' | 'date' | 'city'>
+  reviewer_id: string
+  reviewer?: Profile
+  reviewed_id: string
+  rating: number          // 1–5
+  body: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ReviewStats {
+  average: number
+  count: number
+}
+
 export interface Message {
   id: string
   run_id: string | null
