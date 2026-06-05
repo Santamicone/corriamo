@@ -25,17 +25,34 @@ function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-[#FFF7F0]">
 
-      {/* ── Background: immagine runners a sinistra ── */}
+      {/* ── Background media ── */}
       <div className="absolute inset-0 lg:right-[42%] overflow-hidden">
+
+        {/* Video — solo desktop (lg+) */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="none"
+          poster="/hero.png"
+          className="hidden lg:block absolute inset-0 w-full h-full object-cover object-center"
+          aria-hidden="true"
+        >
+          <source src="/hero.mp4" type="video/mp4" />
+        </video>
+
+        {/* Immagine — mobile e tablet (fallback sempre presente) */}
         <Image
           src="/hero.png"
           alt="Runner in un paesaggio al tramonto"
           fill
           priority
-          className="object-cover object-center"
-          sizes="60vw"
+          className="lg:hidden object-cover object-center"
+          sizes="100vw"
         />
-        {/* Sfumatura warm che copre l'immagine verso destra */}
+
+        {/* Sfumatura warm verso destra */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFF7F0]/60 to-[#FFF7F0]" />
         {/* Sfumatura bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#FFF7F0] to-transparent" />
