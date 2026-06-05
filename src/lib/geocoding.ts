@@ -4,34 +4,49 @@
  *
  * Rate limit: 1 req/s — da usare solo alla creazione della corsa, non in loop.
  */
+export interface GeoResult {
+  lat: number
+  lng: number
+  display_name: string   // indirizzo completo restituito da Nominatim
+}
+
 export async function geocodeAddress(
   location: string,
   city: string
-): Promise<{ lat: number; lng: number } | null> {
+): Promise<GeoResult | null> {
   try {
-    const query = `${location}, ${city}, Italia`
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=it`
+    // Strategia 1: luogo preciso + città
+    const query1 = `${location}, ${city}, Italia`
+    const result = await nominatimSearch(query1)
+    if (result) return result
 
+    // Strategia 2: fallback solo città (almeno il pin è nella zona giusta)
+    const result2 = await nominatimSearch(`${city}, Italia`)
+    return result2
+  } catch {
+    return null
+  }
+}
+
+async function nominatimSearch(query: string): Promise<GeoResult | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=it`
     const res = await fetch(url, {
       headers: {
         'Accept-Language': 'it',
-        // Nominatim richiede un User-Agent identificativo
         'User-Agent': 'vieniacorrere.it/1.0 (contact@vieniacorrere.it)',
       },
-      signal: AbortSignal.timeout(5000), // 5s timeout
+      signal: AbortSignal.timeout(5000),
     })
-
     if (!res.ok) return null
-
     const data = await res.json()
     if (!data || data.length === 0) return null
-
     return {
       lat: parseFloat(data[0].lat),
       lng: parseFloat(data[0].lon),
+      display_name: data[0].display_name ?? '',
     }
   } catch {
-    // Geocoding non bloccante — la corsa si salva comunque senza coordinate
     return null
   }
 }
