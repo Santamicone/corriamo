@@ -62,7 +62,7 @@ function HeroSection() {
 
             {/* Sottotitolo */}
             <p className="text-lg sm:text-xl leading-8 text-gray-700 max-w-lg">
-              Corriamo è il modo più semplice per proporre un allenamento,
+              Vieni a correre? è il modo più semplice per proporre un allenamento,
               unirti a una corsa già organizzata o creare appuntamenti
               ricorrenti con altri runner della tua zona.
             </p>
@@ -89,7 +89,7 @@ function HeroSection() {
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span className="material-symbols-filled text-red-400 text-base">favorite</span>
               <span>
-                Niente feed infinito. Niente classifiche.<br className="sm:hidden" />
+                Niente classifiche, nessuna competizione.<br className="sm:hidden" />
                 {' '}Solo appuntamenti chiari per correre insieme.
               </span>
             </div>

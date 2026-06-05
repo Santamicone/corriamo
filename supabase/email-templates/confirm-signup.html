@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conferma la tua iscrizione</title>
+</head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+
+          <!-- Header arancio -->
+          <tr>
+            <td style="background:#ea580c;padding:24px 32px;">
+              <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.5px;">
+                🏃 Vieni a correre?
+              </span>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 16px;font-size:22px;font-weight:800;color:#111827;">
+                Benvenuto su Vieni a correre?
+              </h2>
+              <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+                Ciao,
+              </p>
+              <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+                grazie per esserti registrato a <strong>Vieni a correre?</strong>, il modo più semplice per proporre una corsa, unirti a un allenamento già organizzato o trovare altri runner della tua zona.
+              </p>
+              <p style="margin:0 0 28px;font-size:15px;color:#374151;line-height:1.6;">
+                Per completare la registrazione, conferma il tuo indirizzo email cliccando sul pulsante qui sotto.
+              </p>
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:10px;background:#ea580c;">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;padding:14px 28px;background:#ea580c;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;">
+                      Conferma la tua email
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:24px 0 0;font-size:13px;color:#6b7280;line-height:1.6;">
+                Se il pulsante non funziona, copia e incolla questo link nel browser:<br>
+                <a href="{{ .ConfirmationURL }}" style="color:#ea580c;word-break:break-all;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid #f3f4f6;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.5;">
+                Se non hai richiesto tu questa registrazione, puoi ignorare questa email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
