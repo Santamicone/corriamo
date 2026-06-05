@@ -63,6 +63,28 @@ export interface Series {
   upcoming_runs?: Run[]
 }
 
+export interface Momento {
+  id: string
+  run_id: string
+  run?: Pick<Run, 'id' | 'title' | 'date' | 'city'>
+  author_id: string
+  author?: Profile
+  body: string | null
+  photo_url: string | null
+  created_at: string
+}
+
+export interface Momento {
+  id: string
+  run_id: string
+  run?: Pick<Run, 'id' | 'title' | 'date' | 'city'>
+  author_id: string
+  author?: Profile
+  photo_url: string | null
+  body: string | null
+  created_at: string
+}
+
 export type NotificationType =
   | 'nuova_richiesta'
   | 'richiesta_approvata'

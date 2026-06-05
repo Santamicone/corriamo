@@ -3,6 +3,8 @@ import { Run } from '@/lib/types'
 import { formatDate, LEVEL_LABELS, formatPaceTarget, cn } from '@/lib/utils'
 import { Avatar } from './ui/Avatar'
 
+type RunWithMeta = Run & { is_spot?: boolean; has_momento?: boolean }
+
 interface RunCardProps {
   run: Run
   className?: string
@@ -18,7 +20,10 @@ const LEVEL_COLORS: Record<string, { badge: string }> = {
 export function RunCard({ run, className }: RunCardProps) {
   const lc = LEVEL_COLORS[run.level] ?? LEVEL_COLORS.tutti
   const count = run.participants_count ?? 0
-  const isSpot = (run as Run & { is_spot?: boolean }).is_spot === true
+  const r = run as RunWithMeta
+  const isSpot = r.is_spot === true
+  const hasMomento = r.has_momento === true
+  const hasMomenti = (run as Run & { momenti_count?: number }).momenti_count ?? 0
   // Accent: rosso pulsante per spot, verde se partecipanti, arancio default
   const accentClass = isSpot
     ? 'from-red-500 to-orange-500'
@@ -54,6 +59,18 @@ export function RunCard({ run, className }: RunCardProps) {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
                   </span>
                   Adesso
+                </span>
+              )}
+                {hasMomenti > 0 && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                  <span className="material-symbols-outlined text-sm">photo_camera</span>
+                  {hasMomenti}
+                </span>
+              )}
+              {hasMomento && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-orange-50 border border-orange-200 px-2.5 py-0.5 text-xs font-semibold text-orange-600">
+                  <span className="material-symbols-filled text-sm">photo_camera</span>
+                  Momento
                 </span>
               )}
               {run.series_id && (

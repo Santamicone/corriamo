@@ -92,6 +92,17 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     const countMap = new Map<string, number>()
     counts?.forEach(c => countMap.set(c.run_id, (countMap.get(c.run_id) ?? 0) + 1))
     runs = runs.map(r => ({ ...r, participants_count: countMap.get(r.id) ?? 0 })) as Run[]
+
+    // Conta i momenti per mostrare il badge 📷 nelle card
+    const pastRunIds = runs.filter(r => r.date < today).map(r => r.id)
+    if (pastRunIds.length > 0) {
+      const { data: mCounts } = await supabase
+        .from('momenti').select('run_id')
+        .in('run_id', pastRunIds)
+      const mMap = new Map<string, number>()
+      mCounts?.forEach(m => mMap.set(m.run_id, (mMap.get(m.run_id) ?? 0) + 1))
+      runs = runs.map(r => ({ ...r, momenti_count: mMap.get(r.id) ?? 0 })) as Run[]
+    }
   } else {
     let query = supabase
       .from('series')
