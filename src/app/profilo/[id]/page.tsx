@@ -5,11 +5,12 @@ import { Avatar } from '@/components/ui/Avatar'
 import { AvatarLightbox } from '@/components/ui/AvatarLightbox'
 import { RunCard } from '@/components/RunCard'
 import { ReviewCard } from '@/components/ReviewCard'
+import { MomentoCard } from '@/components/MomentoCard'
 import { RatingBadge, StarsDisplay } from '@/components/ui/Stars'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { LEVEL_LABELS, formatPace } from '@/lib/utils'
-import type { Profile, Run, Review } from '@/lib/types'
+import type { Profile, Run, Review, Momento } from '@/lib/types'
 
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -20,7 +21,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   if (!profile) notFound()
   const p = profile as unknown as Profile
 
-  const [{ data: organizedRuns }, { data: reviewsData }] = await Promise.all([
+  const [{ data: organizedRuns }, { data: reviewsData }, { data: momentiData }] = await Promise.all([
     supabase
       .from('runs')
       .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
@@ -34,9 +35,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
       .select('*, reviewer:profiles!reviews_reviewer_id_fkey(*), run:runs(id, title, date, city)')
       .eq('reviewed_id', id)
       .order('created_at', { ascending: false }),
+
+    supabase
+      .from('momenti')
+      .select('*, run:runs(id, title, date, city)')
+      .eq('author_id', id)
+      .order('created_at', { ascending: false })
+      .limit(12),
   ])
 
   const reviews = (reviewsData ?? []) as unknown as Review[]
+  const momenti = (momentiData ?? []) as unknown as Momento[]
   const reviewCount = reviews.length
   const avgRating = reviewCount > 0
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
@@ -188,6 +197,22 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
               </div>
             )}
           </section>
+
+          {/* ── Momenti ── */}
+          {momenti.length > 0 && (
+            <section>
+              <h2 className="text-lg font-extrabold text-gray-900 mb-5 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">photo_camera</span>
+                Momenti
+                <span className="text-sm font-normal text-gray-400">({momenti.length})</span>
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {momenti.map(m => (
+                  <MomentoCard key={m.id} momento={{ ...m, author: p }} showRun size="sm" />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* ── Recensioni ── */}
           <section>

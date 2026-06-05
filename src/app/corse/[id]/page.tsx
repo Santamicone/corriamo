@@ -5,12 +5,14 @@ import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate, LEVEL_LABELS, formatPaceTarget } from '@/lib/utils'
-import type { Run, Participation, Review } from '@/lib/types'
+import type { Run, Participation, Review, Momento } from '@/lib/types'
 import { JoinButton } from './JoinButton'
 import { ParticipantsList } from './ParticipantsList'
 import { ContactButton } from './ContactButton'
 import { ReviewForm } from './ReviewForm'
 import { CancelRunButton } from './CancelRunButton'
+import { MomentoSection } from './MomentoSection'
+import { MomentoCard } from '@/components/MomentoCard'
 
 const LEVEL_COLORS: Record<string, string> = {
   tutti:        'bg-gray-100 text-gray-600',
@@ -47,6 +49,17 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
   const isOrganizer = user?.id === typedRun.organizer_id
   const isPast = new Date(`${typedRun.date}T${typedRun.time}`) < new Date()
   const levelColor = LEVEL_COLORS[typedRun.level] ?? LEVEL_COLORS.tutti
+
+  // Momenti — solo per corse passate
+  const momenti: Momento[] = isPast ? await supabase
+    .from('momenti')
+    .select('*, author:profiles!momenti_author_id_fkey(*)')
+    .eq('run_id', id)
+    .order('created_at', { ascending: false })
+    .then(r => (r.data ?? []) as unknown as Momento[]) : []
+
+  const myMomento = user ? momenti.find(m => m.author_id === user.id) ?? null : null
+  const canPostMomento = isPast && !!user && (isOrganizer || myParticipation?.status === 'approvata')
 
   // Recupera recensione esistente dell'utente loggato per questa corsa
   const myReview = (user && isPast && !isOrganizer && myParticipation?.status === 'approvata')
@@ -188,6 +201,17 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                   </div>
                 )}
               </section>
+
+              {/* ── Momenti (corse passate) ── */}
+              {isPast && (
+                <MomentoSection
+                  runId={id}
+                  userId={user?.id ?? null}
+                  canPost={canPostMomento}
+                  existingMomento={myMomento}
+                  momenti={momenti}
+                />
+              )}
 
               {/* Richieste in attesa — solo organizzatore */}
               {isOrganizer && pending.length > 0 && (
