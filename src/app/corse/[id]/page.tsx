@@ -10,6 +10,7 @@ import { JoinButton } from './JoinButton'
 import { ParticipantsList } from './ParticipantsList'
 import { ContactButton } from './ContactButton'
 import { ReviewForm } from './ReviewForm'
+import { CancelRunButton } from './CancelRunButton'
 
 const LEVEL_COLORS: Record<string, string> = {
   tutti:        'bg-gray-100 text-gray-600',
@@ -255,15 +256,20 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
               </div>
 
               {isOrganizer && (
-                <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
-                  <span className="material-symbols-filled text-green-600 text-xl shrink-0">verified</span>
-                  <div>
-                    <p className="text-sm font-bold text-green-800">Sei l&apos;organizzatore</p>
-                    <p className="text-xs text-green-600 mt-0.5 leading-relaxed">
-                      Approva o rifiuta le richieste dal pannello qui sotto.
-                    </p>
+                <>
+                  <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
+                    <span className="material-symbols-filled text-green-600 text-xl shrink-0">verified</span>
+                    <div>
+                      <p className="text-sm font-bold text-green-800">Sei l&apos;organizzatore</p>
+                      <p className="text-xs text-green-600 mt-0.5 leading-relaxed">
+                        Approva o rifiuta le richieste dal pannello qui sotto.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                  {!isPast && typedRun.status === 'aperta' && (
+                    <CancelRunButton runId={id} />
+                  )}
+                </>
               )}
 
               {typedRun.series && (
