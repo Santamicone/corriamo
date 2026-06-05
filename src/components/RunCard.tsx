@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Run } from '@/lib/types'
 import { formatDate, LEVEL_LABELS, formatPaceTarget, cn } from '@/lib/utils'
 import { Avatar } from './ui/Avatar'
+import { TagBadgeList } from './ui/TagBadge'
 
 type RunWithMeta = Run & { is_spot?: boolean; has_momento?: boolean }
 
@@ -103,6 +104,10 @@ export function RunCard({ run, className }: RunCardProps) {
               <span className="text-xs font-semibold text-orange-800">{formatPaceTarget(run.pace_target)}</span>
             </div>
           )}
+          {/* Tag caratteristiche */}
+          {(r as RunWithMeta & { tags?: string[] }).tags?.length ? (
+            <TagBadgeList tags={(r as RunWithMeta & { tags?: string[] }).tags!} max={3} />
+          ) : null}
 
           {/* Footer */}
           <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">

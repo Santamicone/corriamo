@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { addWeeks, addDays, format, nextDay, parseISO, getDay } from 'date-fns'
 import { DAY_LABELS } from '@/lib/utils'
+import { TagPicker } from '@/components/ui/TagPicker'
 
 const WEEKS_AHEAD = 8
 
@@ -36,6 +37,7 @@ export function NuovaSerieForm({ userId }: { userId: string }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [form, setForm] = useState({
     title: '', description: '', location: '', city: '',
     distance_km: '', pace_target: '', level: 'tutti',
@@ -66,6 +68,7 @@ export function NuovaSerieForm({ userId }: { userId: string }) {
       level: form.level,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
       is_no_drop: form.is_no_drop,
+      tags,
       recurrence_type: form.recurrence_type,
       recurrence_day: parseInt(form.recurrence_day),
       recurrence_time: form.recurrence_time,
@@ -89,6 +92,7 @@ export function NuovaSerieForm({ userId }: { userId: string }) {
       level: form.level,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
       is_no_drop: form.is_no_drop,
+      tags,
       status: 'aperta',
     }))
 
@@ -152,6 +156,17 @@ export function NuovaSerieForm({ userId }: { userId: string }) {
           <input type="checkbox" checked={form.is_no_drop} onChange={e => setForm(prev => ({ ...prev, is_no_drop: e.target.checked }))} className="w-4 h-4 accent-primary rounded" />
           <span className="text-sm text-on-surface"><strong>No Drop</strong> — nessuno viene lasciato indietro</span>
         </label>
+      </div>
+
+      {/* Caratteristiche */}
+      <div className="flex flex-col gap-4 pt-4 border-t border-outline-variant">
+        <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+          Caratteristiche della serie
+        </p>
+        <p className="text-xs text-on-surface-variant -mt-2">
+          Seleziona tutto ciò che descrive meglio questa serie ricorrente.
+        </p>
+        <TagPicker selected={tags} onChange={setTags} />
       </div>
 
       {error && <p className="text-sm text-error bg-error-container px-3 py-2 rounded-lg">{error}</p>}

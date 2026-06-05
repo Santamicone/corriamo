@@ -96,6 +96,9 @@ Oltre allo schema base, esegui questi file nell'SQL Editor nell'ordine indicato:
 | 5 | `supabase/add-coordinates.sql` | Colonne lat/lng su runs |
 | 6 | `supabase/storage-avatars.sql` | Bucket Storage per avatar |
 | 7 | `supabase/notifications.sql` | Tabella notifiche + 4 trigger automatici |
+| 8 | `supabase/add-spot.sql` | Colonna `is_spot` su `runs` |
+| 9 | `supabase/momenti.sql` | Tabella momenti post-corsa + bucket Storage |
+| 10 | `supabase/add-tags.sql` | Colonna `tags text[]` su `runs` e `series` |
 
 ## 6. Storage bucket avatars
 

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Series } from '@/lib/types'
 import { LEVEL_LABELS, RECURRENCE_LABELS, DAY_LABELS, cn } from '@/lib/utils'
 import { Avatar } from './ui/Avatar'
+import { TagBadgeList } from './ui/TagBadge'
 
 interface SeriesCardProps {
   series: Series
@@ -47,6 +48,11 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
             <DataPill icon="schedule"       label="Orario"  value={series.recurrence_time.slice(0, 5)} color="text-green-600" />
             <DataPill icon="route"          label="Km"      value={series.distance_km ? `${series.distance_km} km` : '—'} color="text-green-600" />
           </div>
+
+          {/* Tag caratteristiche */}
+          {(series as Series & { tags?: string[] }).tags?.length ? (
+            <TagBadgeList tags={(series as Series & { tags?: string[] }).tags!} max={3} />
+          ) : null}
 
           {/* Footer */}
           <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
