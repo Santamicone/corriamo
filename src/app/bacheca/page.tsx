@@ -9,7 +9,8 @@ import { it } from 'date-fns/locale'
 import { RunMapWrapper } from '@/components/RunMapWrapper'
 import { SpotRunsStrip } from '@/components/SpotRunsStrip'
 import { TAGS, getTag } from '@/lib/tags'
-import type { Run, Series } from '@/lib/types'
+import { computeCompatibility, type CompatibilityResult, type RunHistory } from '@/lib/compatibility'
+import type { Run, Series, Profile } from '@/lib/types'
 
 /* ─── Tipi ─── */
 interface SearchParams {
@@ -65,6 +66,25 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
   let runs: Run[] = []
   let series: Series[] = []
 
+  // Profilo + storico per compatibilità (solo se loggato)
+  let userProfile: Profile | null = null
+  let userHistory: RunHistory = []
+  if (user) {
+    const [{ data: profileData }, { data: historyData }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('participations')
+        .select('run:runs(level, time, distance_km, is_no_drop, pace_target)')
+        .eq('user_id', user.id)
+        .eq('status', 'approvata')
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ])
+    userProfile = profileData as unknown as Profile | null
+    userHistory = (historyData ?? [])
+      .map((p: { run: unknown }) => p.run)
+      .filter(Boolean) as RunHistory
+  }
+
   if (tab === 'corse') {
     // Base query — se c'è un `from` esplicito lo usa, altrimenti mostra da oggi
     let query = supabase
@@ -95,6 +115,14 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     const countMap = new Map<string, number>()
     counts?.forEach(c => countMap.set(c.run_id, (countMap.get(c.run_id) ?? 0) + 1))
     runs = runs.map(r => ({ ...r, participants_count: countMap.get(r.id) ?? 0 })) as Run[]
+
+    // Calcola punteggio di compatibilità per ogni corsa
+    if (userProfile) {
+      runs = runs.map(r => ({
+        ...r,
+        compatibility: computeCompatibility(r, userProfile!, userHistory) ?? undefined,
+      })) as Run[]
+    }
 
     // Conta i momenti per mostrare il badge 📷 nelle card
     const pastRunIds = runs.filter(r => r.date < today).map(r => r.id)

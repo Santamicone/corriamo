@@ -3,8 +3,13 @@ import { Run } from '@/lib/types'
 import { formatDate, LEVEL_LABELS, formatPaceTarget, cn } from '@/lib/utils'
 import { Avatar } from './ui/Avatar'
 import { TagBadgeList } from './ui/TagBadge'
+import type { CompatibilityResult } from '@/lib/compatibility'
 
-type RunWithMeta = Run & { is_spot?: boolean; has_momento?: boolean }
+type RunWithMeta = Run & {
+  is_spot?: boolean
+  has_momento?: boolean
+  compatibility?: CompatibilityResult
+}
 
 interface RunCardProps {
   run: Run
@@ -22,8 +27,9 @@ export function RunCard({ run, className }: RunCardProps) {
   const lc = LEVEL_COLORS[run.level] ?? LEVEL_COLORS.tutti
   const count = run.participants_count ?? 0
   const r = run as RunWithMeta
-  const isSpot = r.is_spot === true
-  const hasMomento = r.has_momento === true
+  const isSpot      = r.is_spot === true
+  const hasMomento  = r.has_momento === true
+  const compat      = r.compatibility ?? null
   const hasMomenti = (run as Run & { momenti_count?: number }).momenti_count ?? 0
   // Accent: rosso pulsante per spot, verde se partecipanti, arancio default
   const accentClass = isSpot
@@ -36,8 +42,23 @@ export function RunCard({ run, className }: RunCardProps) {
     <Link href={`/corse/${run.id}`} className={cn('group block h-full', className)}>
       <article className="h-full bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-orange-100/40 transition-all duration-200 hover:-translate-y-1 overflow-hidden flex flex-col">
 
-        {/* Accent gradient top — arancio se aperta, verde se ci sono già runner */}
+        {/* Accent gradient top */}
         <div className={cn('h-1 bg-gradient-to-r', accentClass)} />
+
+        {/* Banner compatibilità */}
+        {compat && (
+          <div className={cn(
+            'px-4 py-1.5 flex items-center gap-1.5 text-[11px] font-bold border-b',
+            compat.score >= 88
+              ? 'bg-orange-50 text-orange-700 border-orange-100'
+              : compat.score >= 72
+                ? 'bg-amber-50 text-amber-700 border-amber-100'
+                : 'bg-gray-50 text-gray-600 border-gray-100'
+          )}>
+            <span className="material-symbols-filled text-sm">auto_awesome</span>
+            {compat.score}%&nbsp;·&nbsp;{compat.label}
+          </div>
+        )}
 
         <div className="p-5 flex flex-col flex-1 gap-4">
 
