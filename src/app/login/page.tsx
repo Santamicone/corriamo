@@ -33,7 +33,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="p-6">
-        <Link href="/bacheca" className="text-2xl font-extrabold text-primary">Corriamo?</Link>
+        <Link href="/" className="text-2xl font-extrabold text-primary">Vieni a correre?</Link>
       </header>
       <div className="flex-1 flex items-center justify-center px-4 pb-16">
         <div className="w-full max-w-sm">

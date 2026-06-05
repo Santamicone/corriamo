@@ -30,10 +30,13 @@ export default function RegisterPage() {
     // Passiamo tutti i dati del profilo come metadata —
     // il trigger handle_new_user li usa per creare il profilo automaticamente,
     // aggirando il problema di sessione non ancora attiva post-signUp.
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
     const { error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
+        emailRedirectTo: `${siteUrl}/auth/callback`,
         data: {
           full_name: form.full_name,
           city: form.city,
@@ -61,7 +64,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="p-6">
-        <Link href="/bacheca" className="text-2xl font-extrabold text-primary">Corriamo?</Link>
+        <Link href="/" className="text-2xl font-extrabold text-primary">Vieni a correre?</Link>
       </header>
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg">
