@@ -7,6 +7,7 @@ import { RunCard } from '@/components/RunCard'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate, LEVEL_LABELS, RECURRENCE_LABELS, DAY_LABELS } from '@/lib/utils'
+import { TagBadge } from '@/components/ui/TagBadge'
 import type { Series, Run } from '@/lib/types'
 
 export default async function SerieDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -60,6 +61,15 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
                 {typedSeries.description && (
                   <p className="text-sm text-on-surface-variant leading-relaxed">{typedSeries.description}</p>
                 )}
+
+                {/* Tag caratteristiche serie */}
+                {(typedSeries as Series & { tags?: string[] }).tags?.length ? (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {(typedSeries as Series & { tags?: string[] }).tags!.map(id => (
+                      <TagBadge key={id} tagId={id} size="md" />
+                    ))}
+                  </div>
+                ) : null}
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
                   {[

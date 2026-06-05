@@ -5,6 +5,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate, LEVEL_LABELS, formatPaceTarget } from '@/lib/utils'
+import { TagBadge } from '@/components/ui/TagBadge'
 import type { Run, Participation, Review, Momento } from '@/lib/types'
 import { JoinButton } from './JoinButton'
 import { ParticipantsList } from './ParticipantsList'
@@ -155,6 +156,17 @@ export default async function CorsaDetailPage({ params }: { params: Promise<{ id
                     </div>
                   </div>
                 )}
+                {/* Tag caratteristiche */}
+                {(typedRun as Run & { tags?: string[] }).tags?.length ? (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Caratteristiche</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(typedRun as Run & { tags?: string[] }).tags!.map(id => (
+                        <TagBadge key={id} tagId={id} size="md" />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </section>
 
               {/* Descrizione */}

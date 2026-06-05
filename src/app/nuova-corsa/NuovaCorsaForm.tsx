@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { geocodeAddress, type GeoResult } from '@/lib/geocoding'
+import { TagPicker } from '@/components/ui/TagPicker'
 
 const LocationPreviewMap = dynamic(() => import('@/components/LocationPreviewMap'), {
   ssr: false,
@@ -43,6 +44,7 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
     location: '', city: '', distance_km: '', pace_target: '',
     level: 'tutti', max_participants: '', is_no_drop: false, series_id: '',
   })
+  const [tags, setTags] = useState<string[]>([])
 
   /* ── Geocoding state ── */
   const [geoStatus,    setGeoStatus]    = useState<GeoStatus>('idle')
@@ -128,6 +130,7 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
       level:            form.level,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
       is_no_drop:       form.is_no_drop,
+      tags:             tags,
       status:           'aperta',
       series_id:        form.series_id   || null,
       lat:              coords?.lat       ?? null,
@@ -325,6 +328,14 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
             </select>
           </div>
         )}
+      </FormSection>
+
+      {/* ── Caratteristiche ── */}
+      <FormSection
+        title="Caratteristiche della corsa"
+        desc="Seleziona tutto ciò che descrive meglio il tuo appuntamento."
+      >
+        <TagPicker selected={tags} onChange={setTags} />
       </FormSection>
 
       {error && (

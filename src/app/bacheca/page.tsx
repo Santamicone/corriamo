@@ -8,6 +8,7 @@ import { format, addDays, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { RunMapWrapper } from '@/components/RunMapWrapper'
 import { SpotRunsStrip } from '@/components/SpotRunsStrip'
+import { TAGS, getTag } from '@/lib/tags'
 import type { Run, Series } from '@/lib/types'
 
 /* ─── Tipi ─── */
@@ -18,6 +19,7 @@ interface SearchParams {
   q?:     string
   from?:  string   // YYYY-MM-DD
   to?:    string   // YYYY-MM-DD
+  tag?:   string   // singolo tag id
   view?:  'lista' | 'mappa'
 }
 
@@ -76,6 +78,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     if (params.city)  query = query.ilike('city', `%${params.city}%`)
     if (params.level) query = query.eq('level', params.level)
     if (params.q)     query = query.ilike('title', `%${params.q}%`)
+    if (params.tag)   query = query.contains('tags', [params.tag])
 
     const { data } = await query
     runs = (data || []) as unknown as Run[]
@@ -112,13 +115,15 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     if (params.city)  query = query.ilike('city', `%${params.city}%`)
     if (params.level) query = query.eq('level', params.level)
     if (params.q)     query = query.ilike('title', `%${params.q}%`)
+    if (params.tag)   query = query.contains('tags', [params.tag])
 
     const { data } = await query
     series = (data || []) as unknown as Series[]
   }
 
-  const hasFilters    = !!(params.q || params.city || params.level || params.from || params.to)
+  const hasFilters    = !!(params.q || params.city || params.level || params.from || params.to || params.tag)
   const hasDateFilter = !!(params.from || params.to)
+  const activeTag     = params.tag ? getTag(params.tag) : null
   const count = tab === 'corse' ? runs.length : series.length
 
   // Chips — calcolate al momento del render server-side
@@ -205,7 +210,22 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           </div>
 
           {/* Filter bar */}
-          <FilterBar tab={tab} current={params} chips={chips} showDateFilter={tab === 'corse'} />
+          <FilterBar tab={tab} current={params} chips={chips} showDateFilter={tab === 'corse'} showTagFilter />
+
+          {/* Pill tag attivo */}
+          {activeTag && (
+            <div className="flex items-center gap-2 -mt-2">
+              <span className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+                <span className="material-symbols-outlined text-sm text-primary">{activeTag.icon}</span>
+                {activeTag.label}
+                <a href={buildUrl({ ...params, tag: undefined }, {})}
+                  className="text-gray-400 hover:text-red-500 transition-colors ml-0.5"
+                  aria-label="Rimuovi filtro tag">
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </a>
+              </span>
+            </div>
+          )}
 
           {/* Pill filtro data attivo */}
           {hasDateFilter && tab === 'corse' && (
@@ -258,12 +278,13 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
 type ChipRanges = ReturnType<typeof getChipRanges>
 
 function FilterBar({
-  tab, current, chips, showDateFilter,
+  tab, current, chips, showDateFilter, showTagFilter,
 }: {
   tab: string
   current: SearchParams
   chips: ChipRanges
   showDateFilter: boolean
+  showTagFilter?: boolean
 }) {
   const hasTextFilters = !!(current.q || current.city || current.level)
   const hasDateFilter  = !!(current.from || current.to)
@@ -391,6 +412,36 @@ function FilterBar({
               Applica
             </button>
           </form>
+        </div>
+      )}
+
+      {/* ── Riga 3: tag chips ── */}
+      {showTagFilter && (
+        <div className="px-4 pb-3 flex flex-col gap-2.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            Caratteristiche
+          </span>
+          <div className="flex flex-wrap gap-1.5 overflow-x-auto no-scrollbar">
+            {TAGS.map(tag => {
+              const isActive = current.tag === tag.id
+              return (
+                <Link
+                  key={tag.id}
+                  href={isActive
+                    ? buildUrl({ ...current, tag: undefined }, {})
+                    : buildUrl(current, { tag: tag.id })}
+                  className={`inline-flex items-center gap-1 rounded-full border text-[11px] font-semibold px-2.5 py-1 transition-all whitespace-nowrap ${
+                    isActive
+                      ? `${tag.color} ring-2 ring-offset-1 ring-current`
+                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[11px]">{tag.icon}</span>
+                  {tag.label}
+                </Link>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
