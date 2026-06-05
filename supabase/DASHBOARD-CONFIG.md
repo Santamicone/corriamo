@@ -83,6 +83,18 @@ Aggiungere:
 
 ---
 
+## 5. SQL aggiuntivi da eseguire
+
+Oltre allo schema base, esegui questi file nell'SQL Editor:
+
+| File | Contenuto |
+|---|---|
+| `supabase/trigger-new-user.sql` | Trigger profilo automatico alla registrazione |
+| `supabase/messages.sql` | Tabella messaggistica interna |
+| `supabase/reviews.sql` | Tabella recensioni organizzatori |
+
+---
+
 ## 4. Come funziona il flusso di conferma email
 
 1. Utente si registra → `signUp` con `emailRedirectTo: https://corriamo.vercel.app/auth/callback`
