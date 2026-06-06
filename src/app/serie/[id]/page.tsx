@@ -9,6 +9,37 @@ import Link from 'next/link'
 import { formatDate, LEVEL_LABELS, RECURRENCE_LABELS, DAY_LABELS } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/TagBadge'
 import type { Series, Run } from '@/lib/types'
+import type { Metadata } from 'next'
+
+const SITE_URL = 'https://www.vieniacorrere.it'
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('series')
+    .select('title, description, city, level')
+    .eq('id', id)
+    .single()
+
+  if (!data) return { title: 'Serie ricorrente' }
+
+  const desc = data.description ||
+    `Serie ricorrente di corse a ${data.city}. Livello ${LEVEL_LABELS[data.level] ?? data.level}. Unisciti agli appuntamenti fissi.`
+
+  return {
+    title: data.title,
+    description: desc,
+    alternates: { canonical: `${SITE_URL}/serie/${id}` },
+    openGraph: {
+      title: `${data.title} — Vieni a correre?`,
+      description: desc,
+      url: `${SITE_URL}/serie/${id}`,
+    },
+  }
+}
 
 export default async function SerieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

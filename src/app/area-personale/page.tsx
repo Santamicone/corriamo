@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { RunCard } from '@/components/RunCard'
+
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { SeriesCard } from '@/components/SeriesCard'
 import Link from 'next/link'
 import type { Run, Series } from '@/lib/types'

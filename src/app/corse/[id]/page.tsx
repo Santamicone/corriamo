@@ -53,6 +53,7 @@ export async function generateMetadata(
   return {
     title: `${run.title} — Vieni a correre?`,
     description: desc,
+    alternates: { canonical: `${siteUrl}/corse/${id}` },
     openGraph: {
       title: run.title,
       description: desc,

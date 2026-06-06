@@ -11,6 +11,42 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { LEVEL_LABELS } from '@/lib/utils'
 import type { Profile, Run, Review, Momento } from '@/lib/types'
+import type { Metadata } from 'next'
+
+const SITE_URL = 'https://www.vieniacorrere.it'
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('full_name, city, level, bio, avatar_url')
+    .eq('id', id)
+    .single()
+
+  if (!data) return { title: 'Profilo runner' }
+
+  const levelLabel = data.level ? LEVEL_LABELS[data.level] ?? data.level : null
+  const desc = data.bio ||
+    ['Runner', levelLabel, data.city ? `a ${data.city}` : null, '— vedi le corse organizzate.']
+      .filter(Boolean).join(' ')
+
+  return {
+    title: `${data.full_name} — Runner`,
+    description: desc,
+    alternates: { canonical: `${SITE_URL}/profilo/${id}` },
+    openGraph: {
+      title: `${data.full_name} — Vieni a correre?`,
+      description: desc,
+      url: `${SITE_URL}/profilo/${id}`,
+      images: data.avatar_url && !data.avatar_url.startsWith('preset:') && !data.avatar_url.startsWith('carattere:')
+        ? [{ url: data.avatar_url, width: 400, height: 400, alt: data.full_name }]
+        : [{ url: '/logo_vieniacorrere.png', width: 1200, height: 630, alt: 'Vieni a correre?' }],
+    },
+  }
+}
 
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

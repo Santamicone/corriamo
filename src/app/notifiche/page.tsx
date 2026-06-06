@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { Avatar } from '@/components/ui/Avatar'
+
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'

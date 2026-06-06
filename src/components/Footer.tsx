@@ -24,11 +24,10 @@ export function Footer() {
           {/* Links */}
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
             {[
-              { href: '/bacheca',     label: 'Bacheca' },
-              { href: '#',            label: 'Sicurezza' },
-              { href: '#',            label: 'Privacy Policy' },
-              { href: '#',            label: 'Termini di Servizio' },
-              { href: '#',            label: 'Contatti' },
+              { href: '/bacheca',  label: 'Bacheca' },
+              { href: '/privacy',  label: 'Privacy Policy' },
+              { href: '/termini',  label: 'Termini di Servizio' },
+              { href: 'mailto:info@vieniacorrere.it', label: 'Contatti' },
             ].map(link => (
               <Link
                 key={link.label}
