@@ -164,6 +164,15 @@ export interface MessageThread {
   unread_count: number
 }
 
+export interface RunChatMessage {
+  id: string
+  run_id: string
+  author_id: string
+  author?: Profile
+  body: string
+  created_at: string
+}
+
 export interface Participation {
   id: string
   run_id: string

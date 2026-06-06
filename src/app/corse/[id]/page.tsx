@@ -377,6 +377,25 @@ export default async function CorsaDetailPage({
                 />
               )}
 
+              {/* Chat del gruppo — solo approvati e organizzatore */}
+              {(isOrganizer || myParticipation?.status === 'approvata') && (
+                <Link href={`/corse/${id}/chat`}
+                  className="group bg-white rounded-3xl border border-gray-100 shadow-sm p-5 flex items-center gap-3 hover:shadow-md hover:border-orange-200 transition-all">
+                  <div className="w-10 h-10 rounded-2xl bg-orange-50 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-primary text-xl">chat_bubble</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900">Chat del gruppo</p>
+                    <p className="text-xs text-gray-400">
+                      {approved.length + 1} runner · {isPast ? 'storico disponibile' : 'coordinarsi prima della corsa'}
+                    </p>
+                  </div>
+                  <span className="material-symbols-outlined text-gray-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all text-xl">
+                    arrow_forward
+                  </span>
+                </Link>
+              )}
+
               {/* Organizzatore */}
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Organizzatore</h3>
