@@ -9,7 +9,7 @@ import { MomentoCard } from '@/components/MomentoCard'
 import { RatingBadge, StarsDisplay } from '@/components/ui/Stars'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { LEVEL_LABELS, formatPace } from '@/lib/utils'
+import { LEVEL_LABELS } from '@/lib/utils'
 import type { Profile, Run, Review, Momento } from '@/lib/types'
 
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,7 +58,21 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
     principiante: 'bg-green-100 text-green-700',
     intermedio:   'bg-blue-100 text-blue-700',
     avanzato:     'bg-orange-100 text-orange-700',
+    amatore_gare: 'bg-indigo-100 text-indigo-700',
+    atleta:       'bg-purple-100 text-purple-700',
   }
+
+  const WHY_LABELS: Record<string, { label: string; icon: string }> = {
+    forma:        { label: 'Stare in forma',            icon: 'fitness_center' },
+    divertimento: { label: 'Per divertimento',          icon: 'sentiment_very_satisfied' },
+    prestazioni:  { label: 'Migliorare le prestazioni', icon: 'trending_up' },
+    amicizia:     { label: 'Fare amicizia',             icon: 'group' },
+    benessere:    { label: 'Benessere mentale',         icon: 'self_improvement' },
+    gare:         { label: 'Partecipare a gare',        icon: 'emoji_events' },
+    sfida:        { label: 'Sfidare me stesso/a',       icon: 'military_tech' },
+  }
+
+  const hasPBs = !!(p.pb_5k || p.pb_10k || p.pb_21k || p.pb_42k)
 
   // Distribuzione stelle (quante 5, quante 4, ecc.)
   const distribution = [5, 4, 3, 2, 1].map(n => ({
@@ -102,15 +116,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                       {p.city}
                     </span>
                   )}
+                  {p.age && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-gray-500">
+                      <span className="material-symbols-outlined text-base">cake</span>
+                      {p.age} anni
+                    </span>
+                  )}
                   {p.level && (
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${levelColors[p.level] ?? levelColors.tutti}`}>
                       {LEVEL_LABELS[p.level]}
-                    </span>
-                  )}
-                  {p.pace_min && (
-                    <span className="flex items-center gap-1 text-xs font-medium">
-                      <span className="material-symbols-outlined text-base text-primary">speed</span>
-                      {formatPace(p.pace_min, p.pace_max)}
                     </span>
                   )}
                   {/* Rating medio inline */}
@@ -118,6 +132,22 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                     <RatingBadge average={avgRating} count={reviewCount} />
                   )}
                 </div>
+
+                {/* Perché corre */}
+                {p.why_i_run?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {p.why_i_run.map(key => {
+                      const w = WHY_LABELS[key]
+                      if (!w) return null
+                      return (
+                        <span key={key} className="inline-flex items-center gap-1 bg-orange-50 border border-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                          <span className="material-symbols-outlined text-sm">{w.icon}</span>
+                          {w.label}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
 
                 {p.bio && (
                   <p className="mt-3 text-sm text-gray-600 leading-relaxed max-w-xl">{p.bio}</p>
@@ -158,6 +188,26 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                 </Link>
               )}
             </div>
+
+            {/* Personal Best */}
+            {hasPBs && (
+              <div className="mt-5 border-t border-gray-100 pt-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Personal Best</p>
+                <div className="flex flex-wrap gap-3">
+                  {[
+                    { label: '5 km',   value: p.pb_5k },
+                    { label: '10 km',  value: p.pb_10k },
+                    { label: 'Mezza',  value: p.pb_21k },
+                    { label: 'Maratona', value: p.pb_42k },
+                  ].filter(pb => pb.value).map(pb => (
+                    <div key={pb.label} className="flex flex-col items-center bg-gray-50 rounded-2xl px-4 py-2.5 gap-0.5 min-w-[80px]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{pb.label}</span>
+                      <span className="text-sm font-extrabold text-gray-800">{pb.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <p className="mt-6 text-xs text-gray-400 border-t border-gray-100 pt-4">
               Informazioni utili per capire se potete correre bene insieme.

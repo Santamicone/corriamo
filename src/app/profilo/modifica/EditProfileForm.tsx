@@ -6,38 +6,65 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
-import { Avatar, PRESET_OPTIONS } from '@/components/ui/Avatar'
+import { Avatar, CHARACTER_PRESETS, COLOR_PRESETS } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
 import type { Profile } from '@/lib/types'
 
 const MAX_SIZE_MB = 5
 const ACCEPTED    = 'image/jpeg,image/png,image/webp,image/gif'
 
-export function EditProfileForm({ profile }: { profile: Profile }) {
-  const router    = useRouter()
-  const fileRef   = useRef<HTMLInputElement>(null)
+const inputCls = "h-11 w-full px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+const labelCls = "block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5"
 
-  /* ── Form campi testo ── */
+function FormSection({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-4">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{title}</p>
+        {desc && <p className="text-xs text-gray-400 mt-0.5">{desc}</p>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const WHY_I_RUN_OPTIONS = [
+  { value: 'forma',        label: 'Stare in forma',            icon: 'fitness_center' },
+  { value: 'divertimento', label: 'Per divertimento',          icon: 'sentiment_very_satisfied' },
+  { value: 'prestazioni',  label: 'Migliorare le prestazioni', icon: 'trending_up' },
+  { value: 'amicizia',     label: 'Fare amicizia',             icon: 'group' },
+  { value: 'benessere',    label: 'Benessere mentale',         icon: 'self_improvement' },
+  { value: 'gare',         label: 'Partecipare a gare',        icon: 'emoji_events' },
+  { value: 'sfida',        label: 'Sfidare me stesso/a',       icon: 'military_tech' },
+]
+
+export function EditProfileForm({ profile }: { profile: Profile }) {
+  const router  = useRouter()
+  const fileRef = useRef<HTMLInputElement>(null)
+
   const [form, setForm] = useState({
     full_name:     profile.full_name,
     city:          profile.city           ?? '',
-    level:         profile.level          ?? 'tutti',
-    pace_min:      profile.pace_min?.toString() ?? '',
-    pace_max:      profile.pace_max?.toString() ?? '',
+    level:         profile.level          ?? 'principiante',
     bio:           profile.bio            ?? '',
     strava_url:    profile.strava_url     ?? '',
     garmin_url:    profile.garmin_url     ?? '',
     instagram_url: profile.instagram_url  ?? '',
+    age:           profile.age?.toString() ?? '',
+    pb_5k:         profile.pb_5k          ?? '',
+    pb_10k:        profile.pb_10k         ?? '',
+    pb_21k:        profile.pb_21k         ?? '',
+    pb_42k:        profile.pb_42k         ?? '',
   })
+  const [whyIRun, setWhyIRun] = useState<string[]>(profile.why_i_run ?? [])
 
   /* ── Avatar ── */
-  // avatarChoice: 'keep' | 'preset:1' | 'preset:2' | 'preset:3' | 'file'
   const [avatarChoice, setAvatarChoice] = useState<string>('keep')
   const [filePreview,  setFilePreview]  = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileError,    setFileError]    = useState('')
 
-  /* ── UI state ── */
+  /* ── UI ── */
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error,   setError]   = useState('')
@@ -46,24 +73,24 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm(p => ({ ...p, [f]: e.target.value }))
 
-  /* Anteprima dell'avatar attuale in base alla scelta */
+  const toggleWhy = (v: string) =>
+    setWhyIRun(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])
+
   const previewSrc = (): string | null => {
     if (avatarChoice === 'keep') return profile.avatar_url
     if (avatarChoice === 'file') return filePreview
-    return avatarChoice // 'preset:x'
+    return avatarChoice
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     setFileError('')
     if (!file) return
-
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       setFileError(`Il file supera il limite di ${MAX_SIZE_MB} MB.`)
       e.target.value = ''
       return
     }
-
     setSelectedFile(file)
     setFilePreview(URL.createObjectURL(file))
     setAvatarChoice('file')
@@ -75,58 +102,39 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
     setError('')
 
     const supabase = createClient()
-    let avatar_url = profile.avatar_url   // default: mantieni l'esistente
+    let avatar_url = profile.avatar_url
 
-    /* ── Upload foto ── */
     if (avatarChoice === 'file' && selectedFile) {
       const ext  = selectedFile.name.split('.').pop() ?? 'jpg'
       const path = `${profile.id}/avatar.${ext}`
-
       const { error: uploadErr } = await supabase.storage
         .from('avatars')
-        .upload(path, selectedFile, {
-          upsert: true,
-          contentType: selectedFile.type,
-        })
-
-      if (uploadErr) {
-        setError('Errore nel caricamento della foto: ' + uploadErr.message)
-        setLoading(false)
-        return
-      }
-
-      // Aggiungi cache-busting per forzare il refresh del browser
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(path)
-
+        .upload(path, selectedFile, { upsert: true, contentType: selectedFile.type })
+      if (uploadErr) { setError('Errore caricamento foto: ' + uploadErr.message); setLoading(false); return }
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
       avatar_url = `${publicUrl}?t=${Date.now()}`
-
-    } else if (avatarChoice.startsWith('preset:')) {
+    } else if (avatarChoice !== 'keep') {
       avatar_url = avatarChoice
     }
-    // Se avatarChoice === 'keep', avatar_url rimane invariato
 
-    /* ── Salva profilo ── */
     const { error: profileErr } = await supabase.from('profiles').update({
       full_name:     form.full_name,
       city:          form.city          || null,
       level:         form.level,
-      pace_min:      form.pace_min      ? parseFloat(form.pace_min)  : null,
-      pace_max:      form.pace_max      ? parseFloat(form.pace_max)  : null,
       bio:           form.bio           || null,
       strava_url:    form.strava_url    || null,
       garmin_url:    form.garmin_url    || null,
       instagram_url: form.instagram_url || null,
       avatar_url,
+      age:           form.age           ? parseInt(form.age)  : null,
+      why_i_run:     whyIRun,
+      pb_5k:         form.pb_5k         || null,
+      pb_10k:        form.pb_10k        || null,
+      pb_21k:        form.pb_21k        || null,
+      pb_42k:        form.pb_42k        || null,
     }).eq('id', profile.id)
 
-    if (profileErr) {
-      setError('Errore nel salvataggio: ' + profileErr.message)
-      setLoading(false)
-      return
-    }
-
+    if (profileErr) { setError('Errore nel salvataggio: ' + profileErr.message); setLoading(false); return }
     setLoading(false)
     setSuccess(true)
     setTimeout(() => { router.push(`/profilo/${profile.id}`); router.refresh() }, 900)
@@ -135,85 +143,105 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
   return (
     <form onSubmit={handleSave} className="flex flex-col gap-5">
 
-      {/* ── Sezione avatar ── */}
+      {/* ── Foto profilo ── */}
       <div className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-5">
-        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Foto profilo</p>
+        <p className={labelCls}>Foto profilo</p>
 
         {/* Anteprima corrente */}
         <div className="flex items-center gap-5">
-          <Avatar
-            name={form.full_name || profile.full_name}
-            src={previewSrc()}
-            size="xl"
-          />
+          <Avatar name={form.full_name || profile.full_name} src={previewSrc()} size="xl" />
           <div className="flex flex-col gap-1">
             <p className="text-sm font-semibold text-gray-900">
               {avatarChoice === 'keep'
-                ? profile.avatar_url ? 'Foto attuale' : 'Iniziali (default)'
+                ? (profile.avatar_url ? 'Foto attuale' : 'Iniziali (default)')
                 : avatarChoice === 'file' ? 'Foto caricata'
-                : `Icona ${PRESET_OPTIONS.find(p => p.id === avatarChoice)?.label ?? ''}`}
+                : avatarChoice.startsWith('carattere:') ? `Personaggio ${avatarChoice.split(':')[1]}`
+                : 'Icona colorata'}
             </p>
-            <p className="text-xs text-gray-400">
-              Scegli un&apos;icona qui sotto oppure carica una foto.
-            </p>
+            <p className="text-xs text-gray-400">Scegli un personaggio o carica una tua foto.</p>
             {avatarChoice !== 'keep' && (
-              <button
-                type="button"
+              <button type="button"
                 onClick={() => { setAvatarChoice('keep'); setFilePreview(null); setSelectedFile(null) }}
-                className="text-xs text-gray-400 hover:text-red-500 transition-colors text-left mt-1"
-              >
+                className="text-xs text-gray-400 hover:text-red-500 transition-colors text-left mt-1">
                 ↩ Ripristina originale
               </button>
             )}
           </div>
         </div>
 
-        {/* 3 icone preset */}
+        {/* Personaggi illustrati — griglia 3×3 */}
         <div>
-          <p className="text-xs font-medium text-gray-500 mb-3">Scegli un&apos;icona:</p>
-          <div className="flex gap-3">
-            {PRESET_OPTIONS.map(preset => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => setAvatarChoice(preset.id)}
-                className={cn(
-                  'relative rounded-full transition-all duration-150 focus:outline-none',
-                  avatarChoice === preset.id
-                    ? 'ring-2 ring-offset-2 ring-primary scale-110'
-                    : 'hover:scale-105 opacity-70 hover:opacity-100'
-                )}
-                title={preset.label}
-                aria-label={`Icona ${preset.label}`}
-              >
-                <Avatar name={form.full_name} src={preset.id} size="lg" />
-                {avatarChoice === preset.id && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-white">
-                    <span className="material-symbols-filled text-white text-xs">check</span>
-                  </span>
-                )}
-              </button>
-            ))}
+          <p className="text-xs font-medium text-gray-500 mb-3">Scegli un personaggio:</p>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
+            {CHARACTER_PRESETS.map(preset => {
+              const active = avatarChoice === preset.id
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => setAvatarChoice(preset.id)}
+                  className={cn(
+                    'relative rounded-2xl overflow-hidden aspect-square transition-all duration-150 focus:outline-none border-2',
+                    active
+                      ? 'border-primary ring-2 ring-primary ring-offset-1 scale-105'
+                      : 'border-gray-100 hover:border-primary/40 hover:scale-105 opacity-80 hover:opacity-100'
+                  )}
+                  title={preset.label}
+                  aria-label={`Seleziona ${preset.label}`}
+                >
+                  <img
+                    src={preset.src}
+                    alt={preset.label}
+                    className="w-full h-full object-cover"
+                  />
+                  {active && (
+                    <span className="absolute bottom-0.5 right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border border-white">
+                      <span className="material-symbols-filled text-white text-[11px]">check</span>
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Icone colorate */}
+        <div>
+          <p className="text-xs font-medium text-gray-500 mb-3">Oppure scegli un&apos;icona colorata:</p>
+          <div className="flex flex-wrap gap-3">
+            {COLOR_PRESETS.map(preset => {
+              const active = avatarChoice === preset.id
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => setAvatarChoice(preset.id)}
+                  className={cn(
+                    'relative rounded-full transition-all duration-150 focus:outline-none',
+                    active ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'
+                  )}
+                  title={preset.label}
+                  aria-label={`Icona ${preset.label}`}
+                >
+                  <Avatar name={form.full_name} src={preset.id} size="lg" />
+                  {active && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-white">
+                      <span className="material-symbols-filled text-white text-xs">check</span>
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {/* Upload foto */}
         <div>
-          <p className="text-xs font-medium text-gray-500 mb-3">Oppure carica una foto:</p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept={ACCEPTED}
-            onChange={handleFileChange}
-            className="hidden"
-            aria-label="Carica foto profilo"
-          />
+          <p className="text-xs font-medium text-gray-500 mb-3">O carica una tua foto:</p>
+          <input ref={fileRef} type="file" accept={ACCEPTED} onChange={handleFileChange} className="hidden" />
           <div className="flex items-center gap-3 flex-wrap">
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-2 border border-gray-200 text-gray-700 font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
-            >
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="inline-flex items-center gap-2 border border-gray-200 text-gray-700 font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
               <span className="material-symbols-outlined text-base">upload</span>
               {selectedFile ? 'Cambia foto' : 'Scegli file'}
             </button>
@@ -225,40 +253,89 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Formati accettati: JPG, PNG, WebP, GIF · Max {MAX_SIZE_MB} MB
-          </p>
-          {fileError && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl mt-2">{fileError}</p>
-          )}
+          <p className="text-xs text-gray-400 mt-2">JPG, PNG, WebP, GIF · Max {MAX_SIZE_MB} MB</p>
+          {fileError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl mt-2">{fileError}</p>}
         </div>
       </div>
 
-      {/* ── Informazioni runner ── */}
-      <div className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Informazioni runner</p>
+      {/* ── Informazioni base ── */}
+      <FormSection title="Informazioni base">
         <Input label="Nome e cognome" value={form.full_name} onChange={update('full_name')} required />
-        <Input label="Città" value={form.city} onChange={update('city')} placeholder="Milano" />
-        <Select label="Livello" value={form.level} onChange={update('level')}>
-          <option value="tutti">Tutti i livelli</option>
-          <option value="principiante">Principiante</option>
-          <option value="intermedio">Intermedio</option>
-          <option value="avanzato">Avanzato</option>
-        </Select>
         <div className="grid grid-cols-2 gap-4">
-          <Input label="Ritmo min (min/km)" type="number" step="0.1" value={form.pace_min} onChange={update('pace_min')} placeholder="es. 5.5" />
-          <Input label="Ritmo max (min/km)" type="number" step="0.1" value={form.pace_max} onChange={update('pace_max')} placeholder="es. 6.5" />
+          <Input label="Città" value={form.city} onChange={update('city')} placeholder="Milano" />
+          <div>
+            <label className={labelCls}>Età</label>
+            <input className={inputCls} type="number" min="10" max="100"
+              value={form.age} onChange={update('age')} placeholder="es. 35" />
+          </div>
         </div>
-        <Textarea label="Bio" value={form.bio} onChange={update('bio')} placeholder="Racconta qualcosa di te..." rows={3} />
-      </div>
+        <Select label="Livello" value={form.level} onChange={update('level')}>
+          <option value="principiante">Principiante — sto iniziando</option>
+          <option value="intermedio">Intermedio — corro regolarmente</option>
+          <option value="avanzato">Avanzato — corro forte</option>
+          <option value="amatore_gare">Amatore, ma faccio gare</option>
+          <option value="atleta">Atleta agonista</option>
+        </Select>
+        <Textarea label="Bio" value={form.bio} onChange={update('bio')}
+          placeholder="Racconta qualcosa di te come runner: dove corri di solito, cosa ti piace, il tuo obiettivo..." rows={3} />
+      </FormSection>
+
+      {/* ── Perché corri ── */}
+      <FormSection title="Perché corri?" desc="Seleziona tutto quello che ti rappresenta (opzionale).">
+        <div className="flex flex-wrap gap-2">
+          {WHY_I_RUN_OPTIONS.map(opt => {
+            const active = whyIRun.includes(opt.value)
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => toggleWhy(opt.value)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border transition-all',
+                  active
+                    ? 'bg-primary text-white border-primary shadow-sm shadow-orange-200'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                )}
+              >
+                <span className="material-symbols-outlined text-sm">{opt.icon}</span>
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+      </FormSection>
+
+      {/* ── Personal Best ── */}
+      <FormSection title="I tuoi Personal Best" desc="Tempi migliori di gara (opzionale — aiuta gli altri a capire il tuo livello).">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>5 km</label>
+            <input className={inputCls} value={form.pb_5k} onChange={update('pb_5k')} placeholder="es. 23:45 o sub-25" />
+          </div>
+          <div>
+            <label className={labelCls}>10 km</label>
+            <input className={inputCls} value={form.pb_10k} onChange={update('pb_10k')} placeholder="es. 50:20 o sub-55" />
+          </div>
+          <div>
+            <label className={labelCls}>Mezza maratona</label>
+            <input className={inputCls} value={form.pb_21k} onChange={update('pb_21k')} placeholder="es. 1:52:00" />
+          </div>
+          <div>
+            <label className={labelCls}>Maratona</label>
+            <input className={inputCls} value={form.pb_42k} onChange={update('pb_42k')} placeholder="es. 4:05:30 o sub-4h" />
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 -mt-1">
+          Scrivi liberamente: &quot;23:45&quot;, &quot;sub-25 min&quot;, &quot;non ancora partecipato&quot;…
+        </p>
+      </FormSection>
 
       {/* ── Link social ── */}
-      <div className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Link (opzionali)</p>
+      <FormSection title="Link (opzionali)">
         <Input label="Profilo Strava" type="url" value={form.strava_url} onChange={update('strava_url')} placeholder="https://www.strava.com/athletes/..." />
         <Input label="Profilo Garmin" type="url" value={form.garmin_url} onChange={update('garmin_url')} placeholder="https://connect.garmin.com/..." />
         <Input label="Instagram" type="url" value={form.instagram_url} onChange={update('instagram_url')} placeholder="https://www.instagram.com/..." />
-      </div>
+      </FormSection>
 
       {success && (
         <p className="text-sm text-green-700 bg-green-50 border border-green-100 px-4 py-3 rounded-2xl flex items-center gap-2">
@@ -270,9 +347,7 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
         <p className="text-sm text-red-700 bg-red-50 border border-red-100 px-4 py-3 rounded-2xl">{error}</p>
       )}
 
-      <Button type="submit" loading={loading} size="lg">
-        Salva modifiche
-      </Button>
+      <Button type="submit" loading={loading} size="lg">Salva modifiche</Button>
     </form>
   )
 }

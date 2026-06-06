@@ -1,4 +1,5 @@
 export type RunLevel = 'principiante' | 'intermedio' | 'avanzato' | 'tutti'
+export type ProfileLevel = RunLevel | 'amatore_gare' | 'atleta'
 export type RunStatus = 'aperta' | 'completa' | 'annullata'
 export type RunType = 'allenamento' | 'gara'
 export type RaceDistance = '5k' | '10k' | '21k' | '42k'
@@ -9,7 +10,7 @@ export interface Profile {
   id: string
   full_name: string
   city: string | null
-  level: RunLevel | null
+  level: ProfileLevel | null
   pace_min: number | null
   pace_max: number | null
   bio: string | null
@@ -18,6 +19,13 @@ export interface Profile {
   instagram_url: string | null
   avatar_url: string | null
   created_at: string
+  // Nuovi campi profilo
+  age: number | null
+  why_i_run: string[]
+  pb_5k: string | null
+  pb_10k: string | null
+  pb_21k: string | null
+  pb_42k: string | null
 }
 
 export interface Run {
