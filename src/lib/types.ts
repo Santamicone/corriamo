@@ -1,5 +1,7 @@
 export type RunLevel = 'principiante' | 'intermedio' | 'avanzato' | 'tutti'
 export type RunStatus = 'aperta' | 'completa' | 'annullata'
+export type RunType = 'allenamento' | 'gara'
+export type RaceDistance = '5k' | '10k' | '21k' | '42k'
 export type ParticipationStatus = 'in_attesa' | 'approvata' | 'rifiutata'
 export type RecurrenceType = 'settimanale' | 'bisettimanale' | 'mensile'
 
@@ -39,6 +41,14 @@ export interface Run {
   created_at: string
   participants_count?: number
   my_participation?: Participation | null
+  // Campi gara (type='gara')
+  type?: RunType
+  race_name?: string | null
+  race_distance?: RaceDistance | null
+  race_target_time?: string | null
+  race_registered?: boolean
+  looking_for?: string[]
+  tags?: string[]
 }
 
 export interface Series {

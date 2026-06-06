@@ -11,17 +11,20 @@ import { SpotRunsStrip } from '@/components/SpotRunsStrip'
 import { TAGS, getTag } from '@/lib/tags'
 import { computeCompatibility, type CompatibilityResult, type RunHistory } from '@/lib/compatibility'
 import type { Run, Series, Profile } from '@/lib/types'
+import { GaraCard } from '@/components/GaraCard'
 
 /* ─── Tipi ─── */
 interface SearchParams {
-  tab?:   string
-  city?:  string
-  level?: string
-  q?:     string
-  from?:  string   // YYYY-MM-DD
-  to?:    string   // YYYY-MM-DD
-  tag?:   string   // singolo tag id
-  view?:  'lista' | 'mappa'
+  tab?:           string
+  city?:          string
+  level?:         string
+  q?:             string
+  from?:          string   // YYYY-MM-DD
+  to?:            string   // YYYY-MM-DD
+  tag?:           string   // singolo tag id
+  view?:          'lista' | 'mappa'
+  race_distance?: string
+  looking_for?:   string
 }
 
 /* ─── Helpers date ─── */
@@ -65,6 +68,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
   const view = params.view === 'mappa' ? 'mappa' : 'lista'
   let runs: Run[] = []
   let series: Series[] = []
+  let gare: Run[] = []
 
   // Profilo + storico per compatibilità (solo se loggato)
   let userProfile: Profile | null = null
@@ -85,12 +89,29 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       .filter(Boolean) as RunHistory
   }
 
-  if (tab === 'corse') {
+  if (tab === 'gare') {
+    let query = supabase
+      .from('runs')
+      .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
+      .eq('status', 'aperta')
+      .eq('type', 'gara')
+      .gte('date', params.from ?? today)
+      .order('date', { ascending: true })
+
+    if (params.city)          query = query.ilike('city', `%${params.city}%`)
+    if (params.q)             query = query.ilike('title', `%${params.q}%`)
+    if (params.race_distance) query = query.eq('race_distance', params.race_distance)
+    if (params.looking_for)   query = query.contains('looking_for', [params.looking_for])
+
+    const { data } = await query
+    gare = (data || []) as unknown as Run[]
+  } else if (tab === 'corse') {
     // Base query — se c'è un `from` esplicito lo usa, altrimenti mostra da oggi
     let query = supabase
       .from('runs')
       .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
       .eq('status', 'aperta')
+      .not('type', 'eq', 'gara')
       .gte('date', params.from ?? today)
       .order('date', { ascending: true })
 
@@ -149,10 +170,10 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     series = (data || []) as unknown as Series[]
   }
 
-  const hasFilters    = !!(params.q || params.city || params.level || params.from || params.to || params.tag)
+  const hasFilters    = !!(params.q || params.city || params.level || params.from || params.to || params.tag || params.race_distance || params.looking_for)
   const hasDateFilter = !!(params.from || params.to)
   const activeTag     = params.tag ? getTag(params.tag) : null
-  const count = tab === 'corse' ? runs.length : series.length
+  const count = tab === 'corse' ? runs.length : tab === 'gare' ? gare.length : series.length
 
   // Chips — calcolate al momento del render server-side
   const chips = getChipRanges(new Date())
@@ -171,20 +192,26 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
-                  {tab === 'corse' ? 'Chi corre oggi?' : 'Corse ricorrenti'}
+                  {tab === 'corse' ? 'Chi corre oggi?' : tab === 'gare' ? 'Compagni di gara' : 'Corse ricorrenti'}
                 </h1>
                 <p className="mt-2 text-lg text-gray-500">
                   {tab === 'corse'
                     ? 'Trova un allenamento vicino a te, al ritmo giusto.'
-                    : "Appuntamenti fissi per chi vuole creare un'abitudine di corsa."}
+                    : tab === 'gare'
+                      ? 'Trova pacer, compagni o supporter per la tua prossima gara.'
+                      : "Appuntamenti fissi per chi vuole creare un'abitudine di corsa."}
                 </p>
               </div>
               <Link
-                href="/nuova-corsa"
-                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200 shrink-0"
+                href={tab === 'gare' ? '/nuova-gara' : '/nuova-corsa'}
+                className={`inline-flex items-center gap-2 text-white px-6 py-3 rounded-full font-semibold text-sm transition-colors shadow-sm shrink-0 ${
+                  tab === 'gare'
+                    ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+                    : 'bg-primary hover:bg-primary-hover shadow-orange-200'
+                }`}
               >
                 <span className="material-symbols-outlined text-lg">add</span>
-                Proponi una corsa
+                {tab === 'gare' ? 'Cerca compagni' : 'Proponi una corsa'}
               </Link>
             </div>
           </div>
@@ -196,12 +223,13 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex gap-1 bg-gray-100 p-1 rounded-full w-fit">
               {[
-                { value: 'corse', label: 'Corse singole',    icon: 'directions_run' },
-                { value: 'serie', label: 'Serie ricorrenti', icon: 'event_repeat' },
+                { value: 'corse', label: 'Corse',   icon: 'directions_run' },
+                { value: 'serie', label: 'Serie',   icon: 'event_repeat' },
+                { value: 'gare',  label: 'Gare',    icon: 'emoji_events' },
               ].map(t => (
                 <Link
                   key={t.value}
-                  href={buildUrl(params, { tab: t.value, view: undefined })}
+                  href={buildUrl({ tab: t.value }, {})}
                   className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                     tab === t.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -213,7 +241,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             </div>
 
             {/* View toggle Lista / Mappa — solo tab corse */}
-            {tab === 'corse' && (
+            {(tab === 'corse') && (
               <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
                 {[
                   { value: 'lista', icon: 'view_list',    label: 'Lista' },
@@ -238,7 +266,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           </div>
 
           {/* Filter bar */}
-          <FilterBar tab={tab} current={params} chips={chips} showDateFilter={tab === 'corse'} showTagFilter />
+          <FilterBar tab={tab} current={params} chips={chips} showDateFilter={tab === 'corse' || tab === 'gare'} showTagFilter={tab !== 'gare'} showGareFilter={tab === 'gare'} />
 
           {/* Pill tag attivo */}
           {activeTag && (
@@ -265,7 +293,13 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             <p className="text-sm text-gray-400 -mt-2">
               {hasFilters
                 ? `${count} risultat${count === 1 ? 'o' : 'i'} trovati`
-                : `${count} ${tab === 'corse' ? (count === 1 ? 'corsa disponibile' : 'corse disponibili') : (count === 1 ? 'serie attiva' : 'serie attive')}`}
+                : `${count} ${
+                    tab === 'corse'
+                      ? (count === 1 ? 'corsa disponibile' : 'corse disponibili')
+                      : tab === 'gare'
+                        ? (count === 1 ? 'post pubblicato' : 'post pubblicati')
+                        : (count === 1 ? 'serie attiva' : 'serie attive')
+                  }`}
             </p>
           )}
 
@@ -273,16 +307,22 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           {tab === 'corse' ? (
             runs.length > 0 ? (
               view === 'mappa' ? (
-                /* Vista mappa */
                 <RunMapWrapper runs={runs} height="520px" />
               ) : (
-                /* Vista lista */
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {runs.map(run => <RunCard key={run.id} run={run} />)}
                 </div>
               )
             ) : (
               <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
+            )
+          ) : tab === 'gare' ? (
+            gare.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {gare.map(g => <GaraCard key={g.id} run={g} />)}
+              </div>
+            ) : (
+              <EmptyState tab="gare" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
             )
           ) : (
             series.length > 0 ? (
@@ -306,13 +346,14 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
 type ChipRanges = ReturnType<typeof getChipRanges>
 
 function FilterBar({
-  tab, current, chips, showDateFilter, showTagFilter,
+  tab, current, chips, showDateFilter, showTagFilter, showGareFilter,
 }: {
   tab: string
   current: SearchParams
   chips: ChipRanges
   showDateFilter: boolean
   showTagFilter?: boolean
+  showGareFilter?: boolean
 }) {
   const hasTextFilters = !!(current.q || current.city || current.level)
   const hasDateFilter  = !!(current.from || current.to)
@@ -443,7 +484,67 @@ function FilterBar({
         </div>
       )}
 
-      {/* ── Riga 3: tag chips ── */}
+      {/* ── Riga 3: filtri gare ── */}
+      {showGareFilter && (
+        <div className="px-4 pb-3 flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Distanza</span>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { value: '5k',  label: '5K' },
+                { value: '10k', label: '10K' },
+                { value: '21k', label: 'Mezza' },
+                { value: '42k', label: 'Maratona' },
+              ].map(d => {
+                const isActive = current.race_distance === d.value
+                return (
+                  <Link key={d.value}
+                    href={isActive
+                      ? buildUrl({ ...current, race_distance: undefined }, {})
+                      : buildUrl(current, { race_distance: d.value })}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      isActive
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 bg-white'
+                    }`}
+                  >
+                    {d.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cerco</span>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { value: 'pacer',     label: 'Pacer',     icon: 'speed' },
+                { value: 'compagno',  label: 'Compagno',  icon: 'group' },
+                { value: 'supporter', label: 'Supporter', icon: 'volunteer_activism' },
+              ].map(lf => {
+                const isActive = current.looking_for === lf.value
+                return (
+                  <Link key={lf.value}
+                    href={isActive
+                      ? buildUrl({ ...current, looking_for: undefined }, {})
+                      : buildUrl(current, { looking_for: lf.value })}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      isActive
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 bg-white'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">{lf.icon}</span>
+                    {lf.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Riga 4: tag chips ── */}
       {showTagFilter && (
         <div className="px-4 pb-3 flex flex-col gap-2.5">
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
@@ -531,28 +632,32 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params }: {
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-white rounded-3xl border border-gray-100">
       <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center">
         <span className="material-symbols-outlined text-3xl text-gray-300">
-          {tab === 'corse' ? 'directions_run' : 'event_repeat'}
+          {tab === 'corse' ? 'directions_run' : tab === 'gare' ? 'emoji_events' : 'event_repeat'}
         </span>
       </div>
       <div className="flex flex-col items-center gap-1">
         <p className="text-lg font-bold text-gray-900">
-          {hasFilters ? 'Nessuna corsa trovata' : 'Ancora nessuna corsa'}
+          {hasFilters
+            ? (tab === 'gare' ? 'Nessuna gara trovata' : 'Nessuna corsa trovata')
+            : (tab === 'gare' ? 'Ancora nessun post' : 'Ancora nessuna corsa')}
         </p>
         <p className="text-sm text-gray-500 max-w-xs">
           {hasDateFilter
-            ? 'Nessuna corsa disponibile in questo periodo.'
+            ? (tab === 'gare' ? 'Nessuna gara in questo periodo.' : 'Nessuna corsa disponibile in questo periodo.')
             : hasFilters
-              ? 'Prova a cambiare i filtri oppure proponi tu il prossimo allenamento.'
-              : 'Sii il primo a proporre un appuntamento nella tua città.'}
+              ? (tab === 'gare' ? 'Prova a cambiare i filtri.' : 'Prova a cambiare i filtri oppure proponi tu il prossimo allenamento.')
+              : (tab === 'gare' ? 'Sii il primo a cercare compagni per la tua gara.' : 'Sii il primo a proporre un appuntamento nella tua città.')}
         </p>
         {dateHint}
       </div>
       <Link
-        href={tab === 'corse' ? '/nuova-corsa' : '/nuova-serie'}
-        className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors mt-1"
+        href={tab === 'corse' ? '/nuova-corsa' : tab === 'gare' ? '/nuova-gara' : '/nuova-serie'}
+        className={`inline-flex items-center gap-2 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-colors mt-1 ${
+          tab === 'gare' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-hover'
+        }`}
       >
         <span className="material-symbols-outlined text-lg">add</span>
-        {tab === 'corse' ? 'Proponi una corsa' : 'Proponi una serie'}
+        {tab === 'corse' ? 'Proponi una corsa' : tab === 'gare' ? 'Cerca compagni' : 'Proponi una serie'}
       </Link>
     </div>
   )
