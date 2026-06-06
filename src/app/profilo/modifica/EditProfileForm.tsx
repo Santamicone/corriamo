@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
-import { Avatar, CHARACTER_PRESETS, COLOR_PRESETS } from '@/components/ui/Avatar'
+import { Avatar, CHARACTER_PRESETS } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
 import type { Profile } from '@/lib/types'
 
@@ -63,6 +63,8 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
   const [filePreview,  setFilePreview]  = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileError,    setFileError]    = useState('')
+  // Lightbox personaggio
+  const [lightboxChar, setLightboxChar] = useState<typeof CHARACTER_PRESETS[0] | null>(null)
 
   /* ── UI ── */
   const [loading, setLoading] = useState(false)
@@ -155,8 +157,7 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
               {avatarChoice === 'keep'
                 ? (profile.avatar_url ? 'Foto attuale' : 'Iniziali (default)')
                 : avatarChoice === 'file' ? 'Foto caricata'
-                : avatarChoice.startsWith('carattere:') ? `Personaggio ${avatarChoice.split(':')[1]}`
-                : 'Icona colorata'}
+                : `Personaggio ${avatarChoice.split(':')[1]}`}
             </p>
             <p className="text-xs text-gray-400">Scegli un personaggio o carica una tua foto.</p>
             {avatarChoice !== 'keep' && (
@@ -169,71 +170,110 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
           </div>
         </div>
 
-        {/* Personaggi illustrati — griglia 3×3 */}
+        {/* Personaggi illustrati — griglia con anteprima ingrandita */}
         <div>
           <p className="text-xs font-medium text-gray-500 mb-3">Scegli un personaggio:</p>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
             {CHARACTER_PRESETS.map(preset => {
               const active = avatarChoice === preset.id
               return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => setAvatarChoice(preset.id)}
-                  className={cn(
-                    'relative rounded-2xl overflow-hidden aspect-square transition-all duration-150 focus:outline-none border-2',
-                    active
-                      ? 'border-primary ring-2 ring-primary ring-offset-1 scale-105'
-                      : 'border-gray-100 hover:border-primary/40 hover:scale-105 opacity-80 hover:opacity-100'
-                  )}
-                  title={preset.label}
-                  aria-label={`Seleziona ${preset.label}`}
-                >
-                  <img
-                    src={preset.src}
-                    alt={preset.label}
-                    className="w-full h-full object-cover"
-                  />
+                <div key={preset.id} className="relative group aspect-square">
+                  {/* Thumbnail — click per selezionare */}
+                  <button
+                    type="button"
+                    onClick={() => setAvatarChoice(preset.id)}
+                    className={cn(
+                      'w-full h-full rounded-2xl overflow-hidden transition-all duration-150 focus:outline-none border-2',
+                      active
+                        ? 'border-primary ring-2 ring-primary ring-offset-1 scale-105'
+                        : 'border-gray-100 hover:border-primary/40 opacity-80 hover:opacity-100'
+                    )}
+                    aria-label={`Seleziona ${preset.label}`}
+                  >
+                    <img src={preset.src} alt={preset.label} className="w-full h-full object-cover" />
+                  </button>
+
+                  {/* Spunta selezione */}
                   {active && (
-                    <span className="absolute bottom-0.5 right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border border-white">
+                    <span className="absolute bottom-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center border border-white pointer-events-none">
                       <span className="material-symbols-filled text-white text-[11px]">check</span>
                     </span>
                   )}
-                </button>
+
+                  {/* Pulsante zoom — appare sull'hover */}
+                  <button
+                    type="button"
+                    onClick={() => setLightboxChar(preset)}
+                    className="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus:outline-none"
+                    aria-label={`Ingrandisci ${preset.label}`}
+                    title="Vedi in grande"
+                  >
+                    <span className="material-symbols-outlined text-white text-sm">zoom_in</span>
+                  </button>
+                </div>
               )
             })}
           </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Clicca su un personaggio per selezionarlo · Passa sopra e clicca <span className="material-symbols-outlined text-[11px] align-middle">zoom_in</span> per vederlo in grande.
+          </p>
         </div>
 
-        {/* Icone colorate */}
-        <div>
-          <p className="text-xs font-medium text-gray-500 mb-3">Oppure scegli un&apos;icona colorata:</p>
-          <div className="flex flex-wrap gap-3">
-            {COLOR_PRESETS.map(preset => {
-              const active = avatarChoice === preset.id
-              return (
+        {/* ── Lightbox personaggio ── */}
+        {lightboxChar && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            onClick={() => setLightboxChar(null)}
+          >
+            <div
+              className="relative bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Immagine ingrandita */}
+              <img
+                src={lightboxChar.src}
+                alt={lightboxChar.label}
+                className="w-full object-cover"
+              />
+
+              {/* Azioni */}
+              <div className="p-4 flex flex-col gap-3">
                 <button
-                  key={preset.id}
                   type="button"
-                  onClick={() => setAvatarChoice(preset.id)}
+                  onClick={() => { setAvatarChoice(lightboxChar.id); setLightboxChar(null) }}
                   className={cn(
-                    'relative rounded-full transition-all duration-150 focus:outline-none',
-                    active ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'
+                    'w-full flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-semibold text-sm transition-colors',
+                    avatarChoice === lightboxChar.id
+                      ? 'bg-green-500 text-white'
+                      : 'bg-primary text-white hover:bg-primary-hover'
                   )}
-                  title={preset.label}
-                  aria-label={`Icona ${preset.label}`}
                 >
-                  <Avatar name={form.full_name} src={preset.id} size="lg" />
-                  {active && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-white">
-                      <span className="material-symbols-filled text-white text-xs">check</span>
-                    </span>
-                  )}
+                  <span className="material-symbols-outlined text-base">
+                    {avatarChoice === lightboxChar.id ? 'check_circle' : 'person'}
+                  </span>
+                  {avatarChoice === lightboxChar.id ? 'Già selezionato' : 'Scegli questo personaggio'}
                 </button>
-              )
-            })}
+                <button
+                  type="button"
+                  onClick={() => setLightboxChar(null)}
+                  className="w-full px-5 py-2.5 rounded-2xl border border-gray-200 text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                >
+                  Chiudi
+                </button>
+              </div>
+
+              {/* X in alto a destra */}
+              <button
+                type="button"
+                onClick={() => setLightboxChar(null)}
+                className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center transition-colors"
+                aria-label="Chiudi anteprima"
+              >
+                <span className="material-symbols-outlined text-white text-base">close</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Upload foto */}
         <div>
