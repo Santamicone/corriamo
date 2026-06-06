@@ -14,10 +14,9 @@ interface Props {
   runTitle:        string
   runDetailHref:   string
   initialMessages: RunChatMessage[]
-  groupSize:       number  // organizzatore + approvati
+  groupSize:       number
 }
 
-/* ── Formatta la data del separatore ── */
 function formatSep(iso: string): string {
   const d = parseISO(iso)
   if (isToday(d))     return 'Oggi'
@@ -25,30 +24,25 @@ function formatSep(iso: string): string {
   return format(d, 'EEEE d MMMM', { locale: it })
 }
 
-/* ── Formatta l'orario della bolla ── */
 function formatTime(iso: string): string {
   return format(parseISO(iso), 'HH:mm')
 }
 
-/* ── Separa i messaggi per giorno ── */
-function dayOf(iso: string) {
-  return iso.slice(0, 10)
-}
+function dayOf(iso: string) { return iso.slice(0, 10) }
 
 export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMessages, groupSize }: Props) {
   const [messages, setMessages] = useState<RunChatMessage[]>(initialMessages)
   const bottomRef    = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  /* Scroll to bottom */
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     bottomRef.current?.scrollIntoView({ behavior })
   }, [])
 
-  /* Scroll istantaneo al mount */
+  // Scroll istantaneo al mount
   useEffect(() => { scrollToBottom('instant') }, []) // eslint-disable-line
 
-  /* Scroll smooth su nuovi messaggi solo se vicino al fondo */
+  // Scroll smooth su nuovi messaggi, solo se già vicino al fondo
   useEffect(() => {
     const c = containerRef.current
     if (!c) return
@@ -56,7 +50,7 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
     if (isNearBottom) scrollToBottom('smooth')
   }, [messages, scrollToBottom])
 
-  /* ── Supabase Realtime ── */
+  /* ── Supabase Realtime: solo messaggi degli ALTRI utenti ── */
   useEffect(() => {
     const supabase = createClient()
 
@@ -68,11 +62,17 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
         table:  'run_chat',
         filter: `run_id=eq.${runId}`,
       }, async (payload) => {
+        const newMsg = payload.new as { id: string; author_id: string }
+
+        // Skip: i propri messaggi sono già stati aggiunti localmente (insert ottimistico)
+        if (newMsg.author_id === userId) return
+
         const { data } = await supabase
           .from('run_chat')
           .select('*, author:profiles!run_chat_author_id_fkey(*)')
-          .eq('id', payload.new.id)
+          .eq('id', newMsg.id)
           .single()
+
         if (data) {
           setMessages(prev => {
             if (prev.some(m => m.id === data.id)) return prev
@@ -91,13 +91,34 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
       .subscribe()
 
     return () => { supabase.removeChannel(ch) }
-  }, [runId])
+  }, [runId, userId])
 
-  /* ── Cancella un messaggio ── */
+  /* ── Invia messaggio — insert + aggiunta immediata locale ── */
+  const handleSend = useCallback(async (body: string) => {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from('run_chat')
+      .insert({ run_id: runId, author_id: userId, body })
+      .select('*, author:profiles!run_chat_author_id_fkey(*)')
+      .single()
+
+    if (error) throw error
+
+    if (data) {
+      setMessages(prev => {
+        if (prev.some(m => m.id === data.id)) return prev
+        return [...prev, data as RunChatMessage]
+      })
+    }
+  }, [runId, userId])
+
+  /* ── Cancella messaggio ── */
   const handleDelete = async (id: string) => {
+    // Rimozione ottimistica locale
+    setMessages(prev => prev.filter(m => m.id !== id))
     const supabase = createClient()
     await supabase.from('run_chat').delete().eq('id', id)
-    // Rimosso via Realtime DELETE event
   }
 
   return (
@@ -121,7 +142,7 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messaggi */}
       <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1">
 
         {messages.length === 0 && (
@@ -131,24 +152,24 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
             </div>
             <p className="text-sm font-semibold text-gray-500">Nessun messaggio ancora</p>
             <p className="text-xs text-gray-400 max-w-xs">
-              Sii il primo a scrivere! Usa questa chat per coordinarvi, condividere il percorso o motivarvi.
+              Sii il primo a scrivere! Coordinarsi, condividere il percorso o motivarsi — questa chat è vostra.
             </p>
           </div>
         )}
 
         {messages.map((msg, i) => {
-          const isMe      = msg.author_id === userId
-          const prev      = messages[i - 1]
-          const next      = messages[i + 1]
-          const sameAuthorPrev = prev && prev.author_id === msg.author_id && dayOf(prev.created_at) === dayOf(msg.created_at)
-          const sameAuthorNext = next && next.author_id === msg.author_id && dayOf(next.created_at) === dayOf(msg.created_at)
-          const showDay   = !prev || dayOf(prev.created_at) !== dayOf(msg.created_at)
-          const showAvatar = !isMe && !sameAuthorNext
-          const showName   = !isMe && !sameAuthorPrev
+          const isMe             = msg.author_id === userId
+          const prev             = messages[i - 1]
+          const next             = messages[i + 1]
+          const sameAuthorPrev   = prev && prev.author_id === msg.author_id && dayOf(prev.created_at) === dayOf(msg.created_at)
+          const sameAuthorNext   = next && next.author_id === msg.author_id && dayOf(next.created_at) === dayOf(msg.created_at)
+          const showDay          = !prev || dayOf(prev.created_at) !== dayOf(msg.created_at)
+          const showAvatar       = !isMe && !sameAuthorNext
+          const showName         = !isMe && !sameAuthorPrev
 
           return (
             <div key={msg.id}>
-              {/* Date separator */}
+              {/* Separatore data */}
               {showDay && (
                 <div className="flex items-center gap-3 my-4">
                   <div className="flex-1 h-px bg-gray-100" />
@@ -159,10 +180,10 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
                 </div>
               )}
 
-              {/* Message row */}
+              {/* Riga messaggio */}
               <div className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'} ${sameAuthorPrev ? 'mt-0.5' : 'mt-3'}`}>
 
-                {/* Avatar (solo utenti altrui, solo ultimo del gruppo) */}
+                {/* Avatar — solo utenti altrui, solo all'ultimo del gruppo */}
                 {!isMe && (
                   <div className="w-7 shrink-0">
                     {showAvatar && msg.author && (
@@ -175,7 +196,7 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
 
                 <div className={`flex flex-col gap-0.5 max-w-[72%] ${isMe ? 'items-end' : 'items-start'}`}>
 
-                  {/* Nome (solo primo del gruppo, utenti altrui) */}
+                  {/* Nome — solo primo del gruppo, utenti altrui */}
                   {showName && msg.author && (
                     <Link href={`/profilo/${msg.author_id}`}
                       className="text-[11px] font-semibold text-gray-500 hover:text-primary transition-colors ml-1">
@@ -183,7 +204,7 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
                     </Link>
                   )}
 
-                  {/* Bubble */}
+                  {/* Bolla + orario + delete */}
                   <div className={`group relative flex items-end gap-1.5 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                     <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
                       isMe
@@ -193,15 +214,13 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
                       {msg.body}
                     </div>
 
-                    {/* Timestamp + delete (su hover) */}
-                    <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0`}>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <span className="text-[10px] text-gray-400">{formatTime(msg.created_at)}</span>
                       {isMe && (
                         <button
                           onClick={() => handleDelete(msg.id)}
                           className="text-gray-300 hover:text-red-400 transition-colors"
                           aria-label="Elimina messaggio"
-                          title="Elimina"
                         >
                           <span className="material-symbols-outlined text-sm">delete</span>
                         </button>
@@ -218,7 +237,7 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
       </div>
 
       {/* Input */}
-      <MessageInput runId={runId} authorId={userId} />
+      <MessageInput onSend={handleSend} />
     </div>
   )
 }
