@@ -114,8 +114,19 @@ export default async function CorsaDetailPage({
     : null
 
   const isOrganizer = user?.id === typedRun.organizer_id
-  const isPast = new Date(`${typedRun.date}T${typedRun.time}`) < new Date()
+
+  // Interesse dell'utente corrente
+  const myInterest = user
+    ? await supabase.from('interests').select('id').eq('run_id', id).eq('user_id', user.id).maybeSingle()
+        .then(r => r.data ?? null)
+    : null
+  const isPast     = new Date(`${typedRun.date}T${typedRun.time}`) < new Date()
   const levelColor = LEVEL_COLORS[typedRun.level] ?? LEVEL_COLORS.tutti
+
+  // Luogo privato
+  const isPrivateLoc   = (typedRun as Run & { location_public?: boolean }).location_public === false
+  const canSeeLocation = isOrganizer || myParticipation?.status === 'approvata'
+  const displayLocation = isPrivateLoc && !canSeeLocation ? null : typedRun.location
 
   // Momenti — solo per corse passate
   const momenti: Momento[] = isPast ? await supabase
@@ -213,8 +224,8 @@ export default async function CorsaDetailPage({
                     </div>
                   ))}
 
-                  {/* Luogo — card speciale con link Google Maps */}
-                  {(() => {
+                  {/* Luogo — con gestione privacy */}
+                  {displayLocation ? (() => {
                     const run = typedRun as Run & { lat?: number; lng?: number }
                     const mapsUrl = run.lat && run.lng
                       ? `https://www.google.com/maps?q=${run.lat},${run.lng}`
@@ -224,20 +235,25 @@ export default async function CorsaDetailPage({
                         <span className="material-symbols-outlined text-primary text-xl">place</span>
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Luogo</p>
-                          <p className="text-sm font-bold text-gray-800 leading-tight mt-0.5">{typedRun.location}</p>
-                          <a
-                            href={mapsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-semibold text-primary hover:underline"
-                          >
+                          <p className="text-sm font-bold text-gray-800 leading-tight mt-0.5">{displayLocation}</p>
+                          <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-semibold text-primary hover:underline">
                             <span className="material-symbols-outlined text-sm">open_in_new</span>
                             Apri su Google Maps
                           </a>
                         </div>
                       </div>
                     )
-                  })()}
+                  })() : (
+                    <div className="flex flex-col gap-2 bg-gray-50 rounded-2xl p-4">
+                      <span className="material-symbols-outlined text-gray-400 text-xl">lock</span>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Luogo</p>
+                        <p className="text-sm font-bold text-gray-500 leading-tight mt-0.5">{typedRun.city}</p>
+                        <p className="text-[11px] text-gray-400 mt-1">Riservato ai partecipanti approvati</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {typedRun.pace_target && (
                   <div className="flex items-center gap-3 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
@@ -267,6 +283,16 @@ export default async function CorsaDetailPage({
                   <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Com&apos;è la corsa</h2>
                   <p className="text-sm text-gray-600 leading-relaxed">{typedRun.description}</p>
                 </section>
+              )}
+
+              {/* Banner luogo privato — utenti non approvati */}
+              {isPrivateLoc && !canSeeLocation && !isPast && (
+                <div className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3.5">
+                  <span className="material-symbols-outlined text-gray-400 text-xl shrink-0">lock</span>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    L&apos;indirizzo esatto del punto di ritrovo è riservato. Sarà visibile non appena la tua iscrizione verrà approvata.
+                  </p>
+                </div>
               )}
 
               {/* Nota rassicurante — solo corse future */}
@@ -344,12 +370,13 @@ export default async function CorsaDetailPage({
             {/* ── Sidebar ── */}
             <div className="flex flex-col gap-5">
 
-              {/* CTA iscrizione */}
+              {/* CTA iscrizione + Mi interessa */}
               {!isPast && !isOrganizer && (
                 <JoinButton
                   runId={id}
                   userId={user?.id ?? null}
                   myParticipation={myParticipation as Participation | null}
+                  myInterest={myInterest}
                   isFull={typedRun.max_participants !== null && approved.length >= typedRun.max_participants}
                 />
               )}

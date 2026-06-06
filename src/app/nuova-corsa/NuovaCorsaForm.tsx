@@ -67,6 +67,7 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
     title: '', description: '', location: '', city: '',
     distance_km: '', pace_target: '', level: 'tutti',
     max_participants: '', is_no_drop: false, series_id: '',
+    location_public: true,
     // Campi corsa singola
     date: '', time: '07:00',
     // Campi serie
@@ -135,6 +136,7 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
         level:            form.level,
         max_participants: form.max_participants ? parseInt(form.max_participants) : null,
         is_no_drop:       form.is_no_drop,
+        location_public:  form.location_public,
         tags,
         status:           'aperta',
         series_id:        form.series_id   || null,
@@ -159,6 +161,7 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
         level:            form.level,
         max_participants: form.max_participants ? parseInt(form.max_participants) : null,
         is_no_drop:       form.is_no_drop,
+        location_public:  form.location_public,
         tags,
         recurrence_type:  form.recurrence_type,
         recurrence_day:   parseInt(form.recurrence_day),
@@ -183,6 +186,7 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
         level:            form.level,
         max_participants: form.max_participants ? parseInt(form.max_participants) : null,
         is_no_drop:       form.is_no_drop,
+        location_public:  form.location_public,
         tags,
         status:           'aperta',
         lat:              coords?.lat       ?? null,
@@ -302,6 +306,24 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
           </p>
         </div>
         <MapBlock />
+
+        {/* Visibilità luogo */}
+        <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl hover:bg-gray-50 transition-colors">
+          <input
+            type="checkbox"
+            checked={form.location_public}
+            onChange={e => setForm(p => ({ ...p, location_public: e.target.checked }))}
+            className="w-4 h-4 mt-0.5 rounded accent-primary shrink-0"
+          />
+          <div>
+            <span className="text-sm font-semibold text-gray-900">Luogo di ritrovo pubblico</span>
+            <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+              {form.location_public
+                ? 'Tutti possono vedere l\'indirizzo esatto. Disabilita per mostrarlo solo ai partecipanti approvati.'
+                : '🔒 Solo i partecipanti approvati vedranno l\'indirizzo esatto. Sulla mappa apparirà un pin generico sulla città.'}
+            </p>
+          </div>
+        </label>
 
         {tipo === 'singola' ? (
           <div className="grid grid-cols-2 gap-4 pt-1">

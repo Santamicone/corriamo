@@ -1,32 +1,49 @@
 ## Summary
 
-- Aggiunge un **terzo tab "Gare"** in bacheca per trovare runner cercando compagni su gare già esistenti (maratone, mezze, 10K, 5K)
-- Nuovo form `nuova-gara` e pagina dettaglio `gare/[id]` con UX dedicata (accent indigo, no JoinButton)
-- Filtri distanza (5K/10K/Mezza/Maratona) e "cerco" (pacer/compagno/supporter) nella bacheca
+Questa PR consolida tutto lo sviluppo del branch `feat/ui-ux-redesign`.
 
-## Cosa è cambiato
+## Funzionalità principali
 
-### Nuovo
-- `supabase/add-gara.sql` — 6 colonne su `runs` (type, race_name, race_distance, race_target_time, race_registered, looking_for) + 2 indici
-- `src/components/GaraCard.tsx` — card con accent indigo, badge distanza, chip looking_for
-- `src/app/nuova-gara/` — form dedicato: nome gara, distanza, città, data, obiettivo, looking_for (multi-check), note
-- `src/app/gare/[id]/page.tsx` — dettaglio gara: solo ContactButton (no JoinButton, no ParticipantsList, no ReviewForm)
+### Chat di gruppo per corsa (`/corse/[id]/chat`)
+- Chat real-time accessibile solo a organizzatore e partecipanti approvati
+- Messaggi stile iMessage (bolle arancio/bianco), separatori data, raggruppamento per autore
+- Delete su hover dei propri messaggi, scroll auto-bottom intelligente
+- Card di accesso nella sidebar del dettaglio corsa
 
-### Modificato
-- `src/app/bacheca/page.tsx` — terzo tab, query separata con filtro type='gara', filtri distanza/cerco, EmptyState aggiornato
-- `src/lib/types.ts` — RunType, RaceDistance, campi gara opzionali su Run
-- `src/proxy.ts` — nuova-gara aggiunto alle route protette
+### Tab Gare + hub dedicato (`/gare`)
+- Pagina hub con hero descrittivo, spiegazione 3-step, filtri, lista GaraCard
+- Bacheca: tab Gare in sola lettura, tab Serie assorbito in Corse
+- Form nuova corsa con selettore tipo singola/serie (nuova-serie eliminata come route separata)
+- Menu: aggiunto "Cerca compagni di gara" in stile indigo
 
-## Azione manuale richiesta prima del deploy
+### Profilo runner arricchito
+- 9 personaggi illustrati selezionabili con lightbox ingrandimento
+- Età, "Perché corri?" (7 chip), Personal Best (5K/10K/21K/42K)
+- Nuovi livelli: amatore_gare, atleta
+- Rimosso ritmo min/max
 
-Eseguire `supabase/add-gara.sql` nel **Supabase Dashboard → SQL Editor** per aggiungere le colonne al DB di produzione.
+### SEO Sprint 1
+- robots.txt, sitemap.xml dinamico, favicon SVG
+- generateMetadata su tutte le pagine pubbliche con canonical + OG
+- noindex su 8 pagine private
+- Privacy Policy (GDPR) e Termini di Servizio
+- Footer con link reali
+
+## Azioni manuali richieste (Supabase SQL Editor — nell'ordine)
+
+1. `supabase/add-gara.sql`
+2. `supabase/add-profile-fields.sql`
+3. `supabase/run-chat.sql`
+
+Poi in **Database → Replication**: abilitare `run_chat` per INSERT e DELETE (Realtime chat).
 
 ## Test plan
 
-- [ ] Eseguire `supabase/add-gara.sql` sul DB
-- [ ] `nuova-gara` — form compila e salva correttamente, title auto-generato
-- [ ] `bacheca?tab=gare` — tab visibile, filtri distanza e cerco funzionanti
-- [ ] `gare/[id]` — dettaglio si apre, ContactButton presente, JoinButton assente
-- [ ] `npm run build` passa (già verificato in sessione)
-
-Generated with [Claude Code](https://claude.com/claude-code)
+- [ ] SQL eseguiti sul DB
+- [ ] `/nuova-corsa` selettore singola/serie funziona, serie genera appuntamenti
+- [ ] `/gare` hub page visibile e filtri funzionanti
+- [ ] `/corse/[id]` card chat visibile solo agli approvati
+- [ ] `/corse/[id]/chat` chat real-time funzionante
+- [ ] `/profilo/modifica` personaggi selezionabili con lightbox
+- [ ] `/robots.txt` e `/sitemap.xml` rispondono correttamente
+- [ ] `npm run build` passa (verificato in sessione)
