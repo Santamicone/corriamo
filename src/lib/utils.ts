@@ -30,6 +30,9 @@ export const LEVEL_LABELS: Record<string, string> = {
   principiante: 'Principiante',
   intermedio: 'Intermedio',
   avanzato: 'Avanzato',
+  // Livelli profilo estesi
+  amatore_gare: 'Amatore, ma faccio gare',
+  atleta: 'Atleta agonista',
 }
 
 export const RECURRENCE_LABELS: Record<string, string> = {

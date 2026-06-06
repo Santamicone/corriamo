@@ -64,15 +64,30 @@ const LEVEL_IDX: Record<RunLevel, number> = {
   principiante: 0, intermedio: 1, avanzato: 2, tutti: -1,
 }
 
+/** Mappa i livelli profilo estesi al livello di corsa equivalente per il calcolo di compatibilità */
+function toRunLevel(pl: string | null): RunLevel | null {
+  if (!pl) return null
+  const map: Record<string, RunLevel> = {
+    principiante: 'principiante',
+    intermedio:   'intermedio',
+    avanzato:     'avanzato',
+    tutti:        'tutti',
+    amatore_gare: 'avanzato',
+    atleta:       'avanzato',
+  }
+  return map[pl] ?? null
+}
+
 /* ─────────────────────────────────────────
    COMPONENTI DEL PUNTEGGIO
 ───────────────────────────────────────── */
 
-function scoreLevel(userLevel: RunLevel | null, runLevel: RunLevel): number {
-  if (!userLevel || userLevel === 'tutti') return 20  // neutro
+function scoreLevel(userLevel: string | null, runLevel: RunLevel): number {
+  const mapped = toRunLevel(userLevel)
+  if (!mapped || mapped === 'tutti') return 20  // neutro
   if (runLevel === 'tutti') return 25
-  if (runLevel === userLevel) return 30
-  const diff = Math.abs(LEVEL_IDX[userLevel] - LEVEL_IDX[runLevel])
+  if (runLevel === mapped) return 30
+  const diff = Math.abs(LEVEL_IDX[mapped] - LEVEL_IDX[runLevel])
   return diff === 1 ? 15 : 0   // adiacente → 15, opposto → 0
 }
 
