@@ -9,6 +9,9 @@ type RunWithMeta = Run & {
   is_spot?: boolean
   has_momento?: boolean
   compatibility?: CompatibilityResult
+  interests_count?: number
+  my_interest?: boolean
+  location_public?: boolean
 }
 
 interface RunCardProps {
@@ -27,10 +30,12 @@ export function RunCard({ run, className }: RunCardProps) {
   const lc = LEVEL_COLORS[run.level] ?? LEVEL_COLORS.tutti
   const count = run.participants_count ?? 0
   const r = run as RunWithMeta
-  const isSpot      = r.is_spot === true
-  const hasMomento  = r.has_momento === true
-  const compat      = r.compatibility ?? null
-  const hasMomenti = (run as Run & { momenti_count?: number }).momenti_count ?? 0
+  const isSpot         = r.is_spot === true
+  const hasMomento     = r.has_momento === true
+  const compat         = r.compatibility ?? null
+  const hasMomenti     = (run as Run & { momenti_count?: number }).momenti_count ?? 0
+  const interestsCount = r.interests_count ?? 0
+  const isPrivateLoc   = r.location_public === false
   // Accent: rosso pulsante per spot, verde se partecipanti, arancio default
   const accentClass = isSpot
     ? 'from-red-500 to-orange-500'
@@ -114,10 +119,21 @@ export function RunCard({ run, className }: RunCardProps) {
 
           {/* Data grid */}
           <div className="grid grid-cols-3 gap-2">
-            <DataPill icon="place"    label="Luogo"  value={run.city} />
+            <DataPill
+              icon={isPrivateLoc ? 'lock' : 'place'}
+              label="Luogo"
+              value={isPrivateLoc ? run.city : run.city}
+              muted={isPrivateLoc}
+            />
             <DataPill icon="schedule" label="Orario" value={run.time.slice(0, 5)} />
             <DataPill icon="route"    label="Km"     value={run.distance_km ? `${run.distance_km} km` : '—'} />
           </div>
+          {isPrivateLoc && (
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-400 -mt-1">
+              <span className="material-symbols-outlined text-sm text-gray-300">lock</span>
+              Luogo riservato ai partecipanti
+            </div>
+          )}
 
           {run.pace_target && (
             <div className="flex items-center gap-2 bg-orange-50 rounded-xl px-3 py-2">
@@ -148,6 +164,12 @@ export function RunCard({ run, className }: RunCardProps) {
                   {count}
                 </span>
               )}
+              {interestsCount > 0 && (
+                <span className="flex items-center gap-1 text-xs text-amber-500">
+                  <span className="material-symbols-filled text-base">star</span>
+                  {interestsCount}
+                </span>
+              )}
               <span className="material-symbols-outlined text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all text-xl">
                 arrow_forward
               </span>
@@ -159,12 +181,12 @@ export function RunCard({ run, className }: RunCardProps) {
   )
 }
 
-function DataPill({ icon, label, value }: { icon: string; label: string; value: string }) {
+function DataPill({ icon, label, value, muted }: { icon: string; label: string; value: string; muted?: boolean }) {
   return (
     <div className="flex flex-col items-center gap-1 bg-gray-50 rounded-2xl py-2.5 px-2">
-      <span className="material-symbols-outlined text-primary text-base">{icon}</span>
+      <span className={cn('material-symbols-outlined text-base', muted ? 'text-gray-400' : 'text-primary')}>{icon}</span>
       <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
-      <span className="text-xs font-bold text-gray-700 text-center leading-tight">{value}</span>
+      <span className={cn('text-xs font-bold text-center leading-tight', muted ? 'text-gray-400' : 'text-gray-700')}>{value}</span>
     </div>
   )
 }

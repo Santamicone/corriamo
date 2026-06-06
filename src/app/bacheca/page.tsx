@@ -168,6 +168,43 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       runs = runs.map(r => ({ ...r, momenti_count: mMap.get(r.id) ?? 0 })) as Run[]
     }
 
+    // Conta interessi per ogni corsa
+    const runIds = runs.map(r => r.id)
+    if (runIds.length > 0) {
+      const { data: interestRows } = await supabase
+        .from('interests').select('run_id').in('run_id', runIds)
+      const intMap = new Map<string, number>()
+      interestRows?.forEach(i => intMap.set(i.run_id, (intMap.get(i.run_id) ?? 0) + 1))
+      runs = runs.map(r => ({ ...r, interests_count: intMap.get(r.id) ?? 0 })) as Run[]
+
+      // Interessi dell'utente corrente
+      if (user) {
+        const { data: myInterests } = await supabase
+          .from('interests').select('run_id').eq('user_id', user.id).in('run_id', runIds)
+        const myIntSet = new Set(myInterests?.map(i => i.run_id) ?? [])
+        runs = runs.map(r => ({ ...r, my_interest: myIntSet.has(r.id) })) as Run[]
+      }
+    }
+
+    // Maschera la location delle corse private per utenti non approvati
+    runs = runs.map(r => {
+      const ext = r as Run & { location_public?: boolean; lat?: number; lng?: number }
+      if (ext.location_public === false) {
+        const myPart = (r as Run).my_participation
+        const isOrg  = r.organizer_id === user?.id
+        const isApproved = myPart?.status === 'approvata'
+        if (!isOrg && !isApproved) {
+          return {
+            ...r,
+            location: 'Luogo riservato',
+            lat: ext.lat != null ? Math.round(ext.lat * 100) / 100 : ext.lat,
+            lng: ext.lng != null ? Math.round(ext.lng * 100) / 100 : ext.lng,
+          }
+        }
+      }
+      return r
+    }) as Run[]
+
     // Anche le serie (mostrate in fondo al tab Corse)
     let seriesQuery = supabase
       .from('series')

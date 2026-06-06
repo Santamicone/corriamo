@@ -48,7 +48,10 @@ export interface Run {
   series?: Series
   created_at: string
   participants_count?: number
+  interests_count?: number
   my_participation?: Participation | null
+  my_interest?: boolean
+  location_public?: boolean
   // Campi gara (type='gara')
   type?: RunType
   race_name?: string | null
@@ -162,6 +165,13 @@ export interface MessageThread {
   other_user: Profile
   last_message: Message
   unread_count: number
+}
+
+export interface Interest {
+  id: string
+  run_id: string
+  user_id: string
+  created_at: string
 }
 
 export interface RunChatMessage {

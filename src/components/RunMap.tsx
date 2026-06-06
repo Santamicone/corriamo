@@ -20,16 +20,20 @@ const LEVEL_LABELS: Record<string, string> = {
 }
 
 /** SVG teardrop pin con cerchio bianco interno */
-function pinSvg(color: string, count = 1) {
+function pinSvg(color: string, count = 1, isPrivate = false) {
   const badge = count > 1
     ? `<rect x="16" y="0" width="16" height="16" rx="8" fill="#EA580C"/>
        <text x="24" y="11" font-family="sans-serif" font-size="9" font-weight="700" fill="white" text-anchor="middle">${count}</text>`
     : ''
+  const strokeDash = isPrivate ? 'stroke-dasharray="4,2"' : ''
+  const innerContent = isPrivate
+    ? `<text x="16" y="21" font-family="sans-serif" font-size="12" text-anchor="middle" fill="${color}">🔒</text>`
+    : `<circle cx="16" cy="16" r="7" fill="white"/>`
   return `
     <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
       <path d="M16 0C7.163 0 0 7.163 0 16c0 10.667 16 26 16 26s16-15.333 16-26C32 7.163 24.837 0 16 0z"
-            fill="${color}" stroke="white" stroke-width="1.5"/>
-      <circle cx="16" cy="16" r="7" fill="white"/>
+            fill="${color}" stroke="white" stroke-width="1.5" ${strokeDash}/>
+      ${innerContent}
       ${badge}
     </svg>`
 }
@@ -83,10 +87,11 @@ export default function RunMap({ runs, height = '480px' }: RunMapProps) {
       // Crea marker per ogni gruppo
       grouped.forEach((group) => {
         const first = group[0]
-        const isSpot = (first as Run & { is_spot?: boolean }).is_spot === true
-        const color = isSpot ? '#EF4444' : LEVEL_COLORS[first.level] ?? LEVEL_COLORS.tutti
+        const isSpot    = (first as Run & { is_spot?: boolean }).is_spot === true
+        const isPrivate = (first as Run & { location_public?: boolean }).location_public === false
+        const color = isPrivate ? '#9CA3AF' : isSpot ? '#EF4444' : LEVEL_COLORS[first.level] ?? LEVEL_COLORS.tutti
         const icon = L.divIcon({
-          html: pinSvg(color, group.length),
+          html: pinSvg(color, group.length, isPrivate),
           className: '',
           iconSize: [32, 42],
           iconAnchor: [16, 42],
@@ -114,7 +119,7 @@ export default function RunMap({ runs, height = '480px' }: RunMapProps) {
                 📅 ${r.date.split('-').reverse().join('/')} &nbsp;·&nbsp; 🕐 ${r.time.slice(0,5)}
               </span>
               <span style="font-size:12px;color:#6b7280;">
-                📍 ${r.location}, ${r.city}
+                📍 ${(r as Run & { location_public?: boolean }).location_public === false ? `🔒 Luogo riservato · ${r.city}` : `${r.location}, ${r.city}`}
               </span>
               ${r.distance_km ? `<span style="font-size:12px;color:#6b7280;">🏃 ${r.distance_km} km${r.pace_target ? ` &nbsp;·&nbsp; ⏱ ${formatPaceTarget(r.pace_target) ?? r.pace_target}` : ''}</span>` : ''}
             </div>
