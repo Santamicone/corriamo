@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /bacheca
+Allow: /corse/
+Allow: /serie/
+Allow: /gare/
+Allow: /profilo/
+Allow: /privacy
+Allow: /termini
+
+# Pagine private — non indicizzare
+Disallow: /area-personale
+Disallow: /messaggi
+Disallow: /notifiche
+Disallow: /profilo/modifica
+Disallow: /nuova-corsa
+Disallow: /nuova-serie
+Disallow: /nuova-gara
+Disallow: /nuova-corsa-spot
+Disallow: /auth/
+
+Sitemap: https://www.vieniacorrere.it/sitemap.xml

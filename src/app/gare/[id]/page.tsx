@@ -8,6 +8,43 @@ import { formatDate } from '@/lib/utils'
 import type { Run } from '@/lib/types'
 import { ContactButton } from '@/app/corse/[id]/ContactButton'
 import { CancelRunButton } from '@/app/corse/[id]/CancelRunButton'
+import type { Metadata } from 'next'
+
+const SITE_URL = 'https://www.vieniacorrere.it'
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('runs')
+    .select('title, race_name, race_distance, city, date, looking_for')
+    .eq('id', id)
+    .eq('type', 'gara')
+    .single()
+
+  if (!data) return { title: 'Cerca compagni di gara' }
+
+  const dist = data.race_distance ? RACE_DISTANCE_LABELS[data.race_distance] : null
+  const desc = [
+    dist,
+    data.race_name,
+    data.city,
+    data.looking_for?.length ? `Cerca: ${(data.looking_for as string[]).join(', ')}` : null,
+  ].filter(Boolean).join(' · ')
+
+  return {
+    title: data.title,
+    description: desc || `Runner cerca compagni per ${data.race_name ?? 'una gara'} a ${data.city}.`,
+    alternates: { canonical: `${SITE_URL}/gare/${id}` },
+    openGraph: {
+      title: `${data.title} — Vieni a correre?`,
+      description: desc,
+      url: `${SITE_URL}/gare/${id}`,
+    },
+  }
+}
 
 const RACE_DISTANCE_LABELS: Record<string, string> = {
   '5k': '5K', '10k': '10K', '21k': 'Mezza maratona (21K)', '42k': 'Maratona (42K)',

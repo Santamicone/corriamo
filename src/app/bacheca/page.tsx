@@ -12,6 +12,18 @@ import { TAGS, getTag } from '@/lib/tags'
 import { computeCompatibility, type CompatibilityResult, type RunHistory } from '@/lib/compatibility'
 import type { Run, Series, Profile } from '@/lib/types'
 import { GaraCard } from '@/components/GaraCard'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Trova una corsa vicino a te',
+  description: 'Scopri corse, allenamenti e serie ricorrenti organizzati da runner nella tua città. Filtra per livello, ritmo, data. Unisciti oggi.',
+  alternates: { canonical: 'https://www.vieniacorrere.it/bacheca' },
+  openGraph: {
+    title: 'Bacheca corse — Vieni a correre?',
+    description: 'Scopri corse e allenamenti organizzati da runner vicino a te.',
+    url: 'https://www.vieniacorrere.it/bacheca',
+  },
+}
 
 /* ─── Tipi ─── */
 interface SearchParams {

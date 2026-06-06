@@ -1,6 +1,9 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
+
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { Footer } from '@/components/Footer'
 import { NuovaCorsaForm } from './NuovaCorsaForm'
 
