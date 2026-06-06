@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { geocodeAddress, type GeoResult } from '@/lib/geocoding'
 import { TagPicker } from '@/components/ui/TagPicker'
+import { addWeeks, addDays, format, nextDay, parseISO, getDay } from 'date-fns'
+import { DAY_LABELS, cn } from '@/lib/utils'
 
 const LocationPreviewMap = dynamic(() => import('@/components/LocationPreviewMap'), {
   ssr: false,
@@ -34,19 +36,45 @@ function FormSection({ title, desc, children }: { title: string; desc?: string; 
 }
 
 type GeoStatus = 'idle' | 'loading' | 'found' | 'not_found' | 'city_only'
+type TipoCorsa = 'singola' | 'serie'
+
+const WEEKS_AHEAD = 8
+
+function generateDates(startDate: string, recurrenceDay: number, recurrenceType: string): string[] {
+  const dates: string[] = []
+  let current = parseISO(startDate)
+  const targetDay = recurrenceDay as 0 | 1 | 2 | 3 | 4 | 5 | 6
+  if (getDay(current) !== targetDay) current = nextDay(current, targetDay)
+  const endDate = addWeeks(parseISO(startDate), WEEKS_AHEAD)
+  while (current <= endDate) {
+    dates.push(format(current, 'yyyy-MM-dd'))
+    if (recurrenceType === 'settimanale')       current = addWeeks(current, 1)
+    else if (recurrenceType === 'bisettimanale') current = addWeeks(current, 2)
+    else                                         current = addDays(current, 30)
+  }
+  return dates
+}
 
 export function NuovaCorsaForm({ userId, userSeries }: Props) {
   const router = useRouter()
+  const [tipo, setTipo]       = useState<TipoCorsa>('singola')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
-  const [form, setForm] = useState({
-    title: '', description: '', date: '', time: '07:00',
-    location: '', city: '', distance_km: '', pace_target: '',
-    level: 'tutti', max_participants: '', is_no_drop: false, series_id: '',
-  })
-  const [tags, setTags] = useState<string[]>([])
+  const [tags, setTags]       = useState<string[]>([])
 
-  /* ── Geocoding state ── */
+  const [form, setForm] = useState({
+    // Campi comuni
+    title: '', description: '', location: '', city: '',
+    distance_km: '', pace_target: '', level: 'tutti',
+    max_participants: '', is_no_drop: false, series_id: '',
+    // Campi corsa singola
+    date: '', time: '07:00',
+    // Campi serie
+    recurrence_type: 'settimanale', recurrence_day: '1',
+    recurrence_time: '07:00', start_date: '',
+  })
+
+  /* ── Geocoding ── */
   const [geoStatus,    setGeoStatus]    = useState<GeoStatus>('idle')
   const [geoResult,    setGeoResult]    = useState<GeoResult | null>(null)
   const [manualCoords, setManualCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -56,42 +84,20 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
   const set = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(p => ({ ...p, [f]: e.target.value }))
 
-  /* Quando l'utente trascina il pin manualmente */
   const handlePinDragged = useCallback((lat: number, lng: number) => {
-    setManualCoords({ lat, lng })
-    setUserDragged(true)
+    setManualCoords({ lat, lng }); setUserDragged(true)
   }, [])
 
-  /* Ripristina il geocoding automatico */
-  const resetManualPin = () => {
-    setManualCoords(null)
-    setUserDragged(false)
-  }
+  const resetManualPin = () => { setManualCoords(null); setUserDragged(false) }
 
-  /* Geocoding automatico con debounce */
   const runGeocode = useCallback(async (location: string, city: string) => {
-    if (city.trim().length < 2) {
-      setGeoStatus('idle')
-      setGeoResult(null)
-      return
-    }
-    // Reset pin manuale ogni volta che l'indirizzo cambia
-    setManualCoords(null)
-    setUserDragged(false)
-    setGeoStatus('loading')
-
+    if (city.trim().length < 2) { setGeoStatus('idle'); setGeoResult(null); return }
+    setManualCoords(null); setUserDragged(false); setGeoStatus('loading')
     const result = await geocodeAddress(location, city)
-
-    if (!result) {
-      setGeoStatus('not_found')
-      setGeoResult(null)
-      return
-    }
-
-    const displayLower   = result.display_name.toLowerCase()
-    const locationWords  = location.toLowerCase().split(' ').filter(w => w.length > 3)
-    const isPrecise      = locationWords.some(w => displayLower.includes(w))
-
+    if (!result) { setGeoStatus('not_found'); setGeoResult(null); return }
+    const displayLower  = result.display_name.toLowerCase()
+    const locationWords = location.toLowerCase().split(' ').filter(w => w.length > 3)
+    const isPrecise     = locationWords.some(w => displayLower.includes(w))
     setGeoStatus(isPrecise ? 'found' : 'city_only')
     setGeoResult(result)
   }, [])
@@ -102,47 +108,92 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [form.location, form.city, runGeocode])
 
-  /* Coordinate effettive da usare per il DB e la mappa */
   const effectiveCoords = userDragged ? manualCoords : geoResult
+  const today = new Date().toISOString().split('T')[0]
 
   /* ── Submit ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
+    const supabase = createClient()
 
     let coords = effectiveCoords
-    if (!coords && form.location && form.city) {
-      coords = await geocodeAddress(form.location, form.city)
+    if (!coords && form.location && form.city) coords = await geocodeAddress(form.location, form.city)
+
+    if (tipo === 'singola') {
+      /* ── Corsa singola ── */
+      const { data, error: err } = await supabase.from('runs').insert({
+        organizer_id:     userId,
+        title:            form.title,
+        description:      form.description  || null,
+        date:             form.date,
+        time:             form.time,
+        location:         form.location,
+        city:             form.city,
+        distance_km:      form.distance_km  ? parseFloat(form.distance_km)   : null,
+        pace_target:      form.pace_target  || null,
+        level:            form.level,
+        max_participants: form.max_participants ? parseInt(form.max_participants) : null,
+        is_no_drop:       form.is_no_drop,
+        tags,
+        status:           'aperta',
+        series_id:        form.series_id   || null,
+        lat:              coords?.lat       ?? null,
+        lng:              coords?.lng       ?? null,
+      }).select('id').single()
+
+      if (err) { setError(err.message); setLoading(false); return }
+      router.push(`/corse/${data.id}`)
+      router.refresh()
+
+    } else {
+      /* ── Serie ricorrente ── */
+      const { data: seriesData, error: seriesErr } = await supabase.from('series').insert({
+        organizer_id:     userId,
+        title:            form.title,
+        description:      form.description  || null,
+        location:         form.location,
+        city:             form.city,
+        distance_km:      form.distance_km  ? parseFloat(form.distance_km)   : null,
+        pace_target:      form.pace_target  || null,
+        level:            form.level,
+        max_participants: form.max_participants ? parseInt(form.max_participants) : null,
+        is_no_drop:       form.is_no_drop,
+        tags,
+        recurrence_type:  form.recurrence_type,
+        recurrence_day:   parseInt(form.recurrence_day),
+        recurrence_time:  form.recurrence_time,
+        start_date:       form.start_date,
+      }).select('id').single()
+
+      if (seriesErr || !seriesData) { setError(seriesErr?.message ?? 'Errore'); setLoading(false); return }
+
+      const dates = generateDates(form.start_date, parseInt(form.recurrence_day), form.recurrence_type)
+      const runs = dates.map(date => ({
+        organizer_id:     userId,
+        series_id:        seriesData.id,
+        title:            `${form.title} — ${format(parseISO(date), 'dd/MM/yyyy')}`,
+        description:      form.description || null,
+        date,
+        time:             form.recurrence_time,
+        location:         form.location,
+        city:             form.city,
+        distance_km:      form.distance_km  ? parseFloat(form.distance_km)   : null,
+        pace_target:      form.pace_target  || null,
+        level:            form.level,
+        max_participants: form.max_participants ? parseInt(form.max_participants) : null,
+        is_no_drop:       form.is_no_drop,
+        tags,
+        status:           'aperta',
+        lat:              coords?.lat       ?? null,
+        lng:              coords?.lng       ?? null,
+      }))
+
+      await supabase.from('runs').insert(runs)
+      router.push(`/serie/${seriesData.id}`)
+      router.refresh()
     }
-
-    const supabase = createClient()
-    const { data, error: err } = await supabase.from('runs').insert({
-      organizer_id:     userId,
-      title:            form.title,
-      description:      form.description  || null,
-      date:             form.date,
-      time:             form.time,
-      location:         form.location,
-      city:             form.city,
-      distance_km:      form.distance_km  ? parseFloat(form.distance_km)   : null,
-      pace_target:      form.pace_target  || null,
-      level:            form.level,
-      max_participants: form.max_participants ? parseInt(form.max_participants) : null,
-      is_no_drop:       form.is_no_drop,
-      tags:             tags,
-      status:           'aperta',
-      series_id:        form.series_id   || null,
-      lat:              coords?.lat       ?? null,
-      lng:              coords?.lng       ?? null,
-    }).select('id').single()
-
-    if (err) { setError(err.message); setLoading(false); return }
-    router.push(`/corse/${data.id}`)
-    router.refresh()
   }
-
-  const today = new Date().toISOString().split('T')[0]
 
   /* ── Blocco mappa ── */
   const MapBlock = () => {
@@ -152,25 +203,17 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
         Cerco la posizione sulla mappa…
       </div>
     )
-
     if (geoStatus === 'not_found') return (
       <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
         <span className="material-symbols-outlined text-amber-500 text-base shrink-0 mt-0.5">warning</span>
-        <div>
-          <p className="text-xs font-semibold text-amber-800">Posizione non trovata</p>
-          <p className="text-xs text-amber-600 mt-0.5">
-            La corsa verrà pubblicata ma non apparirà sulla mappa.
-            Prova con un indirizzo più preciso (via, piazza, nome di un parco noto).
-          </p>
-        </div>
+        <p className="text-xs font-semibold text-amber-800">
+          Posizione non trovata. La corsa sarà pubblicata senza pin sulla mappa.
+        </p>
       </div>
     )
-
     if (!effectiveCoords) return null
-
     return (
       <div className="flex flex-col gap-2">
-        {/* Status pill */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           {userDragged ? (
             <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
@@ -185,29 +228,18 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
           ) : (
             <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
               <span className="material-symbols-outlined text-sm">info</span>
-              Pin posizionato su {form.city} (approssimativo)
+              Pin approssimativo su {form.city}
             </span>
           )}
-
           {userDragged && (
-            <button
-              type="button"
-              onClick={resetManualPin}
-              className="text-xs text-gray-400 hover:text-primary transition-colors flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-sm">refresh</span>
-              Ripristina automatico
+            <button type="button" onClick={resetManualPin}
+              className="text-xs text-gray-400 hover:text-primary transition-colors flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">refresh</span>Ripristina automatico
             </button>
           )}
         </div>
-
-        {/* Mappa */}
-        <LocationPreviewMap
-          lat={effectiveCoords.lat}
-          lng={effectiveCoords.lng}
-          label={form.location || form.city}
-          onPositionChange={handlePinDragged}
-        />
+        <LocationPreviewMap lat={effectiveCoords.lat} lng={effectiveCoords.lng}
+          label={form.location || form.city} onPositionChange={handlePinDragged} />
       </div>
     )
   }
@@ -215,68 +247,124 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
+      {/* ── Selettore tipo ── */}
+      <div className="bg-white rounded-3xl border border-gray-100 p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Tipo di proposta</p>
+        <div className="grid grid-cols-2 gap-3">
+          {([
+            { value: 'singola', icon: 'directions_run', label: 'Corsa singola',     desc: 'Un appuntamento in una data specifica' },
+            { value: 'serie',   icon: 'event_repeat',   label: 'Serie ricorrente',  desc: 'Appuntamenti fissi (settimanali, mensili…)' },
+          ] as const).map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setTipo(opt.value)}
+              className={cn(
+                'flex flex-col items-start gap-2 p-4 rounded-2xl border-2 text-left transition-all',
+                tipo === opt.value
+                  ? 'border-primary bg-orange-50'
+                  : 'border-gray-100 hover:border-gray-200 bg-gray-50'
+              )}
+            >
+              <span className={cn(
+                'material-symbols-outlined text-2xl',
+                tipo === opt.value ? 'text-primary' : 'text-gray-400'
+              )}>{opt.icon}</span>
+              <div>
+                <p className={cn('text-sm font-bold', tipo === opt.value ? 'text-primary' : 'text-gray-700')}>
+                  {opt.label}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5 leading-snug">{opt.desc}</p>
+              </div>
+              {tipo === opt.value && (
+                <span className="self-end -mt-1 -mb-1 text-primary">
+                  <span className="material-symbols-filled text-sm">check_circle</span>
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Dove e quando ── */}
       <FormSection title="Dove e quando">
-
-        {/* 1. Città — per prima */}
         <div>
           <label className={labelCls}>Città *</label>
-          <input
-            className={inputCls}
-            value={form.city}
-            onChange={set('city')}
-            placeholder="es. Perugia, Milano, Roma…"
-            required
-          />
+          <input className={inputCls} value={form.city} onChange={set('city')}
+            placeholder="es. Perugia, Milano, Roma…" required />
         </div>
-
-        {/* 2. Luogo di ritrovo — dopo la città, con didascalia estesa */}
         <div>
           <label className={labelCls}>Punto di ritrovo *</label>
-          <input
-            className={inputCls}
-            value={form.location}
-            onChange={set('location')}
-            placeholder="es. Ingresso principale Parco Tezio, Via Roma 15, Piazza IV Novembre"
-            required
-          />
+          <input className={inputCls} value={form.location} onChange={set('location')}
+            placeholder="es. Ingresso Parco Sempione, Via Roma 15…" required />
           <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-            Indica un luogo preciso e facilmente riconoscibile: il nome di un parco o ingresso specifico,
-            un indirizzo con numero civico, una piazza o un monumento noto.
-            Più è preciso, più facilmente gli altri runner ti trovano.
+            Indica un luogo preciso e facilmente riconoscibile.
           </p>
         </div>
-
-        {/* Feedback geocoding + mappa */}
         <MapBlock />
 
-        {/* Data e orario */}
-        <div className="grid grid-cols-2 gap-4 pt-1">
-          <div>
-            <label className={labelCls}>Data *</label>
-            <input className={inputCls} type="date" min={today} value={form.date} onChange={set('date')} required />
+        {tipo === 'singola' ? (
+          <div className="grid grid-cols-2 gap-4 pt-1">
+            <div>
+              <label className={labelCls}>Data *</label>
+              <input className={inputCls} type="date" min={today} value={form.date} onChange={set('date')} required />
+            </div>
+            <div>
+              <label className={labelCls}>Orario di partenza *</label>
+              <input className={inputCls} type="time" value={form.time} onChange={set('time')} required />
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Orario di partenza *</label>
-            <input className={inputCls} type="time" value={form.time} onChange={set('time')} required />
+        ) : (
+          <div className="flex flex-col gap-4 pt-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Frequenza *</label>
+                <select className={inputCls} value={form.recurrence_type} onChange={set('recurrence_type')}>
+                  <option value="settimanale">Ogni settimana</option>
+                  <option value="bisettimanale">Ogni due settimane</option>
+                  <option value="mensile">Ogni mese</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Giorno *</label>
+                <select className={inputCls} value={form.recurrence_day} onChange={set('recurrence_day')}>
+                  {DAY_LABELS.map((label, i) => <option key={i} value={i}>{label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Orario *</label>
+                <input className={inputCls} type="time" value={form.recurrence_time} onChange={set('recurrence_time')} required />
+              </div>
+              <div>
+                <label className={labelCls}>Data di inizio *</label>
+                <input className={inputCls} type="date" min={today} value={form.start_date} onChange={set('start_date')} required />
+              </div>
+            </div>
+            <div className="flex items-start gap-2 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2.5">
+              <span className="material-symbols-outlined text-primary text-sm shrink-0 mt-0.5">auto_awesome</span>
+              <p className="text-xs text-orange-800">
+                Verranno generati automaticamente i prossimi <strong>{WEEKS_AHEAD} appuntamenti</strong> a partire dalla data di inizio.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </FormSection>
 
       {/* ── Tipo di allenamento ── */}
-      <FormSection title="Tipo di allenamento" desc="Aiuta gli altri a capire se la corsa fa al caso loro.">
+      <FormSection title="Tipo di allenamento" desc="Aiuta gli altri a capire se fa al caso loro.">
         <div>
-          <label className={labelCls}>Titolo della corsa *</label>
-          <input className={inputCls} value={form.title} onChange={set('title')} placeholder="es. Mattinata al Parco Sempione" required />
+          <label className={labelCls}>Titolo *</label>
+          <input className={inputCls} value={form.title} onChange={set('title')}
+            placeholder={tipo === 'serie' ? 'es. Lunedì mattina al Parco Sempione' : 'es. Mattinata al Parco Sempione'}
+            required />
         </div>
         <div>
           <label className={labelCls}>Descrizione</label>
-          <textarea
-            value={form.description} onChange={set('description')}
-            placeholder="Racconta di cosa si tratta: tipo di percorso, ritmo indicativo, cosa aspettarsi…"
-            rows={3}
-            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-          />
+          <textarea value={form.description} onChange={set('description')}
+            placeholder="Percorso, ritmo indicativo, cosa aspettarsi…" rows={3}
+            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
         </div>
         <div>
           <label className={labelCls}>Livello</label>
@@ -293,22 +381,22 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
             className="w-4 h-4 rounded accent-primary" />
           <div>
             <span className="text-sm font-semibold text-gray-900">No drop</span>
-            <p className="text-xs text-gray-400">Si parte insieme e si rientra insieme. Nessuno viene lasciato indietro.</p>
+            <p className="text-xs text-gray-400">Si parte insieme e si rientra insieme.</p>
           </div>
         </label>
       </FormSection>
 
       {/* ── Ritmo e distanza ── */}
-      <FormSection title="Ritmo e distanza" desc="Anche una stima va bene. Aiuta gli altri a capire se il ritmo è compatibile.">
+      <FormSection title="Ritmo e distanza" desc="Anche una stima va bene.">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Distanza (km)</label>
-            <input className={inputCls} type="number" step="0.5" min="0.5" value={form.distance_km} onChange={set('distance_km')} placeholder="es. 10" />
+            <input className={inputCls} type="number" step="0.5" min="0.5" value={form.distance_km}
+              onChange={set('distance_km')} placeholder="es. 10" />
           </div>
           <div>
             <label className={labelCls}>Ritmo target</label>
             <input className={inputCls} value={form.pace_target} onChange={set('pace_target')} placeholder="es. 5:30/km" />
-            <p className="text-xs text-gray-400 mt-1">Puoi indicare un ritmo preciso o un intervallo, es. 5:00–5:30/km.</p>
           </div>
         </div>
       </FormSection>
@@ -317,9 +405,11 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
       <FormSection title="Partecipazione" desc="Decidi quante persone possono unirsi.">
         <div>
           <label className={labelCls}>Max partecipanti</label>
-          <input className={inputCls} type="number" min="2" value={form.max_participants} onChange={set('max_participants')} placeholder="Lascia vuoto per nessun limite" />
+          <input className={inputCls} type="number" min="2" value={form.max_participants}
+            onChange={set('max_participants')} placeholder="Lascia vuoto per nessun limite" />
         </div>
-        {userSeries.length > 0 && (
+        {/* Link a serie esistente — solo per corse singole */}
+        {tipo === 'singola' && userSeries.length > 0 && (
           <div>
             <label className={labelCls}>Collega a una serie (opzionale)</label>
             <select className={inputCls} value={form.series_id} onChange={set('series_id')}>
@@ -331,10 +421,7 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
       </FormSection>
 
       {/* ── Caratteristiche ── */}
-      <FormSection
-        title="Caratteristiche della corsa"
-        desc="Seleziona tutto ciò che descrive meglio il tuo appuntamento."
-      >
+      <FormSection title="Caratteristiche" desc="Seleziona tutto ciò che descrive questo appuntamento.">
         <TagPicker selected={tags} onChange={setTags} />
       </FormSection>
 
@@ -346,17 +433,15 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
         <button type="submit" disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-primary text-white font-semibold text-base px-6 py-4 rounded-2xl hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200 disabled:opacity-60">
           <span className="material-symbols-outlined text-lg">
-            {loading ? 'hourglass_empty' : 'add_circle'}
+            {loading ? 'hourglass_empty' : tipo === 'serie' ? 'event_repeat' : 'add_circle'}
           </span>
-          {loading ? 'Pubblicazione…' : 'Pubblica la corsa'}
+          {loading ? 'Pubblicazione…' : tipo === 'serie' ? 'Crea serie e genera appuntamenti' : 'Pubblica la corsa'}
         </button>
-        {geoStatus === 'not_found' ? (
+        {geoStatus === 'not_found' && (
           <p className="text-xs text-amber-600 text-center flex items-center justify-center gap-1">
             <span className="material-symbols-outlined text-sm">warning</span>
-            La corsa verrà pubblicata senza pin sulla mappa.
+            Sarà pubblicata senza pin sulla mappa.
           </p>
-        ) : (
-          <p className="text-xs text-gray-400 text-center">Potrai modificarla se qualcosa cambia.</p>
         )}
       </div>
     </form>

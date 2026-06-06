@@ -85,9 +85,9 @@ export function Header() {
   }
 
   const navLinks = [
-    { href: '/bacheca',     label: 'Bacheca' },
-    { href: '/nuova-corsa', label: 'Proponi una corsa' },
-    { href: '/nuova-serie', label: 'Proponi una serie' },
+    { href: '/bacheca',     label: 'Bacheca',                  accent: false },
+    { href: '/nuova-corsa', label: 'Proponi una corsa',        accent: false },
+    { href: '/gare',        label: 'Cerca compagni di gara',   accent: true  },
   ]
 
   const isActive = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href))
@@ -112,9 +112,13 @@ export function Header() {
             <Link key={link.href} href={link.href}
               className={cn(
                 'px-4 py-2 rounded-full text-sm font-medium transition-colors',
-                isActive(link.href)
-                  ? 'bg-orange-50 text-primary font-semibold'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                link.accent
+                  ? isActive(link.href)
+                    ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                    : 'text-indigo-600 hover:bg-indigo-50 font-semibold'
+                  : isActive(link.href)
+                    ? 'bg-orange-50 text-primary font-semibold'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
               )}>
               {link.label}
             </Link>
@@ -238,9 +242,16 @@ export function Header() {
             <Link key={link.href} href={link.href}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors',
-                isActive(link.href) ? 'bg-orange-50 text-primary' : 'text-gray-700 hover:bg-gray-50'
+                link.accent
+                  ? isActive(link.href)
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : 'text-indigo-600 hover:bg-indigo-50'
+                  : isActive(link.href)
+                    ? 'bg-orange-50 text-primary'
+                    : 'text-gray-700 hover:bg-gray-50'
               )}
               onClick={() => setMenuOpen(false)}>
+              {link.accent && <span className="material-symbols-outlined text-base">emoji_events</span>}
               {link.label}
             </Link>
           ))}
