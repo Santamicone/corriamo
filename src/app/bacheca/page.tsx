@@ -167,25 +167,24 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       mCounts?.forEach(m => mMap.set(m.run_id, (mMap.get(m.run_id) ?? 0) + 1))
       runs = runs.map(r => ({ ...r, momenti_count: mMap.get(r.id) ?? 0 })) as Run[]
     }
-  } else {
-    let query = supabase
+
+    // Anche le serie (mostrate in fondo al tab Corse)
+    let seriesQuery = supabase
       .from('series')
       .select('*, organizer:profiles!series_organizer_id_fkey(*)')
       .order('created_at', { ascending: false })
-
-    if (params.city)  query = query.ilike('city', `%${params.city}%`)
-    if (params.level) query = query.eq('level', params.level)
-    if (params.q)     query = query.ilike('title', `%${params.q}%`)
-    if (params.tag)   query = query.contains('tags', [params.tag])
-
-    const { data } = await query
-    series = (data || []) as unknown as Series[]
+    if (params.city)  seriesQuery = seriesQuery.ilike('city', `%${params.city}%`)
+    if (params.level) seriesQuery = seriesQuery.eq('level', params.level)
+    if (params.q)     seriesQuery = seriesQuery.ilike('title', `%${params.q}%`)
+    if (params.tag)   seriesQuery = seriesQuery.contains('tags', [params.tag])
+    const { data: seriesData } = await seriesQuery
+    series = (seriesData || []) as unknown as Series[]
   }
 
   const hasFilters    = !!(params.q || params.city || params.level || params.from || params.to || params.tag || params.race_distance || params.looking_for)
   const hasDateFilter = !!(params.from || params.to)
   const activeTag     = params.tag ? getTag(params.tag) : null
-  const count = tab === 'corse' ? runs.length : tab === 'gare' ? gare.length : series.length
+  const count = tab === 'corse' ? runs.length + series.length : gare.length
 
   // Chips — calcolate al momento del render server-side
   const chips = getChipRanges(new Date())
@@ -204,27 +203,30 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
-                  {tab === 'corse' ? 'Chi corre oggi?' : tab === 'gare' ? 'Compagni di gara' : 'Corse ricorrenti'}
+                  {tab === 'corse' ? 'Chi corre oggi?' : 'Compagni di gara'}
                 </h1>
                 <p className="mt-2 text-lg text-gray-500">
                   {tab === 'corse'
-                    ? 'Trova un allenamento vicino a te, al ritmo giusto.'
-                    : tab === 'gare'
-                      ? 'Trova pacer, compagni o supporter per la tua prossima gara.'
-                      : "Appuntamenti fissi per chi vuole creare un'abitudine di corsa."}
+                    ? 'Corse singole e serie ricorrenti vicino a te, al ritmo giusto.'
+                    : 'Runner che cercano pacer, compagni o supporter per una gara.'}
                 </p>
               </div>
-              <Link
-                href={tab === 'gare' ? '/nuova-gara' : '/nuova-corsa'}
-                className={`inline-flex items-center gap-2 text-white px-6 py-3 rounded-full font-semibold text-sm transition-colors shadow-sm shrink-0 ${
-                  tab === 'gare'
-                    ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-                    : 'bg-primary hover:bg-primary-hover shadow-orange-200'
-                }`}
-              >
-                <span className="material-symbols-outlined text-lg">add</span>
-                {tab === 'gare' ? 'Cerca compagni' : 'Proponi una corsa'}
-              </Link>
+              {tab === 'corse' && (
+                <Link
+                  href="/nuova-corsa"
+                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200 shrink-0"
+                >
+                  <span className="material-symbols-outlined text-lg">add</span>
+                  Proponi una corsa
+                </Link>
+              )}
+              {tab === 'gare' && (
+                <Link href="/gare"
+                  className="inline-flex items-center gap-2 border border-indigo-200 text-indigo-700 bg-indigo-50 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-indigo-100 transition-colors shrink-0">
+                  <span className="material-symbols-outlined text-base">open_in_new</span>
+                  Vai alla pagina gare
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -235,9 +237,8 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex gap-1 bg-gray-100 p-1 rounded-full w-fit">
               {[
-                { value: 'corse', label: 'Corse',   icon: 'directions_run' },
-                { value: 'serie', label: 'Serie',   icon: 'event_repeat' },
-                { value: 'gare',  label: 'Gare',    icon: 'emoji_events' },
+                { value: 'corse', label: 'Corse',  icon: 'directions_run' },
+                { value: 'gare',  label: 'Gare',   icon: 'emoji_events' },
               ].map(t => (
                 <Link
                   key={t.value}
@@ -278,7 +279,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           </div>
 
           {/* Filter bar */}
-          <FilterBar tab={tab} current={params} chips={chips} showDateFilter={tab === 'corse' || tab === 'gare'} showTagFilter={tab !== 'gare'} showGareFilter={tab === 'gare'} />
+          <FilterBar tab={tab} current={params} chips={chips} showDateFilter={tab === 'corse'} showTagFilter={tab === 'corse'} showGareFilter={tab === 'gare'} />
 
           {/* Pill tag attivo */}
           {activeTag && (
@@ -307,42 +308,58 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
                 ? `${count} risultat${count === 1 ? 'o' : 'i'} trovati`
                 : `${count} ${
                     tab === 'corse'
-                      ? (count === 1 ? 'corsa disponibile' : 'corse disponibili')
-                      : tab === 'gare'
-                        ? (count === 1 ? 'post pubblicato' : 'post pubblicati')
-                        : (count === 1 ? 'serie attiva' : 'serie attive')
+                      ? (count === 1 ? 'proposta disponibile' : 'proposte disponibili')
+                      : (count === 1 ? 'post pubblicato' : 'post pubblicati')
                   }`}
             </p>
           )}
 
           {/* Contenuto principale */}
           {tab === 'corse' ? (
-            runs.length > 0 ? (
-              view === 'mappa' ? (
-                <RunMapWrapper runs={runs} height="520px" />
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {runs.map(run => <RunCard key={run.id} run={run} />)}
-                </div>
-              )
-            ) : (
+            runs.length === 0 && series.length === 0 ? (
               <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
+            ) : view === 'mappa' ? (
+              <RunMapWrapper runs={runs} height="520px" />
+            ) : (
+              <div className="flex flex-col gap-8">
+                {/* Corse singole */}
+                {runs.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {runs.map(run => <RunCard key={run.id} run={run} />)}
+                  </div>
+                )}
+                {/* Serie ricorrenti — sotto le corse */}
+                {series.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="material-symbols-outlined text-purple-500 text-xl">event_repeat</span>
+                      <h2 className="text-base font-extrabold text-gray-800">Serie ricorrenti</h2>
+                      <span className="text-xs text-gray-400">({series.length})</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {series.map(s => <SeriesCard key={s.id} series={s} />)}
+                    </div>
+                  </div>
+                )}
+              </div>
             )
-          ) : tab === 'gare' ? (
+          ) : (
+            /* Tab Gare — sola visualizzazione */
             gare.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {gare.map(g => <GaraCard key={g.id} run={g} />)}
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3">
+                  <span className="material-symbols-outlined text-indigo-400 text-lg shrink-0">info</span>
+                  <p className="text-sm text-indigo-700">
+                    Vuoi cercare compagni per la tua gara?{' '}
+                    <a href="/gare" className="font-semibold underline hover:text-indigo-900">Vai alla pagina Gare</a> per pubblicare un post.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {gare.map(g => <GaraCard key={g.id} run={g} />)}
+                </div>
               </div>
             ) : (
               <EmptyState tab="gare" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
-            )
-          ) : (
-            series.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {series.map(s => <SeriesCard key={s.id} series={s} />)}
-              </div>
-            ) : (
-              <EmptyState tab="serie" hasFilters={hasFilters} hasDateFilter={false} params={params} />
             )
           )}
         </div>
@@ -644,33 +661,40 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params }: {
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-white rounded-3xl border border-gray-100">
       <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center">
         <span className="material-symbols-outlined text-3xl text-gray-300">
-          {tab === 'corse' ? 'directions_run' : tab === 'gare' ? 'emoji_events' : 'event_repeat'}
+          {tab === 'gare' ? 'emoji_events' : 'directions_run'}
         </span>
       </div>
       <div className="flex flex-col items-center gap-1">
         <p className="text-lg font-bold text-gray-900">
           {hasFilters
-            ? (tab === 'gare' ? 'Nessuna gara trovata' : 'Nessuna corsa trovata')
+            ? (tab === 'gare' ? 'Nessun post trovato' : 'Nessuna corsa trovata')
             : (tab === 'gare' ? 'Ancora nessun post' : 'Ancora nessuna corsa')}
         </p>
         <p className="text-sm text-gray-500 max-w-xs">
           {hasDateFilter
-            ? (tab === 'gare' ? 'Nessuna gara in questo periodo.' : 'Nessuna corsa disponibile in questo periodo.')
+            ? 'Nessuna corsa in questo periodo.'
             : hasFilters
-              ? (tab === 'gare' ? 'Prova a cambiare i filtri.' : 'Prova a cambiare i filtri oppure proponi tu il prossimo allenamento.')
-              : (tab === 'gare' ? 'Sii il primo a cercare compagni per la tua gara.' : 'Sii il primo a proporre un appuntamento nella tua città.')}
+              ? 'Prova a cambiare i filtri.'
+              : tab === 'gare'
+                ? 'Sii il primo a cercare compagni per una gara.'
+                : 'Sii il primo a proporre un appuntamento nella tua città.'}
         </p>
         {dateHint}
       </div>
-      <Link
-        href={tab === 'corse' ? '/nuova-corsa' : tab === 'gare' ? '/nuova-gara' : '/nuova-serie'}
-        className={`inline-flex items-center gap-2 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-colors mt-1 ${
-          tab === 'gare' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-hover'
-        }`}
-      >
-        <span className="material-symbols-outlined text-lg">add</span>
-        {tab === 'corse' ? 'Proponi una corsa' : tab === 'gare' ? 'Cerca compagni' : 'Proponi una serie'}
-      </Link>
+      {tab === 'corse' && (
+        <Link href="/nuova-corsa"
+          className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors mt-1">
+          <span className="material-symbols-outlined text-lg">add</span>
+          Proponi una corsa
+        </Link>
+      )}
+      {tab === 'gare' && (
+        <Link href="/gare"
+          className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-indigo-700 transition-colors mt-1">
+          <span className="material-symbols-outlined text-lg">emoji_events</span>
+          Vai alla pagina Gare
+        </Link>
+      )}
     </div>
   )
 }
