@@ -110,9 +110,73 @@ export default function ComeFunzionaPage() {
             </Tip>
           </Section>
 
-          {/* 3 — Gare */}
+          {/* 3 — Sono qui */}
           <Section
             number="03"
+            color="purple"
+            icon="location_on"
+            title="Sono qui — Attiva il segnale di ritrovo"
+            subtitle="Il momento del ritrovarsi tra sconosciuti è la fase più delicata. Abbiamo risolto così."
+          >
+            {/* Demo visiva — schermo colorato */}
+            <div className="rounded-3xl overflow-hidden bg-[#7C3AED] p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-8 sm:gap-12">
+              {/* Mockup schermo */}
+              <div className="shrink-0 flex flex-col items-center gap-4 text-white text-center">
+                <span className="material-symbols-filled" style={{ fontSize: 72, opacity: 0.9 }}>directions_run</span>
+                <div>
+                  <p className="font-extrabold text-lg">Mattinata al Sempione</p>
+                  <p className="text-sm opacity-70">Sab 14 giugno · 07:30</p>
+                </div>
+                <div className="flex gap-2 mt-1">
+                  {[true, true, false, false, false].map((filled, i) => (
+                    <span key={i} className={`w-3.5 h-3.5 rounded-full border-2 border-white ${filled ? 'bg-white' : 'bg-transparent opacity-40'}`} />
+                  ))}
+                </div>
+                <p className="text-sm opacity-80 font-semibold">2 runner qui</p>
+                <div className="mt-1 px-5 py-2.5 rounded-full bg-white/20 border border-white/30 text-sm font-bold">
+                  Ho trovato il gruppo ✓
+                </div>
+              </div>
+
+              {/* Spiegazione */}
+              <div className="text-white flex flex-col gap-4">
+                <p className="text-base sm:text-lg font-bold leading-snug">
+                  Ogni corsa ha un colore unico. Quando arrivi al punto di ritrovo, apri la pagina della corsa e tap su <span className="underline decoration-white/50">Sono qui</span>.
+                </p>
+                <p className="text-sm sm:text-base opacity-85 leading-relaxed">
+                  Lo schermo del tuo smartphone si illumina interamente del colore assegnato alla corsa — un segnale luminoso visibile a decine di metri. Gli altri partecipanti fanno lo stesso: vi riconoscete a colpo d&apos;occhio, senza bisogno di guardarvi intorno imbarazzati.
+                </p>
+                <p className="text-sm opacity-70 leading-relaxed">
+                  Il contatore si aggiorna in tempo reale man mano che gli altri runner arrivano. Quando siete tutti, partite.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              <FeatureCard icon="visibility" title="Visibile da lontano">
+                Il colore dello schermo è un segnale luminoso riconoscibile a decine di metri,
+                anche in un parco affollato o in una piazza.
+              </FeatureCard>
+              <FeatureCard icon="group" title="Counter live">
+                Vedi in tempo reale quanti partecipanti sono già arrivati.
+                Niente attese in silenzio — sai subito se sei il primo o se mancano altri.
+              </FeatureCard>
+              <FeatureCard icon="brightness_high" title="Schermo sempre acceso">
+                Mentre il segnale è attivo, lo schermo non si spegne automaticamente.
+                Tienilo in mano e aspetta: gli altri ti vedranno.
+              </FeatureCard>
+            </div>
+
+            <Tip>
+              Il pulsante <strong>Sono qui</strong> appare nella pagina della corsa solo nella finestra
+              temporale: da <strong>60 minuti prima</strong> fino a 30 minuti dopo l&apos;orario di partenza.
+              Accessibile solo a organizzatore e partecipanti approvati.
+            </Tip>
+          </Section>
+
+          {/* 4 — Gare */}
+          <Section
+            number="04"
             color="indigo"
             icon="emoji_events"
             title="Cerca compagni di gara"
@@ -139,9 +203,9 @@ export default function ComeFunzionaPage() {
             </p>
           </Section>
 
-          {/* 4 — Corse dell'ultimo momento */}
+          {/* 5 — Corse dell'ultimo momento */}
           <Section
-            number="04"
+            number="05"
             color="red"
             icon="bolt"
             title="Corse dell'ultimo momento"
@@ -159,9 +223,9 @@ export default function ComeFunzionaPage() {
             </div>
           </Section>
 
-          {/* 5 — Profilo */}
+          {/* 6 — Profilo */}
           <Section
-            number="05"
+            number="06"
             color="purple"
             icon="person"
             title="Il tuo profilo runner"
