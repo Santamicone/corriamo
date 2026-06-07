@@ -57,9 +57,10 @@ function useUnreadNotifications(userId: string | null) {
 }
 
 const navLinks = [
-  { href: '/bacheca',     label: 'Bacheca',              icon: 'directions_run', accent: false },
-  { href: '/nuova-corsa', label: 'Proponi una corsa',    icon: 'add_circle',     accent: false },
-  { href: '/gare',        label: 'Cerca compagni di gara', icon: 'emoji_events', accent: true  },
+  { href: '/bacheca',        label: 'Bacheca',                icon: 'directions_run', help: false },
+  { href: '/nuova-corsa',    label: 'Proponi una corsa',      icon: 'add_circle',     help: false },
+  { href: '/gare',           label: 'Cerca compagni di gara', icon: 'emoji_events',   help: false },
+  { href: '/come-funziona',  label: 'Come funziona',          icon: 'help_outline',   help: true  },
 ]
 
 export function Header() {
@@ -115,15 +116,18 @@ export function Header() {
             {navLinks.map(link => (
               <Link key={link.href} href={link.href}
                 className={cn(
-                  'px-4 py-2 rounded-full text-sm font-medium transition-colors',
-                  link.accent
+                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors',
+                  link.help
                     ? isActive(link.href)
-                      ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                      : 'text-indigo-600 hover:bg-indigo-50 font-semibold'
+                      ? 'bg-gray-100 text-gray-700 font-semibold'
+                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                     : isActive(link.href)
                       ? 'bg-orange-50 text-primary font-semibold'
                       : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                 )}>
+                {link.help && (
+                  <span className="material-symbols-outlined text-base">{link.icon}</span>
+                )}
                 {link.label}
               </Link>
             ))}
@@ -268,17 +272,17 @@ export function Header() {
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-colors',
-                    link.accent
+                    link.help
                       ? isActive(link.href)
-                        ? 'bg-indigo-50 text-indigo-700'
-                        : 'text-indigo-600 hover:bg-indigo-50'
+                        ? 'bg-gray-100 text-gray-700'
+                        : 'text-gray-500 hover:bg-gray-50'
                       : isActive(link.href)
                         ? 'bg-orange-50 text-primary'
                         : 'text-gray-700 hover:bg-gray-50'
                   )}>
                   <span className={cn(
                     'material-symbols-outlined text-base',
-                    link.accent ? 'text-indigo-500' : 'text-gray-400'
+                    link.help ? 'text-gray-400' : 'text-gray-400'
                   )}>{link.icon}</span>
                   {link.label}
                 </Link>

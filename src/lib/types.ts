@@ -26,6 +26,7 @@ export interface Profile {
   pb_10k: string | null
   pb_21k: string | null
   pb_42k: string | null
+  filter_by_city: boolean
 }
 
 export interface Run {

@@ -43,18 +43,19 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
-    full_name:     profile.full_name,
-    city:          profile.city           ?? '',
-    level:         profile.level          ?? 'principiante',
-    bio:           profile.bio            ?? '',
-    strava_url:    profile.strava_url     ?? '',
-    garmin_url:    profile.garmin_url     ?? '',
-    instagram_url: profile.instagram_url  ?? '',
-    age:           profile.age?.toString() ?? '',
-    pb_5k:         profile.pb_5k          ?? '',
-    pb_10k:        profile.pb_10k         ?? '',
-    pb_21k:        profile.pb_21k         ?? '',
-    pb_42k:        profile.pb_42k         ?? '',
+    full_name:      profile.full_name,
+    city:           profile.city           ?? '',
+    level:          profile.level          ?? 'principiante',
+    bio:            profile.bio            ?? '',
+    strava_url:     profile.strava_url     ?? '',
+    garmin_url:     profile.garmin_url     ?? '',
+    instagram_url:  profile.instagram_url  ?? '',
+    age:            profile.age?.toString() ?? '',
+    pb_5k:          profile.pb_5k          ?? '',
+    pb_10k:         profile.pb_10k         ?? '',
+    pb_21k:         profile.pb_21k         ?? '',
+    pb_42k:         profile.pb_42k         ?? '',
+    filter_by_city: profile.filter_by_city ?? false,
   })
   const [whyIRun, setWhyIRun] = useState<string[]>(profile.why_i_run ?? [])
 
@@ -134,6 +135,7 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
       pb_10k:        form.pb_10k        || null,
       pb_21k:        form.pb_21k        || null,
       pb_42k:        form.pb_42k        || null,
+      filter_by_city: form.filter_by_city,
     }).eq('id', profile.id)
 
     if (profileErr) { setError('Errore nel salvataggio: ' + profileErr.message); setLoading(false); return }
@@ -309,6 +311,32 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
               value={form.age} onChange={update('age')} placeholder="es. 35" />
           </div>
         </div>
+        {/* Filtro bacheca per città */}
+        <label className={cn(
+          'flex items-start gap-3 cursor-pointer p-3.5 rounded-2xl border transition-all',
+          form.filter_by_city ? 'bg-orange-50 border-orange-200' : 'border-gray-100 hover:bg-gray-50'
+        )}>
+          <input
+            type="checkbox"
+            checked={form.filter_by_city}
+            disabled={!form.city}
+            onChange={e => setForm(p => ({ ...p, filter_by_city: e.target.checked }))}
+            className="w-4 h-4 mt-0.5 rounded accent-primary shrink-0"
+          />
+          <div>
+            <span className={cn('text-sm font-semibold', form.city ? 'text-gray-900' : 'text-gray-400')}>
+              Mostra solo le corse della mia città in bacheca
+            </span>
+            <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+              {!form.city
+                ? 'Inserisci prima la tua città per abilitare questa opzione.'
+                : form.filter_by_city
+                  ? `In bacheca vedrai automaticamente solo le corse a ${form.city}. Potrai comunque rimuovere il filtro manualmente.`
+                  : 'Vuoi visualizzare solo le corse nella tua città? Potrai comunque rimuovere il filtro manualmente dalla bacheca.'}
+            </p>
+          </div>
+        </label>
+
         <Select label="Livello" value={form.level} onChange={update('level')}>
           <option value="principiante">Principiante — sto iniziando</option>
           <option value="intermedio">Intermedio — corro regolarmente</option>
