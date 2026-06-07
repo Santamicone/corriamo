@@ -122,7 +122,7 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
 
       {/* Sub-header */}
       <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shrink-0">
@@ -143,7 +143,7 @@ export function ChatWindow({ runId, userId, runTitle, runDetailHref, initialMess
       </div>
 
       {/* Messaggi */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1">
+      <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1 min-h-0">
 
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12">
