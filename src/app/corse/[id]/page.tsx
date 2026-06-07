@@ -4,7 +4,7 @@ import { Footer } from '@/components/Footer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { formatDate, LEVEL_LABELS, formatPaceTarget, runRitrovoColor } from '@/lib/utils'
+import { formatDate, LEVEL_LABELS, formatPaceTarget, runRitrovoColor, parseRunDateTime } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/TagBadge'
 import type { Run, Participation, Review, Momento } from '@/lib/types'
 import { JoinButton } from './JoinButton'
@@ -120,11 +120,11 @@ export default async function CorsaDetailPage({
     ? await supabase.from('interests').select('id').eq('run_id', id).eq('user_id', user.id).maybeSingle()
         .then(r => r.data ?? null)
     : null
-  const isPast     = new Date(`${typedRun.date}T${typedRun.time}`) < new Date()
-  const levelColor = LEVEL_COLORS[typedRun.level] ?? LEVEL_COLORS.tutti
+  const runDateTime = parseRunDateTime(typedRun.date, typedRun.time)
+  const isPast      = runDateTime < new Date()
+  const levelColor  = LEVEL_COLORS[typedRun.level] ?? LEVEL_COLORS.tutti
 
-  // Finestra ritrovo: -60 min → +30 min rispetto all'orario
-  const runDateTime = new Date(`${typedRun.date}T${typedRun.time}`)
+  // Finestra ritrovo: -60 min → +30 min rispetto all'orario (ora italiana corretta)
   const diffMin     = (runDateTime.getTime() - Date.now()) / (1000 * 60)
   const isInRitrovo = diffMin <= 60 && diffMin >= -30
 

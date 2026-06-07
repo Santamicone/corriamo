@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import { runRitrovoColor } from '@/lib/utils'
+import { runRitrovoColor, parseRunDateTime } from '@/lib/utils'
 import { RitrovoScreen } from './RitrovoScreen'
 import type { Metadata } from 'next'
 
@@ -29,7 +29,7 @@ export default async function RitrovoPage({
   if (!run) notFound()
 
   /* ── Verifica finestra temporale ── */
-  const runDateTime  = new Date(`${run.date}T${run.time}`)
+  const runDateTime  = parseRunDateTime(run.date, run.time)
   const diffMin      = (runDateTime.getTime() - Date.now()) / (1000 * 60)
   const isInWindow   = diffMin <= 60 && diffMin >= -30 // 60 min prima → 30 min dopo
 

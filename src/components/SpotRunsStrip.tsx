@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar } from './ui/Avatar'
-import { LEVEL_LABELS } from '@/lib/utils'
+import { LEVEL_LABELS, parseRunDateTime } from '@/lib/utils'
 import type { Run } from '@/lib/types'
 
 /* ── Haversine distance ── */
@@ -19,8 +19,7 @@ function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 /* ── Countdown formattato ── */
 function minutesUntil(dateStr: string, timeStr: string): number {
-  const dt = new Date(`${dateStr}T${timeStr}`)
-  return Math.round((dt.getTime() - Date.now()) / 60000)
+  return Math.round((parseRunDateTime(dateStr, timeStr).getTime() - Date.now()) / 60000)
 }
 
 function formatCountdown(min: number): string {
