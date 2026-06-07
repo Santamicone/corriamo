@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Avatar } from '@/components/ui/Avatar'
-import { formatDate, LEVEL_LABELS, formatPaceTarget } from '@/lib/utils'
+import { formatDate, LEVEL_LABELS, formatPaceTarget, parseRunDateTime } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/TagBadge'
 import type { Run } from '@/lib/types'
 
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function ShareLanding({ run, approvedCount }: Props) {
-  const isPast = new Date(`${run.date}T${run.time}`) < new Date()
+  const isPast = parseRunDateTime(run.date, run.time) < new Date()
   const levelColor = LEVEL_COLORS[run.level] ?? LEVEL_COLORS.tutti
 
   return (

@@ -7,6 +7,34 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Parsa data e orario di una corsa trattandoli come ora italiana (Europe/Rome).
+ * Necessario perché il server Vercel gira in UTC ma gli orari nel DB
+ * sono inseriti dagli utenti in ora locale italiana (CET/CEST).
+ */
+export function parseRunDateTime(dateStr: string, timeStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const [h, min]  = timeStr.split(':').map(Number)
+
+  // Crea un timestamp UTC con i valori numerici grezzi
+  const naiveUtc = Date.UTC(y, m - 1, d, h, min)
+
+  // Chiede a Intl che ora mostra Rome per quel timestamp UTC
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Rome',
+    hour12:   false,
+    hour:     'numeric',
+    minute:   'numeric',
+  }).formatToParts(new Date(naiveUtc))
+
+  const romeH   = parseInt(parts.find(p => p.type === 'hour')?.value   ?? String(h))
+  const romeMin = parseInt(parts.find(p => p.type === 'minute')?.value ?? String(min))
+
+  // Calcola la differenza e corregge il timestamp
+  const diffMs = ((h - romeH) * 60 + (min - romeMin)) * 60_000
+  return new Date(naiveUtc + diffMs)
+}
+
 /* ── Purple Screen — colori ritrovo ── */
 const RITROVO_COLORS = [
   { bg: '#7C3AED', text: '#FFFFFF', name: 'Viola' },

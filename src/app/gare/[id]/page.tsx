@@ -4,7 +4,7 @@ import { Footer } from '@/components/Footer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { formatDate } from '@/lib/utils'
+import { formatDate, parseRunDateTime } from '@/lib/utils'
 import type { Run } from '@/lib/types'
 import { ContactButton } from '@/app/corse/[id]/ContactButton'
 import { CancelRunButton } from '@/app/corse/[id]/CancelRunButton'
@@ -76,7 +76,7 @@ export default async function GaraDetailPage({
   const typedRun = run as unknown as Run
 
   const isOrganizer = user?.id === typedRun.organizer_id
-  const isPast = new Date(`${typedRun.date}T${typedRun.time}`) < new Date()
+  const isPast = parseRunDateTime(typedRun.date, typedRun.time) < new Date()
   const lf = typedRun.looking_for ?? []
 
   return (
