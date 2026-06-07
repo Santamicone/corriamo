@@ -55,59 +55,78 @@ NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email red
 **Progetto:** `corriamo`  
 **Ref:** `wshjtgtmxbxhpdqtxpiq`
 
-### Ordine esecuzione SQL (eseguire tutti in sequenza su Supabase Dashboard → SQL Editor)
+### Ordine esecuzione SQL
 
 | # | File | Stato | Contenuto |
 |---|---|---|---|
-| 1 | `supabase/schema.sql` | ✅ Eseguito | `profiles`, `runs`, `series`, `participations` + RLS |
-| 2 | `supabase/trigger-new-user.sql` | ✅ Eseguito | Trigger auto-crea profilo alla registrazione |
-| 3 | `supabase/messages.sql` | ✅ Eseguito | Tabella `messages` + RLS |
-| 4 | `supabase/reviews.sql` | ✅ Eseguito | Tabella `reviews` + RLS + trigger updated_at |
-| 5 | `supabase/add-coordinates.sql` | ✅ Eseguito | Colonne `lat`, `lng` su `runs` |
-| 6 | `supabase/storage-avatars.sql` | ✅ Eseguito | Bucket `avatars` + RLS policies |
-| 7 | `supabase/notifications.sql` | ✅ Eseguito | Tabella `notifications` + 4 trigger automatici |
-| 8 | `supabase/add-spot.sql` | ✅ Eseguito | Colonna `is_spot boolean` su `runs` |
-| 9 | `supabase/momenti.sql` | ✅ Eseguito | Tabella `momenti` + bucket `momenti` Storage |
-| 10 | `supabase/add-tags.sql` | ✅ Eseguito | Colonna `tags text[]` su `runs` e `series` |
+| 1 | `supabase/schema.sql` | ✅ | `profiles`, `runs`, `series`, `participations` + RLS |
+| 2 | `supabase/trigger-new-user.sql` | ✅ | Trigger auto-crea profilo alla registrazione |
+| 3 | `supabase/messages.sql` | ✅ | Tabella `messages` + RLS |
+| 4 | `supabase/reviews.sql` | ✅ | Tabella `reviews` + RLS + trigger updated_at |
+| 5 | `supabase/add-coordinates.sql` | ✅ | Colonne `lat`, `lng` su `runs` |
+| 6 | `supabase/storage-avatars.sql` | ✅ | Bucket `avatars` + RLS policies |
+| 7 | `supabase/notifications.sql` | ✅ | Tabella `notifications` + 4 trigger automatici |
+| 8 | `supabase/add-spot.sql` | ✅ | Colonna `is_spot boolean` su `runs` |
+| 9 | `supabase/momenti.sql` | ✅ | Tabella `momenti` + bucket `momenti` Storage |
+| 10 | `supabase/add-tags.sql` | ✅ | Colonna `tags text[]` su `runs` e `series` |
+| 11 | `supabase/add-gara.sql` | ✅ | Colonne gara su `runs`: type, race_name, race_distance, race_target_time, race_registered, looking_for |
+| 12 | `supabase/add-profile-fields.sql` | ✅ | Nuovi campi profilo: age, why_i_run, pb_5k/10k/21k/42k + nuovi livelli |
+| 13 | `supabase/run-chat.sql` | ✅ | Tabella `run_chat` (chat di gruppo) + RLS |
+| 14 | `supabase/check-ins.sql` | ✅ | Tabella `check_ins` (Purple Screen ritrovo) + RLS |
+| 15 | `supabase/add-interests.sql` | ✅ | Tabella `interests` ("Mi interessa") + RLS |
+| 16 | `supabase/add-location-public.sql` | ✅ | Colonna `location_public boolean` su `runs` |
+| 17 | `supabase/add-filter-by-city.sql` | ✅ | Colonna `filter_by_city boolean` su `profiles` |
 
-### Tabelle principali
+### Schema tabelle aggiornato
 
 ```
 profiles         id, full_name, city, level, pace_min, pace_max, bio,
-                 strava_url, garmin_url, instagram_url, avatar_url
+                 strava_url, garmin_url, instagram_url, avatar_url,
+                 age, why_i_run text[], pb_5k, pb_10k, pb_21k, pb_42k,
+                 filter_by_city boolean
 
 runs             id, organizer_id, series_id, title, description, date, time,
                  location, city, lat, lng, distance_km, pace_target, level,
                  max_participants, status, is_no_drop, is_spot, tags text[],
-                 type ('allenamento'|'gara' — NON ANCORA AGGIUNTO, vedi §8)
+                 type (allenamento|gara), race_name, race_distance (5k|10k|21k|42k),
+                 race_target_time, race_registered, looking_for text[],
+                 location_public boolean
 
 series           id, organizer_id, title, description, location, city,
                  recurrence_type, recurrence_day, recurrence_time, start_date,
-                 distance_km, pace_target, level, max_participants, is_no_drop,
-                 tags text[]
+                 distance_km, pace_target, level, max_participants, is_no_drop, tags text[]
 
-participations   id, run_id, user_id, status (in_attesa|approvata|rifiutata),
-                 message
+participations   id, run_id, user_id, status (in_attesa|approvata|rifiutata), message
+
+interests        id, run_id, user_id, created_at — UNIQUE(run_id, user_id)
 
 messages         id, run_id, sender_id, recipient_id, body, read_at
 
 reviews          id, run_id, reviewer_id, reviewed_id, rating (1-5), body,
                  UNIQUE(run_id, reviewer_id)
 
-notifications    id, user_id, type, title, body, run_id, actor_id, read,
-                 show_after (per promemoria schedulati)
+notifications    id, user_id, type, title, body, run_id, actor_id, read, show_after
 
 momenti          id, run_id, author_id, photo_url, body, UNIQUE(run_id, author_id)
+
+run_chat         id, run_id, author_id, body, created_at
+
+check_ins        id, run_id, user_id, checked_in_at, UNIQUE(run_id, user_id)
 ```
 
 ### Storage bucket
-- `avatars` — foto profilo utente (`avatars/{user_id}/avatar.{ext}`)
-- `momenti` — foto post-run (`momenti/{user_id}/{run_id}.{ext}`)
+- `avatars` — foto profilo utente
+- `momenti` — foto post-run
 
 ### Configurazione Dashboard Supabase (manuale)
-- **Authentication → URL Configuration:** Site URL = `https://vieniacorrere.it`, Redirect URLs = `https://vieniacorrere.it/**`
-- **Authentication → Email Templates:** 4 template HTML in italiano in `supabase/email-templates/`
-- **Database → Replication:** abilitare `notifications` per INSERT e UPDATE (per Realtime badge)
+- **Authentication → URL Configuration:** Site URL = `https://vieniacorrere.it`
+- **Database → Replication (via SQL):** Abilitare Realtime con:
+  ```sql
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.run_chat;
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.check_ins;
+  ```
 
 ---
 
@@ -116,84 +135,103 @@ momenti          id, run_id, author_id, photo_url, body, UNIQUE(run_id, author_i
 ```
 src/
 ├── app/
-│   ├── layout.tsx                    Root layout (font Google Fonts nel <head>)
-│   ├── globals.css                   Design tokens Tailwind v4 + gradient body
-│   ├── page.tsx                      Homepage: hero video/immagine, How it works, Why different
-│   ├── auth/callback/route.ts        Handler conferma email Supabase
-│   ├── bacheca/page.tsx              Lista corse con filtri, mappa, striscia Spot, tag
+│   ├── layout.tsx                    Root layout + metadata globale + favicon SVG
+│   ├── globals.css                   Design tokens Tailwind v4
+│   ├── icon.svg                      Favicon SVG brand color
+│   ├── sitemap.ts                    Sitemap.xml dinamico (corse, serie, gare, profili)
+│   ├── page.tsx                      Homepage: hero, value props, come funziona,
+│   │                                 "Perché Vieni a correre?" (foto noi.jpeg), why different
+│   ├── come-funziona/page.tsx        Guida funzionalità (6 sezioni incl. Purple Screen)
+│   ├── privacy/page.tsx              Privacy Policy GDPR
+│   ├── termini/page.tsx              Termini di Servizio
+│   ├── auth/callback/route.ts
+│   ├── bacheca/page.tsx              2 tab: Corse (singole+serie) | Gare
 │   ├── corse/[id]/
-│   │   ├── page.tsx                  Dettaglio corsa + generateMetadata OG
-│   │   ├── JoinButton.tsx            Iscrizione corsa (client)
-│   │   ├── ParticipantsList.tsx      Approvazione richieste (client)
-│   │   ├── ContactButton.tsx         Form messaggio all'organizzatore (client)
-│   │   ├── ReviewForm.tsx            Form recensione post-corsa (client)
-│   │   ├── MomentoSection.tsx        Form + lista Momenti (client)
-│   │   ├── CancelRunButton.tsx       Annullamento corsa con conferma (client)
-│   │   ├── ShareButton.tsx           Dropdown condivisione: copy/WhatsApp/WebShare (client)
-│   │   └── ShareLanding.tsx          Layout pulito per visitatori da link condiviso
-│   ├── serie/[id]/page.tsx           Dettaglio serie ricorrente
+│   │   ├── page.tsx                  Dettaglio + OG + "Sono qui" button in sidebar
+│   │   ├── JoinButton.tsx            "Mi interessa" + "Partecipa" (due flussi)
+│   │   ├── chat/page.tsx             Server: access check + carica messaggi
+│   │   ├── chat/ChatWindow.tsx       Client: Realtime, insert ottimistico, iMessage style
+│   │   ├── chat/MessageInput.tsx     Client: input + invio su Enter
+│   │   ├── ritrovo/page.tsx          Purple Screen — server: check accesso + finestra
+│   │   ├── ritrovo/RitrovoScreen.tsx Client: schermo colorato, counter live, Wake Lock
+│   │   ├── ParticipantsList.tsx
+│   │   ├── ContactButton.tsx
+│   │   ├── ReviewForm.tsx
+│   │   ├── MomentoSection.tsx
+│   │   ├── CancelRunButton.tsx
+│   │   ├── ShareButton.tsx
+│   │   └── ShareLanding.tsx
+│   ├── serie/[id]/page.tsx
+│   ├── gare/
+│   │   ├── page.tsx                  Hub gare: hero, spiegazione, filtri, lista
+│   │   └── [id]/page.tsx             Dettaglio gara (solo ContactButton)
 │   ├── nuova-corsa/
 │   │   ├── page.tsx
-│   │   └── NuovaCorsaForm.tsx        Form con geocoding live, mappa draggable, TagPicker
+│   │   └── NuovaCorsaForm.tsx        Selettore tipo (singola|serie) + form unificato
 │   ├── nuova-corsa-spot/
-│   │   ├── page.tsx                  Dark hero, forma rapida
-│   │   └── SpotForm.tsx              Form minimo pre-compilato (orario = adesso+30min)
-│   ├── nuova-serie/
 │   │   ├── page.tsx
-│   │   └── NuovaSerieForm.tsx        Form con TagPicker + generazione automatica eventi
+│   │   └── SpotForm.tsx
+│   ├── nuova-gara/
+│   │   ├── page.tsx
+│   │   └── NuovaGaraForm.tsx
+│   ├── nuova-serie/page.tsx          → redirect a /nuova-corsa
 │   ├── profilo/
-│   │   ├── [id]/page.tsx             Profilo pubblico: info, momenti, recensioni
+│   │   ├── [id]/page.tsx             Profilo: età, perché corri, PB, momenti, recensioni
 │   │   └── modifica/
 │   │       ├── page.tsx
-│   │       └── EditProfileForm.tsx   Upload avatar + 3 preset icone + campi profilo
-│   ├── area-personale/page.tsx       Dashboard: corse, serie, iscrizioni, messaggi
+│   │       └── EditProfileForm.tsx   Avatar (9 personaggi+lightbox), età, PB, perché corri,
+│   │                                 filtro città automatico
+│   ├── area-personale/page.tsx
 │   ├── messaggi/
-│   │   ├── page.tsx                  Inbox conversazioni raggruppate
+│   │   ├── page.tsx
 │   │   └── [runId]/[otherId]/
-│   │       ├── page.tsx              Thread iMessage-style
-│   │       ├── ReplyForm.tsx         Barra reply sticky (client)
-│   │       └── MarkReadTrigger.tsx   Segna come letti on mount (client)
+│   │       ├── page.tsx
+│   │       ├── ReplyForm.tsx
+│   │       └── MarkReadTrigger.tsx
 │   ├── notifiche/
-│   │   ├── page.tsx                  Notification center raggruppato per data
-│   │   └── MarkNotificationsRead.tsx (client)
+│   │   ├── page.tsx
+│   │   └── MarkNotificationsRead.tsx
 │   ├── login/page.tsx
-│   ├── registrati/page.tsx           Registrazione con emailRedirectTo
-│   └── api/og/corse/[id]/route.tsx   OG Image dinamica 1200×630 (ImageResponse)
+│   ├── registrati/page.tsx
+│   └── api/og/corse/[id]/route.tsx
 │
 ├── components/
-│   ├── Header.tsx                    Sticky header: nav, bell notifiche, dropdown utente
-│   ├── Footer.tsx
-│   ├── RunCard.tsx                   Card corsa: badge spot, momento, compatibilità
-│   ├── SeriesCard.tsx                Card serie
-│   ├── SpotRunsStrip.tsx             Striscia "Adesso" corse <3h (client, geoloc)
-│   ├── ReviewCard.tsx                Card recensione (sm=griglia, md=full)
-│   ├── MomentoCard.tsx               Card momento (sm=griglia, md=full)
-│   ├── LocationPreviewMap.tsx        Mini-mappa form con pin draggabile (dynamic)
-│   ├── RunMap.tsx                    Mappa bacheca multi-pin (dynamic, no SSR)
-│   ├── RunMapWrapper.tsx             Wrapper dynamic import per RunMap
+│   ├── Header.tsx                    Mobile overlay menu (mobileOpen/userOpen separati)
+│   ├── Footer.tsx                    Link reali: Privacy, Termini, Contatti
+│   ├── RunCard.tsx                   Badge interessi, luogo privato, compatibilità
+│   ├── GaraCard.tsx                  Card gara con accent indigo
+│   ├── SeriesCard.tsx
+│   ├── SpotRunsStrip.tsx             parseRunDateTime per fuso orario corretto
+│   ├── ReviewCard.tsx
+│   ├── MomentoCard.tsx
+│   ├── LocationPreviewMap.tsx
+│   ├── RunMap.tsx                    Pin grigio tratteggiato per luogo privato
+│   ├── RunMapWrapper.tsx
 │   └── ui/
-│       ├── Avatar.tsx                Initials / immagine / preset icone runner
-│       ├── AvatarLightbox.tsx        Lightbox foto profilo al click (client)
+│       ├── Avatar.tsx                CHARACTER_PRESETS (9 img) + COLOR_PRESETS (6)
+│       ├── AvatarLightbox.tsx
 │       ├── Badge.tsx
 │       ├── Button.tsx
 │       ├── Input.tsx
 │       ├── Select.tsx
-│       ├── Stars.tsx                 StarsDisplay, StarsInput, RatingBadge
-│       ├── TagBadge.tsx              TagBadge, TagBadgeList
-│       ├── TagPicker.tsx             Picker chip toggle raggruppato per categoria (client)
+│       ├── Stars.tsx
+│       ├── TagBadge.tsx
+│       ├── TagPicker.tsx
 │       └── Textarea.tsx
 │
 ├── lib/
-│   ├── types.ts                      Tutti i tipi TypeScript (Profile, Run, Series, ...)
-│   ├── utils.ts                      cn, formatDate, formatPace, formatPaceTarget, ...
-│   ├── tags.ts                       18 tag definitioni + helpers
-│   ├── compatibility.ts              Algoritmo scoring compatibilità 6 componenti
-│   ├── geocoding.ts                  Nominatim geocoding + fallback città italiane
+│   ├── types.ts                      Profile (nuovi campi), Run (gara, location_public...),
+│   │                                 Interest, CheckIn, RunChatMessage, ProfileLevel
+│   ├── utils.ts                      + parseRunDateTime (fuso Europe/Rome)
+│   │                                 + runRitrovoColor (Purple Screen)
+│   ├── tags.ts
+│   ├── compatibility.ts              Supporto nuovi livelli profilo (amatore_gare, atleta)
+│   ├── geocoding.ts
 │   └── supabase/
-│       ├── client.ts                 createBrowserClient
-│       └── server.ts                 createServerClient (con cookies)
+│       ├── client.ts
+│       └── server.ts
 │
-└── proxy.ts                          Auth guard (Next.js 16 "proxy" convention)
+└── proxy.ts                          Protected paths aggiornati (nuova-gara, ecc.)
 ```
 
 ---
@@ -202,92 +240,91 @@ src/
 
 ### Core MVP
 - [x] Registrazione / Login / Logout con email
-- [x] Conferma email con redirect corretto (`/auth/callback`)
-- [x] Profilo runner: livello, ritmo, bio, Strava/Garmin/Instagram
-- [x] Upload foto profilo o scelta tra 3 icone preset
-- [x] Lightbox foto profilo al click
-- [x] Creazione corsa singola con geocoding live + mappa draggabile
-- [x] Creazione serie ricorrente con generazione automatica 8 settimane
-- [x] Bacheca corse con filtri: testo, città, livello, data, tag
-- [x] Vista lista e vista mappa (Leaflet, pin colorati per livello)
-- [x] Filtro date: chip rapide (Oggi/Domani/Weekend/+7gg) + range personalizzato
-- [x] Iscrizione corsa con messaggio opzionale
-- [x] Approvazione / rifiuto richieste (organizzatore)
-- [x] Area personale: corse organizzate, iscrizioni, serie, messaggi
-- [x] Annullamento corsa (con notifica automatica ai partecipanti)
+- [x] Conferma email con redirect corretto
+- [x] Protezione route tramite proxy.ts
 
-### Social & community
-- [x] Messaggistica interna: inbox, thread iMessage-style, read receipts, realtime
-- [x] Recensioni organizzatori (1-5 stelle + testo, solo post-corsa per partecipanti approvati)
-- [x] Momenti post-run: foto + testo, griglia profilo, badge in card
-- [x] Contatta organizzatore (prima di iscriversi)
+### Profilo runner
+- [x] Avatar: foto caricata, 9 personaggi illustrati (lightbox ingrandimento), 6 icone colorate
+- [x] Livelli estesi: Principiante, Intermedio, Avanzato, Amatore che fa gare, Atleta agonista
+- [x] Età, Bio, Personal Best (5K/10K/21K/42K)
+- [x] Sezione "Perché corri?" con 7 motivazioni (chip multi-selezione)
+- [x] Link verificabili: Strava, Garmin, Instagram
+- [x] Filtro città automatico in bacheca (con chip rimovibile)
+- [x] Score compatibilità calcolato server-side
 
-### Discovery & engagement
-- [x] Tag caratteristiche (18 tag in 5 gruppi, filtrabili in bacheca)
-- [x] Compatibilità runner: badge "93% · Perfetta per te" calcolato server-side
-- [x] Corse dell'ultimo momento (striscia "Adesso", geolocalizzazione, countdown live)
-- [x] Form rapido corsa spot (`/nuova-corsa-spot`, 30 secondi, orario pre-compilato)
+### Bacheca e corse
+- [x] Tab "Corse": singole + serie ricorrenti nella stessa vista
+- [x] Tab "Gare": post per trovare compagni di gara
+- [x] Filtri: testo, città, livello, data, 18 tag in 5 categorie
+- [x] Vista Lista e Vista Mappa (toggle)
+- [x] Striscia "Adesso" con geolocalizzazione e countdown live
+- [x] Filtro automatico città dal profilo
 
-### Mappa & geolocalizzazione
-- [x] Geocoding Nominatim (automatico alla creazione corsa, feedback live nel form)
-- [x] Pin draggabile nel form per posizionamento preciso
-- [x] Mappa bacheca con pin colorati per livello, popup con dettagli
-- [x] Pin rosso per corse spot
-- [x] Link "Apri su Google Maps" nel dettaglio corsa
+### Creazione corse
+- [x] Form unificato con selettore tipo (singola | serie)
+- [x] Geocoding live + mappa con pin draggabile
+- [x] Luogo pubblico o privato (pin generico sulla mappa se privato)
+- [x] No drop, tag caratteristiche, max partecipanti
+- [x] Serie: genera automaticamente 8 appuntamenti
+- [x] Corsa spot (form rapido < 30 secondi)
 
-### Condivisione
-- [x] OG meta tags (titolo, descrizione, immagine) per ogni corsa
-- [x] OG image dinamica 1200×630 (`/api/og/corse/[id]`)
-- [x] ShareButton: copia link / WhatsApp / Web Share API nativa
-- [x] Share landing pulita per visitatori non loggati (`?ref=share`)
+### Partecipazioni
+- [x] "Mi interessa": segnale automatico, no approvazione, no chat
+- [x] "Partecipa": richiesta formale → organizzatore approva/rifiuta
+- [x] Contatori separati in card e dettaglio
+- [x] Annullamento corsa con notifica automatica
+
+### "Sono qui" — Purple Screen
+- [x] Ogni corsa ha un colore unico (hash deterministico, 18 colori)
+- [x] Pulsante in sidebar nella finestra −60 min → +30 min
+- [x] Pagina /corse/[id]/ritrovo: schermo full-color
+- [x] Counter live partecipanti arrivati (Supabase Realtime)
+- [x] Wake Lock API: schermo sempre acceso
+- [x] Due stati: preview / attivo
+
+### Chat di gruppo
+- [x] Accessibile solo a organizzatore e partecipanti approvati
+- [x] iMessage style, Realtime, insert ottimistico
+- [x] Separatori data, raggruppamento per autore
+- [x] Layout full-screen mobile-first
+
+### Compagni di gara (/gare)
+- [x] Hub /gare con hero descrittivo e 3-step
+- [x] Pacer / Compagno di gara / Supporter
+- [x] Filtri distanza e tipo compagno
+- [x] Solo ContactButton (no JoinButton)
+- [x] Tab "Gare" in bacheca (sola visualizzazione)
+
+### Messaggistica 1-to-1
+- [x] Inbox, thread iMessage-style, badge realtime, read receipts
+
+### Momenti post-run & Recensioni
+- [x] Foto + testo post-corsa, griglia nel profilo
+- [x] Stelle 1-5, media con distribuzione nel profilo
 
 ### Notifiche
-- [x] Badge notifiche realtime nell'header (campanella)
-- [x] Notification center `/notifiche` raggruppato per data
-- [x] Trigger automatici DB per: nuova richiesta, approvazione, rifiuto, nuovo messaggio, promemoria corsa (24h prima), corsa annullata
+- [x] Badge realtime, notification center, 6 tipi di trigger DB
 
-### UX & Design
-- [x] Design system Tailwind v4: palette calda arancio/verde, Plus Jakarta Sans
-- [x] Homepage con hero video (desktop) + immagine (mobile), sezioni How it works, Why different
-- [x] Email template italiani per: conferma, reset password, magic link, cambio email
+### Mappa
+- [x] Pin colorati per livello, grigio tratteggiato per luogo privato, rosso per spot
 
----
+### SEO (Sprint 1 completato)
+- [x] robots.txt, sitemap.xml dinamico, favicon SVG
+- [x] generateMetadata su tutte le pagine pubbliche (canonical, OG, Twitter card)
+- [x] noindex su tutte le pagine private
+- [x] OG image dinamica per ogni corsa
+- [x] Privacy Policy e Termini di Servizio
 
-## 7. Funzionalità progettate ma NON ancora implementate 🏗️
-
-### Tab "Gare" (progettazione completata in sessione, implementazione da fare)
-
-**Concept:** tipologia di corsa per trovare pacer / compagni di gara su maratone, mezze, 10K.  
-**Differenze chiave vs corse normali:**
-- Non si "organizza" — si è entrambi iscritti a una gara di terzi
-- Nessun JoinButton/ParticipantsList — solo ContactButton
-- Campi specifici: nome gara, distanza (5K/10K/21K/42K), tempo obiettivo, "cerco:" (pacer/compagno/supporter)
-- Accent visivo blu/indigo per distinguerle dalle corse normali
-
-**SQL necessario:**
-```sql
-ALTER TABLE runs
-  ADD COLUMN type text DEFAULT 'allenamento'
-    CHECK (type IN ('allenamento', 'gara')),
-  ADD COLUMN race_name text,
-  ADD COLUMN race_distance text
-    CHECK (race_distance IN ('5k','10k','21k','42k')),
-  ADD COLUMN race_target_time text,
-  ADD COLUMN race_registered boolean DEFAULT false,
-  ADD COLUMN looking_for text[] DEFAULT '{}';
-  -- looking_for values: 'pacer' | 'compagno' | 'supporter'
-```
-
-**File da creare:**
-- `supabase/add-gara.sql`
-- `src/components/GaraCard.tsx`
-- `src/app/nuova-gara/page.tsx` + `NuovaGaraForm.tsx`
-- `src/app/gare/[id]/page.tsx` (dettaglio gara, senza JoinButton)
-- Update `src/app/bacheca/page.tsx` — aggiungere tab "Gare" + filtri distanza/cerco
+### UX
+- [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
+- [x] Homepage: hero video/img + "Perché Vieni a correre?" con foto fondatori
+- [x] Pagina "Come funziona" con 6 sezioni inclusa Purple Screen
+- [x] Menu mobile: overlay full-height, no voci duplicate, nessun overlap
+- [x] Chat responsive: h-screen + min-h-0 per corretto overflow su iOS
 
 ---
 
-## 8. Decisioni architetturali prese
+## 7. Decisioni architetturali
 
 | Decisione | Scelta | Motivazione |
 |---|---|---|
@@ -297,70 +334,67 @@ ALTER TABLE runs
 | Mappa | Leaflet + dynamic import (no SSR) | Open source, zero costi |
 | Notifiche | DB triggers + Supabase Realtime | Affidabile, no job schedulati |
 | Serie → eventi | Generazione in-app (8 settimane) | Semplice, nessun cron job |
-| Profilo creation | DB trigger `handle_new_user` | Bypassa RLS post-signUp |
 | OG image | `next/og` ImageResponse | Built-in, zero dipendenze |
 | Compatibilità | Calcolata server-side al load | Nessuna tabella extra |
 | Tags | `text[]` su `runs`/`series` con GIN index | Semplice, query con `@>` |
-| Messaggi | Thread `(run_id, sender, recipient)` | Contestuale alle corse |
-| Gare (design) | `type='gara'` su tabella `runs` esistente | Riuso tabella, meno JOIN |
+| Messaggi 1-to-1 | Thread `(run_id, sender, recipient)` | Contestuale alle corse |
+| Gare | `type='gara'` su tabella `runs` esistente | Riuso tabella, meno JOIN |
+| Profilo creation | DB trigger `handle_new_user` | Bypassa RLS post-signUp |
+| nuova-serie | Redirect a nuova-corsa | Form unificato con selettore tipo |
+| Interessi | Tabella separata `interests` | Flusso completamente diverso da partecipazioni |
+| Luogo privato | `location_public boolean` + coordinate arrotondate per non-approvati | Semplice, no extra query |
+| Purple Screen | Colore deterministico dall'ID (hash → palette 18 colori) | No colonna DB, sempre consistente |
+| Fuso orario | `parseRunDateTime` con `Intl.DateTimeFormat Europe/Rome` | Server Vercel in UTC, corse in ora italiana |
+| Chat di gruppo | Insert ottimistico in ChatWindow, Realtime solo per altri utenti | Messaggio appare subito senza attesa Realtime |
+| Menu mobile | Due state separati (mobileOpen / userOpen) + overlay fixed | No overlap, no voci duplicate |
 
 ---
 
-## 9. Problemi noti / aree da migliorare
+## 8. Problemi noti / aree da migliorare
 
 | Problema | Priorità | Note |
 |---|---|---|
-| `NuovaSerieForm` usa ancora UI vecchia | Media | Stile form con `Input`/`Select` Tailwind v3, non le sezioni card del redesign |
 | Form "modifica corsa" non esiste | Media | Si può solo annullare, non editare dopo la pubblicazione |
 | Corse esistenti senza coordinate | Bassa | Non appaiono sulla mappa; backfill SQL in DASHBOARD-CONFIG.md |
-| `MomentoCard` aggiunto 2 volte nel profilo durante refactoring | Risolto | Era un artefatto di sessioni precedenti, ora corretto |
-| Notifiche: `supabase_realtime` pubblica | Da verificare | L'ultimo statement in notifications.sql potrebbe fallire se già configurato |
-| Email confirmations | Config | Disabilitare in Supabase Dashboard per dev locale |
+| SEO Sprint 2 non ancora fatto | Media | Schema.org JSON-LD (Event, Person, WebSite) |
+| Push notifications via email | Bassa | Supabase Edge Functions per promemoria critici |
 
 ---
 
-## 10. Prossimi task (in ordine di priorità)
+## 9. Prossimi task (in ordine di priorità)
 
 ### Alta priorità
-1. **Implementare tab "Gare"** — design completato (§7), SQL + componenti + pagine da costruire
-2. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e in produzione
+1. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e gira in produzione
 
 ### Media priorità
-3. **Form modifica corsa** — attualmente si può solo annullare; utile avere modifica di data/orario/luogo
-4. **Backfill coordinate corse esistenti** — script SQL o pagina admin per geocodificare le corse già create
-5. **Migliorare `NuovaSerieForm`** — aggiornare stile al nuovo design system (sezioni card, helper text)
+2. **Form modifica corsa** — data/orario/luogo modificabili dopo la pubblicazione
+3. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
+4. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
 
 ### Bassa priorità / idee future
-6. **Feature #4 — Badge reputazione organizzatore** (progettata, non costruita)
-7. **Feature #5 — GPS condiviso durante la corsa** (progettata, non costruita)
-8. **Form modifica profilo runner** — più ricco (es. distanze preferite, percorsi abituali)
-9. **Push notifications** — invio email da Supabase Edge Functions per promemoria e notifiche critiche
-10. **SEO ottimizzazione** — structured data JSON-LD per le corse (schema.org/Event)
+5. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
+6. **Badge reputazione organizzatore** — livello di affidabilità basato su recensioni e storico
+7. **Push notifications** — invio email da Supabase Edge Functions
+8. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
 
 ---
 
-## 11. Come avviare il progetto in locale
+## 10. Come avviare il progetto in locale
 
 ```bash
-# Clone e installa dipendenze
 git clone https://github.com/Santamicone/corriamo.git
 cd corriamo
 git checkout feat/ui-ux-redesign
 npm install
 
 # Configura .env.local (vedi §3)
-cp .env.local.example .env.local   # oppure crea manualmente
-
-# Avvia
 npm run dev   # → http://localhost:3000
-
-# Build di produzione (verifica prima di push)
-npm run build
+npm run build # verifica prima di push
 ```
 
 ---
 
-## 12. Deployment
+## 11. Deployment
 
 - **Piattaforma:** Vercel (deploy automatico a ogni push su `main`)
 - **Preview:** ogni push su branch crea un preview URL temporaneo
@@ -368,7 +402,7 @@ npm run build
 
 ---
 
-## 13. Repository e risorse
+## 12. Repository e risorse
 
 | Risorsa | URL |
 |---|---|
@@ -376,4 +410,3 @@ npm run build
 | Produzione | https://www.vieniacorrere.it |
 | Supabase Dashboard | https://supabase.com/dashboard/project/wshjtgtmxbxhpdqtxpiq |
 | Vercel Dashboard | https://vercel.com/santamicone/corriamo |
-| Prototipo UX originale | `../stitch/` (nella stessa cartella Downloads) |
