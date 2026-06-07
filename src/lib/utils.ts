@@ -7,6 +7,36 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/* ── Purple Screen — colori ritrovo ── */
+const RITROVO_COLORS = [
+  { bg: '#7C3AED', text: '#FFFFFF', name: 'Viola' },
+  { bg: '#DC2626', text: '#FFFFFF', name: 'Rosso' },
+  { bg: '#0891B2', text: '#FFFFFF', name: 'Azzurro' },
+  { bg: '#16A34A', text: '#FFFFFF', name: 'Verde' },
+  { bg: '#DB2777', text: '#FFFFFF', name: 'Fucsia' },
+  { bg: '#EA580C', text: '#FFFFFF', name: 'Arancio' },
+  { bg: '#2563EB', text: '#FFFFFF', name: 'Blu' },
+  { bg: '#059669', text: '#FFFFFF', name: 'Smeraldo' },
+  { bg: '#9333EA', text: '#FFFFFF', name: 'Indaco' },
+  { bg: '#B45309', text: '#FFFFFF', name: 'Marrone' },
+  { bg: '#0F766E', text: '#FFFFFF', name: 'Teal' },
+  { bg: '#BE123C', text: '#FFFFFF', name: 'Cremisi' },
+  { bg: '#1D4ED8', text: '#FFFFFF', name: 'Cobalto' },
+  { bg: '#7E22CE', text: '#FFFFFF', name: 'Porpora' },
+  { bg: '#065F46', text: '#FFFFFF', name: 'Foresta' },
+  { bg: '#B91C1C', text: '#FFFFFF', name: 'Mattone' },
+  { bg: '#0369A1', text: '#FFFFFF', name: 'Oceano' },
+  { bg: '#6D28D9', text: '#FFFFFF', name: 'Ametista' },
+] as const
+
+export type RitrovoColor = typeof RITROVO_COLORS[number]
+
+/** Restituisce il colore assegnato a una corsa (deterministico dall'ID) */
+export function runRitrovoColor(runId: string): RitrovoColor {
+  const hash = runId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+  return RITROVO_COLORS[hash % RITROVO_COLORS.length]
+}
+
 export function formatDate(dateStr: string): string {
   return format(parseISO(dateStr), "d MMMM yyyy", { locale: it })
 }
