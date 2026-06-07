@@ -8,28 +8,36 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 
+const inputCls = "h-11 w-full px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-4">
+      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{title}</p>
+      {children}
+    </div>
+  )
+}
+
 export default function RegisterPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     email: '', password: '', full_name: '', city: '',
-    level: 'tutti', pace_min: '', pace_max: '', bio: '',
+    level: 'principiante', bio: '',
     strava_url: '', garmin_url: '', instagram_url: '',
   })
 
-  const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm(prev => ({ ...prev, [field]: e.target.value }))
+  const update = (field: string) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+      setForm(prev => ({ ...prev, [field]: e.target.value }))
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     const supabase = createClient()
-
-    // Passiamo tutti i dati del profilo come metadata —
-    // il trigger handle_new_user li usa per creare il profilo automaticamente,
-    // aggirando il problema di sessione non ancora attiva post-signUp.
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
     const { error: authError } = await supabase.auth.signUp({
@@ -38,14 +46,12 @@ export default function RegisterPage() {
       options: {
         emailRedirectTo: `${siteUrl}/auth/callback`,
         data: {
-          full_name: form.full_name,
-          city: form.city,
-          level: form.level,
-          pace_min: form.pace_min,
-          pace_max: form.pace_max,
-          bio: form.bio,
-          strava_url: form.strava_url,
-          garmin_url: form.garmin_url,
+          full_name:     form.full_name,
+          city:          form.city,
+          level:         form.level,
+          bio:           form.bio,
+          strava_url:    form.strava_url,
+          garmin_url:    form.garmin_url,
           instagram_url: form.instagram_url,
         },
       },
@@ -62,60 +68,122 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="p-6">
-        <Link href="/" className="text-2xl font-extrabold text-primary">Vieni a correre?</Link>
+    <div className="min-h-screen bg-[#FAFAF9] flex flex-col">
+      <header className="px-6 py-5 border-b border-gray-100 bg-white">
+        <Link href="/" className="text-xl font-extrabold text-primary">Vieni a correre?</Link>
       </header>
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-8 shadow-sm">
-            <h1 className="text-2xl font-bold text-on-surface mb-2">Crea il tuo profilo runner</h1>
-            <p className="text-sm text-on-surface-variant mb-8">Unisciti alla community. Corri con gli altri.</p>
 
-            <form onSubmit={handleRegister} className="flex flex-col gap-5">
-              <div className="pb-4 border-b border-outline-variant">
-                <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">Account</p>
-                <div className="flex flex-col gap-4">
-                  <Input label="Email" type="email" value={form.email} onChange={update('email')} placeholder="nome@esempio.it" required />
-                  <Input label="Password" type="password" value={form.password} onChange={update('password')} placeholder="Minimo 8 caratteri" required minLength={8} />
-                </div>
-              </div>
+      <div className="flex-1 flex items-start justify-center px-4 py-10">
+        <div className="w-full max-w-lg flex flex-col gap-5">
 
-              <div className="pb-4 border-b border-outline-variant">
-                <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">Profilo runner</p>
-                <div className="flex flex-col gap-4">
-                  <Input label="Nome e cognome" value={form.full_name} onChange={update('full_name')} placeholder="Mario Rossi" required />
-                  <Input label="Città" value={form.city} onChange={update('city')} placeholder="Milano" />
-                  <Select label="Livello" value={form.level} onChange={update('level')}>
-                    <option value="tutti">Tutti i livelli</option>
-                    <option value="principiante">Principiante</option>
-                    <option value="intermedio">Intermedio</option>
-                    <option value="avanzato">Avanzato</option>
-                  </Select>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input label="Ritmo min (min/km)" type="number" step="0.1" min="3" max="12" value={form.pace_min} onChange={update('pace_min')} placeholder="es. 4.5" hint="es. 4.5 = 4:30/km" />
-                    <Input label="Ritmo max (min/km)" type="number" step="0.1" min="3" max="12" value={form.pace_max} onChange={update('pace_max')} placeholder="es. 5.5" />
-                  </div>
-                  <Textarea label="Bio" value={form.bio} onChange={update('bio')} placeholder="Racconta qualcosa di te come runner..." rows={3} />
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">Link (opzionali)</p>
-                <div className="flex flex-col gap-4">
-                  <Input label="Profilo Strava" type="url" value={form.strava_url} onChange={update('strava_url')} placeholder="https://www.strava.com/athletes/..." />
-                  <Input label="Profilo Garmin" type="url" value={form.garmin_url} onChange={update('garmin_url')} placeholder="https://connect.garmin.com/..." />
-                  <Input label="Instagram" type="url" value={form.instagram_url} onChange={update('instagram_url')} placeholder="https://www.instagram.com/..." />
-                </div>
-              </div>
-
-              {error && <p className="text-sm text-error bg-error-container px-3 py-2 rounded-lg">{error}</p>}
-              <Button type="submit" loading={loading} size="lg" className="mt-2 w-full">
-                Crea profilo e accedi
-              </Button>
-            </form>
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900">Crea il tuo profilo runner</h1>
+            <p className="text-sm text-gray-500 mt-1">Unisciti alla community. Corri con gli altri.</p>
           </div>
-          <p className="text-center text-sm text-on-surface-variant mt-6">
+
+          <form onSubmit={handleRegister} className="flex flex-col gap-4">
+
+            {/* Account */}
+            <Section title="Account">
+              <Input
+                label="Email"
+                type="email"
+                value={form.email}
+                onChange={update('email')}
+                placeholder="nome@esempio.it"
+                required
+              />
+              <Input
+                label="Password"
+                type="password"
+                value={form.password}
+                onChange={update('password')}
+                placeholder="Minimo 8 caratteri"
+                required
+                minLength={8}
+              />
+            </Section>
+
+            {/* Profilo runner */}
+            <Section title="Profilo runner">
+              <Input
+                label="Nome e cognome"
+                value={form.full_name}
+                onChange={update('full_name')}
+                placeholder="Mario Rossi"
+                required
+              />
+              <Input
+                label="Città"
+                value={form.city}
+                onChange={update('city')}
+                placeholder="Milano"
+              />
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                  Livello
+                </label>
+                <select
+                  value={form.level}
+                  onChange={update('level')}
+                  className={inputCls}
+                >
+                  <option value="principiante">Principiante — sto iniziando</option>
+                  <option value="intermedio">Intermedio — corro regolarmente</option>
+                  <option value="avanzato">Avanzato — corro forte</option>
+                  <option value="amatore_gare">Amatore, ma faccio gare</option>
+                  <option value="atleta">Atleta agonista</option>
+                </select>
+              </div>
+              <Textarea
+                label="Bio"
+                value={form.bio}
+                onChange={update('bio')}
+                placeholder="Racconta qualcosa di te come runner: dove corri di solito, i tuoi obiettivi…"
+                rows={3}
+              />
+            </Section>
+
+            {/* Link social */}
+            <Section title="Link (opzionali)">
+              <Input
+                label="Profilo Strava"
+                type="url"
+                value={form.strava_url}
+                onChange={update('strava_url')}
+                placeholder="https://www.strava.com/athletes/..."
+              />
+              <Input
+                label="Profilo Garmin"
+                type="url"
+                value={form.garmin_url}
+                onChange={update('garmin_url')}
+                placeholder="https://connect.garmin.com/..."
+              />
+              <Input
+                label="Instagram"
+                type="url"
+                value={form.instagram_url}
+                onChange={update('instagram_url')}
+                placeholder="https://www.instagram.com/..."
+              />
+              <p className="text-xs text-gray-400 -mt-1">
+                Potrai aggiungere Personal Best, età e altri dettagli dal tuo profilo dopo la registrazione.
+              </p>
+            </Section>
+
+            {error && (
+              <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <Button type="submit" loading={loading} size="lg" className="w-full">
+              Crea profilo e accedi
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-gray-500">
             Hai già un account?{' '}
             <Link href="/login" className="text-primary font-semibold hover:underline">Accedi</Link>
           </p>

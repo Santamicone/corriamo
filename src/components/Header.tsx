@@ -67,8 +67,9 @@ export function Header() {
   const pathname  = usePathname()
   const router    = useRouter()
   const [profile,    setProfile]    = useState<Profile | null>(null)
-  const [mobileOpen, setMobileOpen] = useState(false)  // hamburger mobile
-  const [userOpen,   setUserOpen]   = useState(false)  // dropdown avatar desktop
+  const [mobileOpen,  setMobileOpen]  = useState(false)  // hamburger mobile
+  const [userOpen,    setUserOpen]    = useState(false)  // dropdown avatar desktop
+  const [loggingOut,  setLoggingOut]  = useState(false)  // feedback logout
 
   const unreadMessages      = useUnreadMessages(profile?.id ?? null)
   const unreadNotifications = useUnreadNotifications(profile?.id ?? null)
@@ -88,6 +89,7 @@ export function Header() {
   const handleLogout = async () => {
     setMobileOpen(false)
     setUserOpen(false)
+    setLoggingOut(true)
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
@@ -98,6 +100,17 @@ export function Header() {
 
   return (
     <>
+      {/* ── Overlay logout ── */}
+      {loggingOut && (
+        <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center gap-4">
+          <span className="material-symbols-filled text-green-500" style={{ fontSize: 72 }}>check_circle</span>
+          <div className="text-center">
+            <p className="text-2xl font-extrabold text-gray-900">Arrivederci!</p>
+            <p className="text-sm text-gray-400 mt-1">Hai effettuato il logout con successo.</p>
+          </div>
+        </div>
+      )}
+
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
 
