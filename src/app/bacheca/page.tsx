@@ -37,6 +37,7 @@ interface SearchParams {
   view?:          'lista' | 'mappa'
   race_distance?: string
   looking_for?:   string
+  all_cities?:    string   // bypass del filtro città automatico dal profilo
 }
 
 /* ─── Helpers date ─── */
@@ -96,10 +97,17 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
         .limit(20),
     ])
     userProfile = profileData as unknown as Profile | null
+
     userHistory = (historyData ?? [])
       .map((p: { run: unknown }) => p.run)
       .filter(Boolean) as RunHistory
   }
+
+  // Città automatica dal profilo (dichiarata PRIMA delle query)
+  const autoCity = !params.city && !params.all_cities && userProfile?.filter_by_city && userProfile.city
+    ? userProfile.city
+    : null
+  const filterCity = params.city || autoCity || undefined
 
   if (tab === 'gare') {
     let query = supabase
@@ -110,7 +118,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       .gte('date', params.from ?? today)
       .order('date', { ascending: true })
 
-    if (params.city)          query = query.ilike('city', `%${params.city}%`)
+    if (filterCity)           query = query.ilike('city', `%${filterCity}%`)
     if (params.q)             query = query.ilike('title', `%${params.q}%`)
     if (params.race_distance) query = query.eq('race_distance', params.race_distance)
     if (params.looking_for)   query = query.contains('looking_for', [params.looking_for])
@@ -128,7 +136,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       .order('date', { ascending: true })
 
     if (params.to)    query = query.lte('date', params.to)
-    if (params.city)  query = query.ilike('city', `%${params.city}%`)
+    if (filterCity)   query = query.ilike('city', `%${filterCity}%`)
     if (params.level) query = query.eq('level', params.level)
     if (params.q)     query = query.ilike('title', `%${params.q}%`)
     if (params.tag)   query = query.contains('tags', [params.tag])
@@ -210,7 +218,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       .from('series')
       .select('*, organizer:profiles!series_organizer_id_fkey(*)')
       .order('created_at', { ascending: false })
-    if (params.city)  seriesQuery = seriesQuery.ilike('city', `%${params.city}%`)
+    if (filterCity)   seriesQuery = seriesQuery.ilike('city', `%${filterCity}%`)
     if (params.level) seriesQuery = seriesQuery.eq('level', params.level)
     if (params.q)     seriesQuery = seriesQuery.ilike('title', `%${params.q}%`)
     if (params.tag)   seriesQuery = seriesQuery.contains('tags', [params.tag])
@@ -218,7 +226,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     series = (seriesData || []) as unknown as Series[]
   }
 
-  const hasFilters    = !!(params.q || params.city || params.level || params.from || params.to || params.tag || params.race_distance || params.looking_for)
+  const hasFilters    = !!(params.q || filterCity || params.level || params.from || params.to || params.tag || params.race_distance || params.looking_for)
   const hasDateFilter = !!(params.from || params.to)
   const activeTag     = params.tag ? getTag(params.tag) : null
   const count = tab === 'corse' ? runs.length + series.length : gare.length
@@ -327,6 +335,21 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
                 <a href={buildUrl({ ...params, tag: undefined }, {})}
                   className="text-gray-400 hover:text-red-500 transition-colors ml-0.5"
                   aria-label="Rimuovi filtro tag">
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </a>
+              </span>
+            </div>
+          )}
+
+          {/* Chip filtro città automatico dal profilo */}
+          {autoCity && !params.city && (
+            <div className="flex items-center gap-2 -mt-2">
+              <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold px-3 py-1.5 rounded-full">
+                <span className="material-symbols-outlined text-sm text-blue-500">location_on</span>
+                Solo corse a {autoCity} · dal tuo profilo
+                <a href={buildUrl({ ...params, all_cities: '1', city: undefined }, {})}
+                  className="text-blue-400 hover:text-blue-700 transition-colors ml-0.5"
+                  aria-label="Vedi tutte le città">
                   <span className="material-symbols-outlined text-sm">close</span>
                 </a>
               </span>
