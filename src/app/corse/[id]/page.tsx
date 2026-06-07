@@ -4,7 +4,7 @@ import { Footer } from '@/components/Footer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { formatDate, LEVEL_LABELS, formatPaceTarget } from '@/lib/utils'
+import { formatDate, LEVEL_LABELS, formatPaceTarget, runRitrovoColor } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/TagBadge'
 import type { Run, Participation, Review, Momento } from '@/lib/types'
 import { JoinButton } from './JoinButton'
@@ -122,6 +122,14 @@ export default async function CorsaDetailPage({
     : null
   const isPast     = new Date(`${typedRun.date}T${typedRun.time}`) < new Date()
   const levelColor = LEVEL_COLORS[typedRun.level] ?? LEVEL_COLORS.tutti
+
+  // Finestra ritrovo: -60 min → +30 min rispetto all'orario
+  const runDateTime = new Date(`${typedRun.date}T${typedRun.time}`)
+  const diffMin     = (runDateTime.getTime() - Date.now()) / (1000 * 60)
+  const isInRitrovo = diffMin <= 60 && diffMin >= -30
+
+  // Colore Purple Screen
+  const ritrovoColor = runRitrovoColor(id)
 
   // Luogo privato
   const isPrivateLoc   = (typedRun as Run & { location_public?: boolean }).location_public === false
@@ -369,6 +377,26 @@ export default async function CorsaDetailPage({
 
             {/* ── Sidebar ── */}
             <div className="flex flex-col gap-5">
+
+              {/* ── Purple Screen — Sono qui ── */}
+              {(isOrganizer || myParticipation?.status === 'approvata') && isInRitrovo && (
+                <Link
+                  href={`/corse/${id}/ritrovo`}
+                  className="group rounded-3xl p-5 flex items-center gap-4 shadow-sm transition-all hover:scale-[1.02] hover:shadow-lg"
+                  style={{ backgroundColor: ritrovoColor.bg, color: ritrovoColor.text }}
+                >
+                  <span className="material-symbols-filled text-4xl shrink-0 opacity-90">
+                    location_on
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-extrabold">Sono qui</p>
+                    <p className="text-xs opacity-70 mt-0.5">Attiva il segnale di ritrovo</p>
+                  </div>
+                  <span className="material-symbols-outlined ml-auto opacity-60 group-hover:translate-x-1 transition-transform">
+                    arrow_forward
+                  </span>
+                </Link>
+              )}
 
               {/* CTA iscrizione + Mi interessa */}
               {!isPast && !isOrganizer && (

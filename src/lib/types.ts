@@ -168,6 +168,13 @@ export interface MessageThread {
   unread_count: number
 }
 
+export interface CheckIn {
+  id: string
+  run_id: string
+  user_id: string
+  checked_in_at: string
+}
+
 export interface Interest {
   id: string
   run_id: string
