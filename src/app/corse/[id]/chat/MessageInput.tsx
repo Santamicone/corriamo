@@ -56,7 +56,6 @@ export function MessageInput({ onSend }: Props) {
             rows={1}
             className="w-full px-4 py-2.5 rounded-2xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all max-h-32 overflow-y-auto"
             style={{ lineHeight: '1.5' }}
-            autoFocus
           />
           {nearLimit && (
             <p className={`text-[11px] text-right pr-1 ${remaining <= 0 ? 'text-red-500' : 'text-amber-500'}`}>

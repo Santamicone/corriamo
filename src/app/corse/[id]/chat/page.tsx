@@ -94,9 +94,9 @@ export default async function RunChatPage({
   const groupSize = (approvedParts?.length ?? 0) + 1
 
   return (
-    <div className="h-dvh flex flex-col overflow-hidden">
+    <div className="flex flex-col h-screen overflow-hidden">
       <Header />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-h-0">
         <ChatWindow
           runId={id}
           userId={user.id}
