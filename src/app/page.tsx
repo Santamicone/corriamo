@@ -267,21 +267,20 @@ function WhyUsSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
-          {/* Foto */}
-          <div className="relative order-first lg:order-last">
-            <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-gray-200/80 aspect-[4/3] sm:aspect-[3/2] lg:aspect-[4/5]">
+          {/* Foto — più compatta, bilanciata col testo ridotto */}
+          <div className="relative order-first lg:order-last flex justify-center lg:justify-end">
+            <div className="relative w-full max-w-xs sm:max-w-sm rounded-3xl overflow-hidden shadow-xl shadow-gray-200/80 aspect-square">
               <Image
                 src="/noi.jpeg"
                 alt="Massimo e Marzia, fondatori di Vieni a correre?"
                 fill
                 className="object-cover object-center"
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="(max-width: 1024px) 384px, 320px"
               />
-              {/* Overlay caldo leggero */}
               <div className="absolute inset-0 bg-gradient-to-t from-orange-950/20 to-transparent" />
             </div>
             {/* Badge firma */}
-            <div className="absolute -bottom-4 left-6 bg-white rounded-2xl shadow-lg px-4 py-2.5 border border-gray-100 flex items-center gap-2.5">
+            <div className="absolute -bottom-4 left-0 sm:left-4 bg-white rounded-2xl shadow-lg px-4 py-2.5 border border-gray-100 flex items-center gap-2.5">
               <span className="material-symbols-filled text-primary text-xl">favorite</span>
               <div>
                 <p className="text-xs font-extrabold text-gray-900 leading-tight">Massimo & Marzia</p>
@@ -291,7 +290,7 @@ function WhyUsSection() {
           </div>
 
           {/* Testo */}
-          <div className="flex flex-col gap-5 pt-4 lg:pt-0 order-last lg:order-first">
+          <div className="flex flex-col gap-4 pt-4 lg:pt-0 order-last lg:order-first">
             <div className="inline-flex items-center gap-2 self-start bg-orange-50 border border-orange-200 text-orange-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
               <span className="material-symbols-outlined text-sm">history</span>
               La nostra storia
@@ -301,42 +300,37 @@ function WhyUsSection() {
               Perché Vieni a correre?
             </h2>
 
-            <div className="flex flex-col gap-4 text-gray-600 text-base leading-relaxed">
+            <div className="flex flex-col gap-3 text-gray-600 text-base leading-relaxed">
               <p>
-                <span className="font-semibold text-gray-800">Nasce da un&apos;esigenza molto concreta:</span>{' '}
-                trovare qualcuno con cui correre, a volte, è più difficile di quanto sembri.
+                Trovare qualcuno con cui correre, a volte, è più difficile di quanto sembri.
               </p>
               <p>
-                Siamo Massimo e Marzia, corriamo da anni e viviamo a Perugia. La nostra squadra è a Roma,
-                ma la vita quotidiana — gli allenamenti facili, i lunghi improvvisati, le uscite nei giorni
-                normali — succede qui. Perugia è una città bellissima, ma non enorme. I runner ci sono,
-                però non sempre si incontrano.
+                Siamo Massimo e Marzia, corriamo da anni e viviamo a Perugia. Come in ogni città,
+                i runner ci sono, ma non sempre si incontrano.
               </p>
               <p>
-                Così ci siamo detti: perché non creare uno strumento semplice per dire
-                {' '}<em className="text-gray-800 not-italic font-semibold">&ldquo;io corro qui, a quest&apos;ora, qualcuno viene?&rdquo;</em>
+                Così ci siamo detti: perché non creare uno strumento semplice per dire{' '}
+                <span className="font-semibold text-gray-800">&ldquo;io corro qui, a quest&apos;ora, qualcuno viene?&rdquo;</span>
               </p>
               <p>
-                Non volevamo fare un altro social network per runner, pieno di classifiche, notifiche
-                e competizione. Volevamo una cosa più pratica: una bacheca per proporre una corsa,
-                trovare compagnia, organizzarsi senza complicazioni.
+                Non volevamo fare un altro social network per runner, volevamo una cosa più pratica:
+                una bacheca per proporre una corsa, trovare compagnia, organizzarsi senza complicazioni.
               </p>
-              <p className="text-gray-700">
-                Vieni a correre? nasce per chi corre sempre da solo, per chi si è appena trasferito,
+              <p>
+                Vieniacorrere.it nasce per chi corre sempre da solo, per chi si è appena trasferito,
                 per chi vuole ricominciare, per chi cerca compagnia per un lungo, per chi ha un
                 allenamento preciso o solo voglia di uscire.
               </p>
             </div>
 
-            {/* Citazione finale */}
-            <blockquote className="border-l-4 border-primary pl-5 py-1 mt-1">
+            <blockquote className="border-l-4 border-primary pl-5 py-0.5 mt-1">
               <p className="text-gray-700 font-medium leading-relaxed italic">
                 Un luogo, un orario, un tipo di corsa.<br />
                 Il resto succede correndo.
               </p>
             </blockquote>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
               <Link href="/registrati"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200">
                 Inizia a correre insieme
