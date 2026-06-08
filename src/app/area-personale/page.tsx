@@ -123,11 +123,9 @@ export default async function AreaPersonalePage() {
                 <span className="material-symbols-outlined text-primary text-xl">group</span>
                 La mia crew
               </h2>
-              {myOwnedCrews.length === 0 && (
-                <Link href="/crew/nuova" className="text-sm font-semibold text-primary hover:underline">
-                  + Crea crew
-                </Link>
-              )}
+              <Link href="/crew/nuova" className="text-sm font-semibold text-primary hover:underline">
+                + Crea crew
+              </Link>
             </div>
 
             {myOwnedCrews.length > 0 ? (
