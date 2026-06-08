@@ -1,7 +1,7 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
-> Aggiornato al: **giugno 2026** — ultima sessione: sistema affidabilità organizzatori
+> Aggiornato al: **giugno 2026** — ultima sessione: crew, email notifiche, onboarding, modifica corsa
 
 ---
 
@@ -80,6 +80,9 @@ NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email red
 | 19 | `supabase/crews.sql` | ⏳ DA ESEGUIRE | Tabelle `crews` + `crew_members` + RLS + 4 trigger + colonne `crew_id`, `run_visibility` su `runs` |
 | 20 | `supabase/crew-invites.sql` | ⏳ DA ESEGUIRE | Tabella `crew_invites` + RLS |
 | 21 | `supabase/crews-fix-rls.sql` | ⏳ DA ESEGUIRE | Fix ricorsione RLS crews/crew_members — funzioni SECURITY DEFINER |
+| 22 | `supabase/edit-run.sql` | ⏳ DA ESEGUIRE | Permessi e trigger per modifica corsa (blocco <2h dalla partenza) |
+| 23 | `supabase/email-notifications.sql` | ⏳ DA ESEGUIRE | Tabella `email_notifications` + preferenze utente + unsubscribe token |
+| 24 | `supabase/email-triggers.sql` | ⏳ DA ESEGUIRE | Trigger DB che accodano email (partecipazione, approvazione, ecc.) |
 
 ### Schema tabelle aggiornato
 
@@ -166,14 +169,15 @@ src/
 │   ├── sitemap.ts                    Sitemap.xml dinamico (corse, serie, gare, profili)
 │   ├── page.tsx                      Homepage: hero, value props, come funziona,
 │   │                                 "Perché Vieni a correre?" (foto noi.jpeg), why different
-│   ├── come-funziona/page.tsx        Guida funzionalità (6 sezioni incl. Purple Screen)
+│   ├── come-funziona/page.tsx        Guida funzionalità (7 sezioni incl. Purple Screen + Crew)
 │   ├── privacy/page.tsx              Privacy Policy GDPR
 │   ├── termini/page.tsx              Termini di Servizio
 │   ├── auth/callback/route.ts
 │   ├── bacheca/page.tsx              2 tab: Corse (singole+serie) | Gare
 │   ├── corse/[id]/
 │   │   ├── page.tsx                  Dettaglio + OG + "Sono qui" button in sidebar
-│   │   ├── JoinButton.tsx            "Mi interessa" + "Partecipa" (due flussi)
+│   │   ├── JoinButton.tsx            "Mi interessa" (toast conferma) + "Partecipa" (due flussi)
+│   │   ├── modifica/page.tsx         Form modifica corsa (blocco <2h dalla partenza)
 │   │   ├── chat/page.tsx             Server: access check + carica messaggi
 │   │   ├── chat/ChatWindow.tsx       Client: Realtime, insert ottimistico, iMessage style
 │   │   ├── chat/MessageInput.tsx     Client: input + invio su Enter
@@ -200,13 +204,23 @@ src/
 │   │   ├── page.tsx
 │   │   └── NuovaGaraForm.tsx
 │   ├── nuova-serie/page.tsx          → redirect a /nuova-corsa
+│   ├── crew/
+│   │   ├── nuova/page.tsx            Crea nuova crew
+│   │   ├── [id]/page.tsx             Pagina pubblica crew
+│   │   ├── [id]/modifica/page.tsx    Modifica nome/descrizione/visibilità/WhatsApp
+│   │   ├── [id]/gestisci/page.tsx    Gestione membri (solo owner/admin)
+│   │   │   ├── AddMemberSearch.tsx   Ricerca e aggiunta membro per nome
+│   │   │   ├── MemberActions.tsx     Approva/rimuovi membro
+│   │   │   ├── InviteLinkSection.tsx Link d'invito con token
+│   │   │   └── DeleteCrewButton.tsx  Eliminazione crew
+│   │   └── invite/[token]/page.tsx   Pagina accettazione invito
 │   ├── profilo/
 │   │   ├── [id]/page.tsx             Profilo: età, perché corri, PB, momenti, recensioni
 │   │   └── modifica/
 │   │       ├── page.tsx
 │   │       └── EditProfileForm.tsx   Avatar (9 personaggi+lightbox), età, PB, perché corri,
 │   │                                 filtro città automatico
-│   ├── area-personale/page.tsx
+│   ├── area-personale/page.tsx       Welcome banner (nuovo utente) + banner profilo incompleto
 │   ├── messaggi/
 │   │   ├── page.tsx
 │   │   └── [runId]/[otherId]/
@@ -217,8 +231,11 @@ src/
 │   │   ├── page.tsx
 │   │   └── MarkNotificationsRead.tsx
 │   ├── login/page.tsx
-│   ├── registrati/page.tsx
-│   └── api/og/corse/[id]/route.tsx
+│   ├── registrati/
+│   │   ├── page.tsx                  Form semplificato (solo nome + email + password)
+│   │   └── conferma/page.tsx         Pagina "Controlla la tua email"
+│   ├── api/og/corse/[id]/route.tsx
+│   └── api/unsubscribe/route.ts      Unsubscribe email notifiche via token
 │
 ├── components/
 │   ├── Header.tsx                    Mobile overlay menu (mobileOpen/userOpen separati)
@@ -246,13 +263,18 @@ src/
 │
 ├── lib/
 │   ├── types.ts                      Profile (nuovi campi + reliability_*), Run (gara, location_public...),
-│   │                                 Interest, CheckIn, RunChatMessage, RunConfirmation, ProfileLevel
+│   │                                 Interest, CheckIn, RunChatMessage, RunConfirmation, ProfileLevel,
+│   │                                 Crew, CrewMember, CrewInvite
 │   ├── utils.ts                      + parseRunDateTime (fuso Europe/Rome)
 │   │                                 + runRitrovoColor (Purple Screen)
-│   ├── tags.ts
+│   ├── tags.ts                       12 tag attivi (rimossi: scarico, solo_asfalto, panoramico,
+│   │                                 porta_frontale, porta_acqua, hi_vis)
 │   ├── compatibility.ts              Supporto nuovi livelli profilo (amatore_gare, atleta)
 │   ├── geocoding.ts
 │   ├── reliability.ts                getReliabilityBadge() → 'affidabile' | 'organizzatore' | null
+│   ├── email/
+│   │   ├── templates.ts              Template HTML email (partecipazione, approvazione, ecc.)
+│   │   └── token.ts                  Generazione/verifica token unsubscribe
 │   └── supabase/
 │       ├── client.ts
 │       └── server.ts
@@ -351,11 +373,43 @@ src/
 - [x] OG image dinamica per ogni corsa
 - [x] Privacy Policy e Termini di Servizio
 
+### Crew (gruppi permanenti)
+- [x] Creazione crew con nome, descrizione, tipo, visibilità, link WhatsApp
+- [x] Pagina pubblica crew + sezione crew in area personale
+- [x] Gestione membri: aggiunta per nome, link invito con token, rimozione, eliminazione crew
+- [x] Badge "Riservata a [crew]" nella card/dettaglio corsa
+- [x] Corsa privata (run_visibility: crew_only)
+- [x] Fix RLS ricorsione crews/crew_members con funzioni SECURITY DEFINER
+- [x] Sezione Crew in /come-funziona
+- ⏳ **SQL crews.sql / crew-invites.sql / crews-fix-rls.sql ancora da eseguire**
+
+### Email notifiche
+- [x] Supabase Edge Functions: `send-immediate` e `send-digest` via Resend API
+- [x] Tabella `email_notifications` con preferenze utente e log invii
+- [x] Trigger DB per accodare email (partecipazione, approvazione, modifica, ecc.)
+- [x] Template HTML per ogni tipo di notifica
+- [x] Unsubscribe via token (`/api/unsubscribe`)
+- ⏳ **SQL email-notifications.sql / email-triggers.sql ancora da eseguire**
+- ⏳ **Edge Functions da deployare + RESEND_API_KEY su Supabase Secrets**
+
+### Onboarding & Registrazione
+- [x] Form registrazione semplificato (solo nome + email + password, profilo completabile dopo)
+- [x] Pagina `/registrati/conferma` con istruzioni email
+- [x] Welcome banner in area personale per nuovi utenti
+- [x] Banner "Completa il profilo" per chi non ha ancora compilato i campi opzionali
+
+### Modifica corsa
+- [x] Route `/corse/[id]/modifica` per organizzatori
+- [x] Blocco modifica se mancano meno di 2 ore alla partenza
+- [x] Notifica automatica ai partecipanti approvati in caso di modifica
+
 ### UX
 - [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
 - [x] Homepage: hero video/img + "Perché Vieni a correre?" con foto fondatori
-- [x] Pagina "Come funziona" con 6 sezioni inclusa Purple Screen
-- [x] Menu mobile: overlay full-height, no voci duplicate, nessun overlap
+- [x] Pagina "Come funziona" con 7 sezioni (incluse Purple Screen e Crew)
+- [x] Menu mobile: overlay full-height, no voci duplicate, badge notifiche su hamburger
+- [x] Notifiche link nel menu mobile
+- [x] Toast conferma "Mi interessa" dopo click
 - [x] Chat responsive: h-screen + min-h-0 per corretto overflow su iOS
 
 ---
@@ -390,31 +444,39 @@ src/
 
 | Problema | Priorità | Note |
 |---|---|---|
+| **SQL crews (3 file) da eseguire** | **Alta** | `crews.sql`, `crew-invites.sql`, `crews-fix-rls.sql` |
+| **SQL email (2 file) da eseguire** | **Alta** | `email-notifications.sql`, `email-triggers.sql` |
 | **`supabase/reliability.sql` da eseguire** | **Alta** | Senza questo le colonne `reliability_*` non esistono in produzione |
-| Form "modifica corsa" non esiste | Media | Si può solo annullare, non editare dopo la pubblicazione |
+| **`supabase/edit-run.sql` da eseguire** | **Alta** | Necessario per la funzionalità modifica corsa |
+| **Edge Functions email da deployare** | **Media** | `send-immediate` e `send-digest` + RESEND_API_KEY su Supabase Secrets |
 | Corse esistenti senza coordinate | Bassa | Non appaiono sulla mappa; backfill SQL in DASHBOARD-CONFIG.md |
 | SEO Sprint 2 non ancora fatto | Media | Schema.org JSON-LD (Event, Person, WebSite) |
-| Push notifications via email | Bassa | Supabase Edge Functions per promemoria critici |
 
 ---
 
 ## 9. Prossimi task (in ordine di priorità)
 
 ### Urgente (pre-merge)
-1. **Eseguire `supabase/reliability.sql`** su Supabase Dashboard → SQL Editor
+1. **Eseguire SQL mancanti** (in ordine):
+   - `supabase/reliability.sql`
+   - `supabase/edit-run.sql`
+   - `supabase/crews.sql`
+   - `supabase/crew-invites.sql`
+   - `supabase/crews-fix-rls.sql`
+   - `supabase/email-notifications.sql`
+   - `supabase/email-triggers.sql`
+2. **Deployare Edge Functions** email (`send-immediate`, `send-digest`) e impostare `RESEND_API_KEY` nei Supabase Secrets
 
 ### Alta priorità
-2. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e gira in produzione
+3. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e gira in produzione
 
 ### Media priorità
-3. **Form modifica corsa** — data/orario/luogo modificabili dopo la pubblicazione
 4. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
 5. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
 
 ### Bassa priorità / idee future
 6. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
-7. **Push notifications** — invio email da Supabase Edge Functions
-8. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
+7. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
 
 ---
 

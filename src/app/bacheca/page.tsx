@@ -12,6 +12,7 @@ import { TAGS, getTag } from '@/lib/tags'
 import { computeCompatibility, type CompatibilityResult, type RunHistory } from '@/lib/compatibility'
 import type { Run, Series, Profile } from '@/lib/types'
 import { GaraCard } from '@/components/GaraCard'
+import { GeolocCityDetector } from '@/components/GeolocCityDetector'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ interface SearchParams {
   looking_for?:   string
   all_cities?:    string   // bypass del filtro città automatico dal profilo
   welcome?:       string   // '1' → primo accesso dopo registrazione
+  geo?:           string   // '1' → città rilevata da geolocalizzazione
 }
 
 /* ─── Helpers date ─── */
@@ -373,6 +375,21 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             </div>
           )}
 
+          {/* Chip filtro città da geolocalizzazione (utenti anonimi) */}
+          {!user && params.geo === '1' && params.city && (
+            <div className="flex items-center gap-2 -mt-2">
+              <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold px-3 py-1.5 rounded-full">
+                <span className="material-symbols-outlined text-sm text-blue-500">near_me</span>
+                Corse vicino a te · {params.city}
+                <a href={buildUrl({ ...params, city: undefined, geo: undefined }, {})}
+                  className="text-blue-400 hover:text-blue-700 transition-colors ml-0.5"
+                  aria-label="Vedi tutte le città">
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </a>
+              </span>
+            </div>
+          )}
+
           {/* Pill filtro data attivo */}
           {hasDateFilter && tab === 'corse' && (
             <ActiveDatePill params={params} />
@@ -439,6 +456,11 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
               <EmptyState tab="gare" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
             )
           )}
+          {/* Geolocalizzazione automatica — solo utenti anonimi */}
+          {!user && params.geo !== '1' && (
+            <GeolocCityDetector currentCityParam={params.city} />
+          )}
+
         </div>
       </main>
       <Footer />

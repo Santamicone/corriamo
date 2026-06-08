@@ -64,12 +64,13 @@ corriamo/
 │   │   ├── icon.svg               Favicon SVG
 │   │   ├── sitemap.ts             Sitemap.xml dinamico
 │   │   ├── page.tsx               Homepage
-│   │   ├── come-funziona/         Guida funzionalità (6 sezioni)
+│   │   ├── come-funziona/         Guida funzionalità (7 sezioni, incl. Crew)
 │   │   ├── privacy/               Privacy Policy GDPR
 │   │   ├── termini/               Termini di Servizio
 │   │   ├── auth/callback/         Handler OAuth/email Supabase
 │   │   ├── bacheca/               Lista corse: tab Corse + Gare
 │   │   ├── corse/[id]/            Dettaglio corsa
+│   │   │   ├── modifica/          Modifica corsa (blocco <2h)
 │   │   │   ├── chat/              Chat di gruppo (Realtime)
 │   │   │   └── ritrovo/           Purple Screen — "Sono qui"
 │   │   ├── gare/                  Hub + [id] dettaglio gara
@@ -78,13 +79,21 @@ corriamo/
 │   │   ├── nuova-corsa-spot/      Form corsa spot rapido
 │   │   ├── nuova-gara/            Form post compagni di gara
 │   │   ├── nuova-serie/           → redirect a /nuova-corsa
+│   │   ├── crew/                  Gruppi permanenti di runner
+│   │   │   ├── nuova/             Crea crew
+│   │   │   ├── [id]/              Pagina pubblica crew
+│   │   │   ├── [id]/modifica/     Modifica crew
+│   │   │   ├── [id]/gestisci/     Gestione membri (owner/admin)
+│   │   │   └── invite/[token]/    Accettazione invito
 │   │   ├── profilo/[id]/          Profilo pubblico runner
 │   │   ├── profilo/modifica/      Modifica profilo (auth)
-│   │   ├── area-personale/        Dashboard utente
+│   │   ├── area-personale/        Dashboard + welcome banner + promemoria profilo
 │   │   ├── messaggi/              Inbox + thread conversazione
 │   │   ├── notifiche/             Notification center
-│   │   ├── login/ + registrati/
-│   │   └── api/og/corse/[id]/     OG Image dinamica
+│   │   ├── login/
+│   │   ├── registrati/            Form semplificato + pagina /conferma
+│   │   ├── api/og/corse/[id]/     OG Image dinamica
+│   │   └── api/unsubscribe/       Unsubscribe email via token
 │   │
 │   ├── components/
 │   │   ├── Header.tsx             Nav + menu mobile overlay (no duplicati)
@@ -107,22 +116,29 @@ corriamo/
 │   │       ├── Stars.tsx
 │   │       ├── TagBadge.tsx / TagPicker.tsx
 │   │       ├── ReliabilityBadge.tsx    Badge affidabilità organizzatore
-│   │       └── ...
+│   │       └── Toast.tsx               Toast notifiche (es. conferma "Mi interessa")
 │   │
 │   ├── lib/
 │   │   ├── types.ts               Tipi TS (Profile, Run, Series, Interest, CheckIn, RunConfirmation...)
 │   │   ├── utils.ts               cn, formatDate, parseRunDateTime, runRitrovoColor...
-│   │   ├── tags.ts                18 tag + helpers
+│   │   ├── tags.ts                12 tag attivi (6 rimossi: scarico, solo_asfalto, ecc.)
 │   │   ├── compatibility.ts       Scoring compatibilità (supporta nuovi livelli profilo)
 │   │   ├── geocoding.ts           Nominatim + fallback città
 │   │   ├── reliability.ts         getReliabilityBadge() — score affidabilità organizzatore
+│   │   ├── email/templates.ts     Template HTML email transazionali
+│   │   ├── email/token.ts         Unsubscribe token
 │   │   └── supabase/
 │   │       ├── client.ts
 │   │       └── server.ts
 │   │
 │   └── proxy.ts                   Auth guard (Next.js 16 convention)
 │
-├── supabase/                      File SQL + email templates
+├── supabase/
+│   ├── *.sql                      24 file SQL in ordine di esecuzione
+│   ├── email-templates/           Template HTML Supabase Auth
+│   └── functions/
+│       ├── send-immediate/        Edge Function: invia email subito
+│       └── send-digest/           Edge Function: digest email
 └── Vieni_a_correre_Documentazione.docx
 ```
 
@@ -194,6 +210,12 @@ In produzione (Vercel) `NEXT_PUBLIC_SITE_URL` → `https://vieniacorrere.it`
 | 16 | `supabase/add-location-public.sql` |
 | 17 | `supabase/add-filter-by-city.sql` |
 | 18 | `supabase/reliability.sql` |
+| 19 | `supabase/crews.sql` |
+| 20 | `supabase/crew-invites.sql` |
+| 21 | `supabase/crews-fix-rls.sql` |
+| 22 | `supabase/edit-run.sql` |
+| 23 | `supabase/email-notifications.sql` |
+| 24 | `supabase/email-triggers.sql` |
 
 ### Abilitare Realtime (SQL Editor)
 
@@ -203,6 +225,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.run_chat;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.check_ins;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.run_confirmations;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.crew_members;
+```
+
+### Variabili d'ambiente Supabase (Edge Functions)
+
+Aggiungere nei Supabase Secrets (Dashboard → Edge Functions → Secrets):
+```
+RESEND_API_KEY=re_...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 ```
 
 ### Configurazione Dashboard
@@ -311,6 +342,26 @@ main                    ← produzione
 - Prompt "La corsa si è svolta?" per partecipanti approvati tra 2h e 7gg dalla corsa
 - Corse spot pesano 0.5; colonne materializzate su `profiles` aggiornate da trigger
 
+### Crew (gruppi permanenti)
+- Crea crew con nome, tipo (training_group / running_club / friends), visibilità, link WhatsApp
+- Gestione membri: aggiunta per nome, link invito con token, rimozione, eliminazione crew
+- Badge "Riservata a [crew]" su corse visibili solo ai membri
+- Sezione crew nell'area personale e nella pagina /come-funziona
+
+### Email notifiche
+- Supabase Edge Functions (`send-immediate`, `send-digest`) via **Resend API**
+- Trigger DB accodano email per: partecipazione, approvazione, modifica corsa, ecc.
+- Unsubscribe via token one-click (`/api/unsubscribe`)
+
+### Onboarding
+- Registrazione semplificata: solo nome + email + password
+- Pagina conferma email con istruzioni chiare
+- Welcome banner e promemoria completamento profilo in area personale
+
+### Modifica corsa
+- Organizzatore può modificare data/orario/luogo entro 2h dalla partenza
+- Notifica automatica ai partecipanti approvati in caso di modifica
+
 ### SEO
 - robots.txt, sitemap.xml dinamico, favicon SVG
 - Metadata dinamico su tutte le pagine pubbliche (canonical, OG, Twitter)
@@ -377,6 +428,15 @@ npx tsc --noEmit -p tsconfig.json
 ### Badge affidabilità non appare
 - Verificare che `supabase/reliability.sql` sia stato eseguito (aggiunge colonne `reliability_*` su `profiles`)
 - I badge compaiono solo dopo che il trigger ha calcolato almeno 1 corsa eligible (passata da >24h con partecipanti approvati)
+
+### Email notifiche non partono
+- Verificare che `supabase/email-notifications.sql` e `supabase/email-triggers.sql` siano stati eseguiti
+- Verificare che le Edge Functions `send-immediate` e `send-digest` siano deployate
+- Verificare `RESEND_API_KEY` e `SUPABASE_SERVICE_ROLE_KEY` nei Supabase Secrets
+
+### Crew non visibili / errore RLS
+- Eseguire nell'ordine: `crews.sql` → `crew-invites.sql` → `crews-fix-rls.sql`
+- `crews-fix-rls.sql` è indispensabile per risolvere la ricorsione infinita nelle policy RLS
 
 ### Purple Screen non appare
 - Verificare finestra temporale (−60 min → +30 min dall'orario corsa)
