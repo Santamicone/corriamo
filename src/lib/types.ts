@@ -27,6 +27,9 @@ export interface Profile {
   pb_21k: string | null
   pb_42k: string | null
   filter_by_city: boolean
+  // Preferenze email
+  email_prefs: { immediate: boolean; digest: boolean; reminders: boolean } | null
+  last_seen_at: string | null
   // Affidabilità organizzatore (materializzata da trigger)
   reliability_score:     number | null
   reliability_eligible:  number
