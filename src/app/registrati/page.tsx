@@ -5,15 +5,14 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
-import { Textarea } from '@/components/ui/Textarea'
 
-const inputCls = "h-11 w-full px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-4">
-      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{title}</p>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{title}</p>
+        {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+      </div>
       {children}
     </div>
   )
@@ -25,12 +24,10 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     email: '', password: '', full_name: '', city: '',
-    level: 'principiante', bio: '',
-    strava_url: '', garmin_url: '', instagram_url: '',
   })
 
   const update = (field: string) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm(prev => ({ ...prev, [field]: e.target.value }))
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -40,19 +37,15 @@ export default function RegisterPage() {
     const supabase = createClient()
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
         emailRedirectTo: `${siteUrl}/auth/callback`,
         data: {
-          full_name:     form.full_name,
-          city:          form.city,
-          level:         form.level,
-          bio:           form.bio,
-          strava_url:    form.strava_url,
-          garmin_url:    form.garmin_url,
-          instagram_url: form.instagram_url,
+          full_name: form.full_name,
+          city:      form.city,
+          level:     'principiante',
         },
       },
     })
@@ -63,7 +56,13 @@ export default function RegisterPage() {
       return
     }
 
-    router.push('/bacheca')
+    // Email di conferma richiesta → mostra pagina dedicata
+    if (!data.session) {
+      router.push('/registrati/conferma')
+      return
+    }
+
+    router.push('/bacheca?welcome=1')
     router.refresh()
   }
 
@@ -78,12 +77,11 @@ export default function RegisterPage() {
 
           <div>
             <h1 className="text-2xl font-extrabold text-gray-900">Crea il tuo profilo runner</h1>
-            <p className="text-sm text-gray-500 mt-1">Unisciti alla community. Corri con gli altri.</p>
+            <p className="text-sm text-gray-500 mt-1">Bastano nome, email e città. Aggiungi il resto dopo.</p>
           </div>
 
           <form onSubmit={handleRegister} className="flex flex-col gap-4">
 
-            {/* Account */}
             <Section title="Account">
               <Input
                 label="Email"
@@ -104,8 +102,7 @@ export default function RegisterPage() {
               />
             </Section>
 
-            {/* Profilo runner */}
-            <Section title="Profilo runner">
+            <Section title="Chi sei" subtitle="Visibile agli altri runner">
               <Input
                 label="Nome e cognome"
                 value={form.full_name}
@@ -119,57 +116,6 @@ export default function RegisterPage() {
                 onChange={update('city')}
                 placeholder="Milano"
               />
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Livello
-                </label>
-                <select
-                  value={form.level}
-                  onChange={update('level')}
-                  className={inputCls}
-                >
-                  <option value="principiante">Principiante — sto iniziando</option>
-                  <option value="intermedio">Intermedio — corro regolarmente</option>
-                  <option value="avanzato">Avanzato — corro forte</option>
-                  <option value="amatore_gare">Amatore, ma faccio gare</option>
-                  <option value="atleta">Atleta agonista</option>
-                </select>
-              </div>
-              <Textarea
-                label="Bio"
-                value={form.bio}
-                onChange={update('bio')}
-                placeholder="Racconta qualcosa di te come runner: dove corri di solito, i tuoi obiettivi…"
-                rows={3}
-              />
-            </Section>
-
-            {/* Link social */}
-            <Section title="Link (opzionali)">
-              <Input
-                label="Profilo Strava"
-                type="url"
-                value={form.strava_url}
-                onChange={update('strava_url')}
-                placeholder="https://www.strava.com/athletes/..."
-              />
-              <Input
-                label="Profilo Garmin"
-                type="url"
-                value={form.garmin_url}
-                onChange={update('garmin_url')}
-                placeholder="https://connect.garmin.com/..."
-              />
-              <Input
-                label="Instagram"
-                type="url"
-                value={form.instagram_url}
-                onChange={update('instagram_url')}
-                placeholder="https://www.instagram.com/..."
-              />
-              <p className="text-xs text-gray-400 -mt-1">
-                Potrai aggiungere Personal Best, età e altri dettagli dal tuo profilo dopo la registrazione.
-              </p>
             </Section>
 
             {error && (
@@ -181,6 +127,10 @@ export default function RegisterPage() {
             <Button type="submit" loading={loading} size="lg" className="w-full">
               Crea profilo e accedi
             </Button>
+
+            <p className="text-center text-xs text-gray-400">
+              Livello, bio, Personal Best e link social li aggiungi dal profilo dopo la registrazione.
+            </p>
           </form>
 
           <p className="text-center text-sm text-gray-500">

@@ -24,6 +24,7 @@ export default async function AreaPersonalePage() {
     { data: mySeries },
     { data: unreadMessages },
     { data: myCrewMemberships },
+    { data: myProfile },
   ] = await Promise.all([
     supabase.from('runs')
       .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
@@ -50,6 +51,11 @@ export default async function AreaPersonalePage() {
       .select('crew_id, role, status, crew:crews!crew_id(id, name, crew_type)')
       .eq('user_id', user.id)
       .eq('status', 'active'),
+
+    supabase.from('profiles')
+      .select('bio, level, city, age, pb_5k, pb_10k, pb_21k, pb_42k')
+      .eq('id', user.id)
+      .single(),
   ])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,6 +67,15 @@ export default async function AreaPersonalePage() {
 
   const myOwnedCrews = crewMemberships.filter(m => m.role === 'owner')
   const myMemberCrews = crewMemberships.filter(m => m.role !== 'owner')
+
+  // Calcola completezza profilo
+  const profile = myProfile as { bio?: string; level?: string; city?: string; age?: number; pb_5k?: string; pb_10k?: string; pb_21k?: string; pb_42k?: string } | null
+  const missingFields: string[] = []
+  if (!profile?.bio)    missingFields.push('bio')
+  if (!profile?.level || profile.level === 'principiante') missingFields.push('livello')
+  if (!profile?.age)    missingFields.push('età')
+  if (!profile?.pb_5k && !profile?.pb_10k && !profile?.pb_21k && !profile?.pb_42k) missingFields.push('personal best')
+  const profileIncomplete = missingFields.length >= 2
 
   const approvedParticipations = myParticipations?.filter(p => p.status === 'approvata') ?? []
   const pendingParticipations  = myParticipations?.filter(p => p.status === 'in_attesa') ?? []
@@ -78,6 +93,29 @@ export default async function AreaPersonalePage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-10">
+
+          {/* ── Banner completa profilo ── */}
+          {profileIncomplete && (
+            <div className="flex items-start gap-4 bg-orange-50 border border-orange-200 rounded-2xl px-5 py-4">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="material-symbols-outlined text-primary text-xl">person_edit</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900">Completa il tuo profilo runner</p>
+                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                  Un profilo completo aumenta le probabilità che gli organizzatori ti approvino.
+                  Ti mancano ancora: <span className="font-semibold">{missingFields.join(', ')}</span>.
+                </p>
+              </div>
+              <Link
+                href="/profilo/modifica"
+                className="shrink-0 inline-flex items-center gap-1.5 bg-primary text-white text-xs font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
+              >
+                Completa
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </Link>
+            </div>
+          )}
 
           {/* ── Messaggi in evidenza ── */}
           <section>
