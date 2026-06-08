@@ -251,6 +251,38 @@ export default function ComeFunzionaPage() {
             </div>
           </Section>
 
+          {/* 7 — Crew */}
+          <Section
+            number="07"
+            color="green"
+            icon="groups"
+            title="Corri con la tua crew"
+            subtitle="Crea o entra in un gruppo fisso — squadra di allenamento, running club o gruppo di amici."
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FeatureCard icon="group_add" title="Tre tipi di crew">
+                <strong>Squadra di allenamento</strong> con coach, <strong>Running club</strong> per uscite e gare organizzate,
+                o <strong>Gruppo di amici</strong> per correre in modo informale. Scegli il formato che si adatta al tuo modo di correre.
+              </FeatureCard>
+              <FeatureCard icon="lock" title="Corse riservate ai membri">
+                Organizza corse visibili solo ai membri della tua crew. Sulla bacheca pubblica non appariranno:
+                solo chi fa parte del gruppo può vederle e iscriversi.
+              </FeatureCard>
+              <FeatureCard icon="link" title="Invita con un link">
+                Condividi un link di invito diretto con chi vuoi — il link porta direttamente alla pagina crew
+                dove il nuovo membro può richiedere di entrare.
+              </FeatureCard>
+              <FeatureCard icon="manage_accounts" title="Ruoli: owner, admin, membro">
+                L&apos;owner gestisce tutto. Gli admin possono approvare le richieste di ingresso e aggiungere
+                direttamente nuovi membri per nome. I membri partecipano alle corse riservate.
+              </FeatureCard>
+            </div>
+            <Tip>
+              Per creare una crew vai su <strong>Area personale → Crew → Crea crew</strong>.
+              Le crew pubbliche sono visibili a tutti; quelle private sono accessibili solo tramite link diretto.
+            </Tip>
+          </Section>
+
           {/* CTA finale */}
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl px-8 py-12 text-center flex flex-col items-center gap-5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
