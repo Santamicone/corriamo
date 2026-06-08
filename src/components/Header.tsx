@@ -252,13 +252,17 @@ export function Header() {
 
             {/* Hamburger — mobile only */}
             <button
-              className="md:hidden p-2 rounded-xl hover:bg-gray-50 transition-colors text-gray-500"
+              className="md:hidden relative p-2 rounded-xl hover:bg-gray-50 transition-colors text-gray-500"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label={mobileOpen ? 'Chiudi menu' : 'Apri menu'}
             >
               <span className="material-symbols-outlined text-2xl">
                 {mobileOpen ? 'close' : 'menu'}
               </span>
+              {/* Badge punto rosso — solo quando il menu è chiuso e ci sono notifiche/messaggi non letti */}
+              {!mobileOpen && (unreadMessages + unreadNotifications) > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-white" />
+              )}
             </button>
           </div>
         </div>
@@ -325,6 +329,18 @@ export function Header() {
                     Messaggi
                     {unreadMessages > 0 && (
                       <span className="ml-auto bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full">{unreadMessages}</span>
+                    )}
+                  </Link>
+                  <Link href="/notifiche" onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    <span className="material-symbols-outlined text-base text-gray-400">
+                      {unreadNotifications > 0 ? 'notifications_active' : 'notifications'}
+                    </span>
+                    Notifiche
+                    {unreadNotifications > 0 && (
+                      <span className="ml-auto bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                      </span>
                     )}
                   </Link>
                   <button onClick={handleLogout}
