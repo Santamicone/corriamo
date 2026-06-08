@@ -27,6 +27,10 @@ export interface Profile {
   pb_21k: string | null
   pb_42k: string | null
   filter_by_city: boolean
+  // Affidabilità organizzatore (materializzata da trigger)
+  reliability_score:     number | null
+  reliability_eligible:  number
+  reliability_confirmed: number
 }
 
 export interface Run {
@@ -188,6 +192,14 @@ export interface RunChatMessage {
   author_id: string
   author?: Profile
   body: string
+  created_at: string
+}
+
+export interface RunConfirmation {
+  id: string
+  run_id: string
+  user_id: string
+  confirmed: boolean
   created_at: string
 }
 

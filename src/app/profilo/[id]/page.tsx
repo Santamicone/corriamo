@@ -11,6 +11,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { LEVEL_LABELS } from '@/lib/utils'
 import type { Profile, Run, Review, Momento } from '@/lib/types'
+import { ReliabilityBadge } from '@/components/ui/ReliabilityBadge'
 import type { Metadata } from 'next'
 
 const SITE_URL = 'https://www.vieniacorrere.it'
@@ -167,6 +168,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                   {reviewCount >= 2 && (
                     <RatingBadge average={avgRating} count={reviewCount} />
                   )}
+                  {/* Badge affidabilità */}
+                  <ReliabilityBadge profile={p} />
                 </div>
 
                 {/* Perché corre */}
