@@ -38,6 +38,7 @@ interface SearchParams {
   race_distance?: string
   looking_for?:   string
   all_cities?:    string   // bypass del filtro città automatico dal profilo
+  welcome?:       string   // '1' → primo accesso dopo registrazione
 }
 
 /* ─── Helpers date ─── */
@@ -278,6 +279,22 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
 
+          {/* Banner benvenuto al primo accesso */}
+          {params.welcome === '1' && (
+            <div className="flex items-start gap-4 bg-green-50 border border-green-200 rounded-2xl px-5 py-4">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-green-600 text-xl">celebration</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-gray-900">Bentornato nella community!</p>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Esplora le corse disponibili, oppure{' '}
+                  <Link href="/nuova-corsa" className="font-semibold text-primary hover:underline">proponi tu il primo appuntamento</Link>.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Tabs + view toggle */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex gap-1 bg-gray-100 p-1 rounded-full w-fit">
@@ -377,7 +394,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           {/* Contenuto principale */}
           {tab === 'corse' ? (
             runs.length === 0 && series.length === 0 ? (
-              <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
+              <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} userCity={filterCity ?? undefined} isLoggedIn={!!user} />
             ) : view === 'mappa' ? (
               <RunMapWrapper runs={runs} height="520px" />
             ) : (
@@ -703,10 +720,10 @@ function ActiveDatePill({ params }: { params: SearchParams }) {
 /* ═══════════════════════════════════════
    EMPTY STATE
 ═══════════════════════════════════════ */
-function EmptyState({ tab, hasFilters, hasDateFilter, params }: {
+function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLoggedIn }: {
   tab: string; hasFilters: boolean; hasDateFilter: boolean; params: SearchParams
+  userCity?: string; isLoggedIn?: boolean
 }) {
-  // Suggerimento contestuale per il filtro data
   const dateHint = hasDateFilter && (
     <a
       href={buildUrl({ ...params, from: undefined, to: undefined }, {})}
@@ -716,6 +733,12 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params }: {
       Cerca in tutte le date
     </a>
   )
+
+  const noFilterMessage = tab === 'gare'
+    ? 'Sii il primo a cercare compagni per una gara.'
+    : userCity
+      ? `Non ci sono ancora corse a ${userCity}. Sii il primo a proporne una!`
+      : 'Sii il primo a proporre un appuntamento nella tua città.'
 
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-white rounded-3xl border border-gray-100">
@@ -735,17 +758,22 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params }: {
             ? 'Nessuna corsa in questo periodo.'
             : hasFilters
               ? 'Prova a cambiare i filtri.'
-              : tab === 'gare'
-                ? 'Sii il primo a cercare compagni per una gara.'
-                : 'Sii il primo a proporre un appuntamento nella tua città.'}
+              : noFilterMessage}
         </p>
         {dateHint}
       </div>
-      {tab === 'corse' && (
+      {tab === 'corse' && isLoggedIn && (
         <Link href="/nuova-corsa"
           className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors mt-1">
           <span className="material-symbols-outlined text-lg">add</span>
           Proponi una corsa
+        </Link>
+      )}
+      {tab === 'corse' && !isLoggedIn && (
+        <Link href="/registrati"
+          className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors mt-1">
+          <span className="material-symbols-outlined text-lg">person_add</span>
+          Registrati e proponi una corsa
         </Link>
       )}
       {tab === 'gare' && (
