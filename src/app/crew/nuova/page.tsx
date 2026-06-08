@@ -88,7 +88,8 @@ export default function NuovaCrewPage() {
           )}
 
           {step === 'form' && crewType && (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <>
+            <form id="crew-form" onSubmit={handleSubmit} className="space-y-5">
               <button
                 type="button"
                 onClick={() => setStep('tipo')}
@@ -190,15 +191,20 @@ export default function NuovaCrewPage() {
               {error && (
                 <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{error}</p>
               )}
+            </form>
 
+            {/* Bottone sticky — sempre visibile */}
+            <div className="sticky bottom-0 bg-gray-50 pt-4 pb-6 mt-2">
               <button
+                form="crew-form"
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--color-brand)] text-white font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="w-full bg-[var(--color-brand)] text-white font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg"
               >
                 {loading ? 'Creazione...' : 'Crea crew'}
               </button>
-            </form>
+            </div>
+            </>
           )}
         </div>
       </main>
