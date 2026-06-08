@@ -12,8 +12,20 @@ export default async function NuovaCorsaPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: series } = await supabase
-    .from('series').select('id, title').eq('organizer_id', user.id).order('created_at', { ascending: false })
+  const [{ data: series }, { data: userCrews }] = await Promise.all([
+    supabase.from('series').select('id, title').eq('organizer_id', user.id).order('created_at', { ascending: false }),
+    supabase.from('crew_members').select('crew_id, role, crew:crews!crew_id(id, name, whatsapp_group_link)').eq('user_id', user.id).in('role', ['owner', 'admin']).eq('status', 'active'),
+  ])
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const crewOptions = (userCrews ?? []).map((m: any) => {
+    const crew = Array.isArray(m.crew) ? m.crew[0] : m.crew
+    return {
+      id: m.crew_id as string,
+      name: (crew?.name ?? '') as string,
+      whatsapp_group_link: (crew?.whatsapp_group_link ?? null) as string | null,
+    }
+  })
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -34,7 +46,7 @@ export default async function NuovaCorsaPage() {
       </div>
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NuovaCorsaForm userId={user.id} userSeries={series ?? []} />
+        <NuovaCorsaForm userId={user.id} userSeries={series ?? []} userCrews={crewOptions} />
       </main>
       <Footer />
     </div>

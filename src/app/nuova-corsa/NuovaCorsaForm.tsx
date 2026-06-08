@@ -15,9 +15,16 @@ const LocationPreviewMap = dynamic(() => import('@/components/LocationPreviewMap
   ),
 })
 
+interface CrewOption {
+  id: string
+  name: string
+  whatsapp_group_link: string | null
+}
+
 interface Props {
   userId: string
   userSeries: { id: string; title: string }[]
+  userCrews?: CrewOption[]
 }
 
 const inputCls = "h-11 w-full px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
@@ -55,7 +62,7 @@ function generateDates(startDate: string, recurrenceDay: number, recurrenceType:
   return dates
 }
 
-export function NuovaCorsaForm({ userId, userSeries }: Props) {
+export function NuovaCorsaForm({ userId, userSeries, userCrews = [] }: Props) {
   const router = useRouter()
   const [tipo, setTipo]       = useState<TipoCorsa>('singola')
   const [loading, setLoading] = useState(false)
@@ -68,6 +75,8 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
     distance_km: '', pace_target: '', level: 'tutti',
     max_participants: '', is_no_drop: false, series_id: '',
     location_public: true,
+    run_visibility: 'public' as 'public' | 'crew_only',
+    crew_id: '',
     // Campi corsa singola
     date: '', time: '07:00',
     // Campi serie
@@ -137,6 +146,8 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
         max_participants: form.max_participants ? parseInt(form.max_participants) : null,
         is_no_drop:       form.is_no_drop,
         location_public:  form.location_public,
+        run_visibility:   form.run_visibility,
+        crew_id:          form.run_visibility === 'crew_only' ? (form.crew_id || null) : null,
         tags,
         status:           'aperta',
         series_id:        form.series_id   || null,
@@ -324,6 +335,57 @@ export function NuovaCorsaForm({ userId, userSeries }: Props) {
             </p>
           </div>
         </label>
+
+        {/* Visibilità crew — solo se l'utente ha crew */}
+        {userCrews.length > 0 && (
+          <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-gray-500">lock</span>
+              <span className="text-sm font-semibold text-gray-900">Visibilità partecipanti</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {(['public', 'crew_only'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, run_visibility: v }))}
+                  className={`border rounded-xl px-3 py-2.5 text-xs text-left transition-colors ${
+                    form.run_visibility === v
+                      ? 'border-[var(--color-brand)] bg-[var(--color-brand)]/5 font-semibold'
+                      : 'border-gray-200 text-gray-600'
+                  }`}
+                >
+                  <div className="font-semibold mb-0.5">{v === 'public' ? 'Pubblica' : 'Solo crew'}</div>
+                  <div className="text-gray-400 text-[11px]">
+                    {v === 'public' ? 'Visibile a tutti in bacheca' : 'Solo i membri della crew selezionata'}
+                  </div>
+                </button>
+              ))}
+            </div>
+            {form.run_visibility === 'crew_only' && (
+              <div>
+                <label className={labelCls}>Crew *</label>
+                <select
+                  required
+                  value={form.crew_id}
+                  onChange={e => setForm(p => ({ ...p, crew_id: e.target.value }))}
+                  className={inputCls}
+                >
+                  <option value="">Seleziona crew</option>
+                  {userCrews.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                {/* Bottone avvisa WhatsApp — mostrato dopo la scelta crew */}
+                {form.crew_id && userCrews.find(c => c.id === form.crew_id)?.whatsapp_group_link && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    Dopo aver salvato potrai avvisare il gruppo WhatsApp direttamente dalla pagina della corsa.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {tipo === 'singola' ? (
           <div className="grid grid-cols-2 gap-4 pt-1">

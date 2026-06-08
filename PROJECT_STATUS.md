@@ -77,6 +77,8 @@ NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email red
 | 16 | `supabase/add-location-public.sql` | ✅ | Colonna `location_public boolean` su `runs` |
 | 17 | `supabase/add-filter-by-city.sql` | ✅ | Colonna `filter_by_city boolean` su `profiles` |
 | 18 | `supabase/reliability.sql` | ⏳ DA ESEGUIRE | Tabella `run_confirmations` + colonne `reliability_*` su `profiles` + funzione score + 4 trigger |
+| 19 | `supabase/crews.sql` | ⏳ DA ESEGUIRE | Tabelle `crews` + `crew_members` + RLS + 4 trigger + colonne `crew_id`, `run_visibility` su `runs` |
+| 20 | `supabase/crew-invites.sql` | ⏳ DA ESEGUIRE | Tabella `crew_invites` + RLS |
 
 ### Schema tabelle aggiornato
 
@@ -118,6 +120,20 @@ check_ins        id, run_id, user_id, checked_in_at, UNIQUE(run_id, user_id)
 
 run_confirmations id, run_id, user_id, confirmed boolean, created_at,
                   UNIQUE(run_id, user_id)
+
+crews            id, name, description, avatar_url, owner_id,
+                 crew_type (training_group|running_club|friends),
+                 visibility (public|private), whatsapp_group_link, created_at
+
+crew_members     id, crew_id, user_id, role (owner|admin|member),
+                 status (active|pending|rejected), joined_at,
+                 UNIQUE(crew_id, user_id)
+
+crew_invites     id, crew_id, invited_by, token uuid, max_uses, use_count,
+                 expires_at, created_at
+
+runs             + crew_id → crews.id (nullable)
+                 + run_visibility (public|crew_only|invite_only) default 'public'
 ```
 
 ### Storage bucket
@@ -133,6 +149,7 @@ run_confirmations id, run_id, user_id, confirmed boolean, created_at,
   ALTER PUBLICATION supabase_realtime ADD TABLE public.run_chat;
   ALTER PUBLICATION supabase_realtime ADD TABLE public.check_ins;
   ALTER PUBLICATION supabase_realtime ADD TABLE public.run_confirmations;
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.crew_members;
   ```
 
 ---

@@ -27,6 +27,9 @@ export interface Profile {
   pb_21k: string | null
   pb_42k: string | null
   filter_by_city: boolean
+  // Preferenze email
+  email_prefs: { immediate: boolean; digest: boolean; reminders: boolean } | null
+  last_seen_at: string | null
   // Affidabilità organizzatore (materializzata da trigger)
   reliability_score:     number | null
   reliability_eligible:  number
@@ -202,6 +205,59 @@ export interface RunConfirmation {
   user_id: string
   confirmed: boolean
   created_at: string
+}
+
+export type CrewType = 'training_group' | 'running_club' | 'friends'
+export type CrewVisibility = 'public' | 'private'
+export type CrewMemberRole = 'owner' | 'admin' | 'member'
+export type CrewMemberStatus = 'active' | 'pending' | 'rejected'
+export type RunVisibility = 'public' | 'crew_only' | 'invite_only'
+
+export interface Crew {
+  id: string
+  name: string
+  description: string | null
+  avatar_url: string | null
+  owner_id: string
+  owner?: Profile
+  crew_type: CrewType
+  visibility: CrewVisibility
+  whatsapp_group_link: string | null
+  created_at: string
+}
+
+export interface CrewMember {
+  id: string
+  crew_id: string
+  user_id: string
+  user?: Profile
+  role: CrewMemberRole
+  status: CrewMemberStatus
+  joined_at: string
+}
+
+export const CREW_TYPE_LABELS: Record<CrewType, { name: string; ownerLabel: string; adminLabel: string; memberLabel: string; description: string }> = {
+  training_group: {
+    name: 'Squadra di allenamento',
+    ownerLabel: 'Coach',
+    adminLabel: 'Coach',
+    memberLabel: 'Atleta',
+    description: 'Allenamenti strutturati con un programma definito',
+  },
+  running_club: {
+    name: 'Running club',
+    ownerLabel: 'Leader',
+    adminLabel: 'Leader',
+    memberLabel: 'Membro',
+    description: 'Club organizzato per uscite e gare di gruppo',
+  },
+  friends: {
+    name: 'Gruppo di amici',
+    ownerLabel: 'Admin',
+    adminLabel: 'Admin',
+    memberLabel: 'Membro',
+    description: 'Gruppo informale per correre insieme',
+  },
 }
 
 export interface Participation {

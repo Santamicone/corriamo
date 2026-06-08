@@ -26,8 +26,15 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { error, data } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // Aggiorna last_seen_at per la logica anti-spam digest email
+      if (data.user) {
+        await supabase
+          .from('profiles')
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq('id', data.user.id)
+      }
       // Usa il site URL configurato in produzione, fallback all'origin locale
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || origin
       return NextResponse.redirect(`${siteUrl}${next}`)

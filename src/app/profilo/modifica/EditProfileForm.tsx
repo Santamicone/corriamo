@@ -57,6 +57,13 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
     pb_42k:         profile.pb_42k         ?? '',
     filter_by_city: profile.filter_by_city ?? false,
   })
+
+  const defaultPrefs = { immediate: true, digest: true, reminders: true }
+  const [emailPrefs, setEmailPrefs] = useState<{ immediate: boolean; digest: boolean; reminders: boolean }>(
+    { ...defaultPrefs, ...(profile.email_prefs as Partial<typeof defaultPrefs> ?? {}) }
+  )
+  const togglePref = (key: keyof typeof emailPrefs) =>
+    setEmailPrefs(p => ({ ...p, [key]: !p[key] }))
   const [whyIRun, setWhyIRun] = useState<string[]>(profile.why_i_run ?? [])
 
   /* ── Avatar ── */
@@ -136,6 +143,7 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
       pb_21k:        form.pb_21k        || null,
       pb_42k:        form.pb_42k        || null,
       filter_by_city: form.filter_by_city,
+      email_prefs:   emailPrefs,
     }).eq('id', profile.id)
 
     if (profileErr) { setError('Errore nel salvataggio: ' + profileErr.message); setLoading(false); return }
@@ -403,6 +411,53 @@ export function EditProfileForm({ profile }: { profile: Profile }) {
         <Input label="Profilo Strava" type="url" value={form.strava_url} onChange={update('strava_url')} placeholder="https://www.strava.com/athletes/..." />
         <Input label="Profilo Garmin" type="url" value={form.garmin_url} onChange={update('garmin_url')} placeholder="https://connect.garmin.com/..." />
         <Input label="Instagram" type="url" value={form.instagram_url} onChange={update('instagram_url')} placeholder="https://www.instagram.com/..." />
+      </FormSection>
+
+      {/* ── Preferenze email ── */}
+      <FormSection title="Preferenze email" desc="Scegli quali email vuoi ricevere da Vieni a correre?.">
+        {([
+          {
+            key:   'immediate' as const,
+            icon:  'notifications_active',
+            label: 'Email immediate',
+            desc:  'Annullamenti corsa, iscrizione approvata, modifiche importanti.',
+          },
+          {
+            key:   'digest' as const,
+            icon:  'inbox',
+            label: 'Riepiloghi',
+            desc:  'Nuove richieste di partecipazione e messaggi non letti (se non apri l\'app entro 2 ore).',
+          },
+          {
+            key:   'reminders' as const,
+            icon:  'alarm',
+            label: 'Promemoria',
+            desc:  'La sera prima di una corsa a cui sei iscritto/a.',
+          },
+        ]).map(opt => (
+          <label key={opt.key}
+            className={cn(
+              'flex items-start gap-3 cursor-pointer p-3.5 rounded-2xl border transition-all',
+              emailPrefs[opt.key] ? 'bg-orange-50 border-orange-200' : 'border-gray-100 hover:bg-gray-50'
+            )}>
+            <input
+              type="checkbox"
+              checked={emailPrefs[opt.key]}
+              onChange={() => togglePref(opt.key)}
+              className="w-4 h-4 mt-0.5 rounded accent-primary shrink-0"
+            />
+            <div>
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+                <span className="material-symbols-outlined text-base text-gray-500">{opt.icon}</span>
+                {opt.label}
+              </span>
+              <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{opt.desc}</p>
+            </div>
+          </label>
+        ))}
+        <p className="text-xs text-gray-400 -mt-1">
+          Puoi disiscriverti da tutto in qualsiasi momento dal link nelle email.
+        </p>
       </FormSection>
 
       {success && (
