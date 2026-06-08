@@ -79,6 +79,7 @@ NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email red
 | 18 | `supabase/reliability.sql` | ⏳ DA ESEGUIRE | Tabella `run_confirmations` + colonne `reliability_*` su `profiles` + funzione score + 4 trigger |
 | 19 | `supabase/crews.sql` | ⏳ DA ESEGUIRE | Tabelle `crews` + `crew_members` + RLS + 4 trigger + colonne `crew_id`, `run_visibility` su `runs` |
 | 20 | `supabase/crew-invites.sql` | ⏳ DA ESEGUIRE | Tabella `crew_invites` + RLS |
+| 21 | `supabase/crews-fix-rls.sql` | ⏳ DA ESEGUIRE | Fix ricorsione RLS crews/crew_members — funzioni SECURITY DEFINER |
 
 ### Schema tabelle aggiornato
 
