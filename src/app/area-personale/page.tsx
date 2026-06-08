@@ -47,7 +47,7 @@ export default async function AreaPersonalePage() {
       .is('read_at', null),
 
     supabase.from('crew_members')
-      .select('role, status, crew:crews!crew_id(id, name, crew_type)')
+      .select('crew_id, role, status, crew:crews!crew_id(id, name, crew_type)')
       .eq('user_id', user.id)
       .eq('status', 'active'),
   ])
