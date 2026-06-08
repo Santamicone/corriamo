@@ -7,10 +7,12 @@ import Link from 'next/link'
 import { formatDate, LEVEL_LABELS, formatPaceTarget, runRitrovoColor, parseRunDateTime } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/TagBadge'
 import type { Run, Participation, Review, Momento } from '@/lib/types'
+import { ReliabilityBadge } from '@/components/ui/ReliabilityBadge'
 import { JoinButton } from './JoinButton'
 import { ParticipantsList } from './ParticipantsList'
 import { ContactButton } from './ContactButton'
 import { ReviewForm } from './ReviewForm'
+import { ConfirmationPrompt } from './ConfirmationPrompt'
 import { CancelRunButton } from './CancelRunButton'
 import { MomentoSection } from './MomentoSection'
 import { MomentoCard } from '@/components/MomentoCard'
@@ -165,6 +167,28 @@ export default async function CorsaDetailPage({
     !isOrganizer &&
     myParticipation?.status === 'approvata'
   )
+
+  // Prompt "La corsa si è svolta?" — partecipante approvato, corsa passata da >2h e <7gg, non organizzatore
+  const hoursAfterRun = (Date.now() - runDateTime.getTime()) / (1000 * 60 * 60)
+  const showConfirmationPrompt = !!(
+    user &&
+    isPast &&
+    !isOrganizer &&
+    myParticipation?.status === 'approvata' &&
+    hoursAfterRun >= 2 &&
+    hoursAfterRun <= 24 * 7
+  )
+  // Controlla se ha già risposto
+  const myConfirmation = showConfirmationPrompt
+    ? await supabase
+        .from('run_confirmations')
+        .select('id')
+        .eq('run_id', id)
+        .eq('user_id', user!.id)
+        .maybeSingle()
+        .then(r => r.data)
+    : null
+  const needsConfirmation = showConfirmationPrompt && !myConfirmation
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -362,6 +386,11 @@ export default async function CorsaDetailPage({
                 </section>
               )}
 
+              {/* ── Prompt post-run "La corsa si è svolta?" ── */}
+              {needsConfirmation && (
+                <ConfirmationPrompt runId={id} runTitle={typedRun.title} />
+              )}
+
               {/* ── Recensione (solo partecipanti approvati, corsa passata) ── */}
               {canReview && (
                 <ReviewForm
@@ -460,9 +489,12 @@ export default async function CorsaDetailPage({
                     <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">
                       {typedRun.organizer.full_name}
                     </p>
-                    {typedRun.organizer.city && (
-                      <p className="text-xs text-gray-400">{typedRun.organizer.city}</p>
-                    )}
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      {typedRun.organizer.city && (
+                        <p className="text-xs text-gray-400">{typedRun.organizer.city}</p>
+                      )}
+                      <ReliabilityBadge profile={typedRun.organizer} variant="icon" />
+                    </div>
                   </div>
                   <span className="material-symbols-outlined text-gray-200 group-hover:text-primary ml-auto transition-colors">
                     chevron_right
