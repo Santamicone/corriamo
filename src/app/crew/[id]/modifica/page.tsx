@@ -173,8 +173,7 @@ export default function ModificaCrewPage() {
             <button
               type="submit"
               disabled={saving}
-              style={{ backgroundColor: 'var(--color-brand)' }}
-              className="w-full text-white font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full bg-primary text-white font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {saving ? 'Salvataggio...' : 'Salva modifiche'}
             </button>

@@ -102,7 +102,7 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
           {/* Membri attivi */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-900 mb-4">
-              {active.length} {typeInfo.memberLabel}{active.length !== 1 ? 'i' : 'e'}
+              {active.length} {active.length !== 1 ? (typeInfo.memberLabelPlural ?? typeInfo.memberLabel) : typeInfo.memberLabel}
             </h2>
             <div className="space-y-3">
               {active.map((m) => (

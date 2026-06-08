@@ -194,8 +194,7 @@ export default function NuovaCrewPage() {
               <button
                 type="submit"
                 disabled={loading}
-                style={{ backgroundColor: 'var(--color-brand)' }}
-                className="w-full text-white font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="w-full bg-primary text-white font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {loading ? 'Creazione...' : 'Crea crew'}
               </button>
