@@ -138,6 +138,17 @@ export default async function CorsaDetailPage({
   const canSeeLocation = isOrganizer || myParticipation?.status === 'approvata'
   const displayLocation = isPrivateLoc && !canSeeLocation ? null : typedRun.location
 
+  // Crew della corsa (se crew_only) — per bottone WhatsApp organizzatore
+  const runWithCrew = typedRun as Run & { run_visibility?: string; crew_id?: string }
+  const crewWhatsappLink = (isOrganizer && runWithCrew.run_visibility === 'crew_only' && runWithCrew.crew_id)
+    ? await supabase
+        .from('crews')
+        .select('name, whatsapp_group_link')
+        .eq('id', runWithCrew.crew_id)
+        .single()
+        .then(r => r.data?.whatsapp_group_link ?? null)
+    : null
+
   // Momenti — solo per corse passate
   const momenti: Momento[] = isPast ? await supabase
     .from('momenti')
@@ -513,6 +524,17 @@ export default async function CorsaDetailPage({
                       </p>
                     </div>
                   </div>
+                  {/* Bottone WhatsApp — solo se corsa crew_only con gruppo configurato */}
+                  {crewWhatsappLink && !isPast && (
+                    <a
+                      href={`whatsapp://send?text=${encodeURIComponent(`🏃 ${typedRun.title}\n📅 ${new Date(typedRun.date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })} · ore ${typedRun.time?.slice(0,5)}\n📍 ${typedRun.location}, ${typedRun.city}\n\n👉 ${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.vieniacorrere.it'}/corse/${id}`)}`}
+                      className="flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-base">chat</span>
+                      Avvisa il gruppo WhatsApp
+                    </a>
+                  )}
+
                   {!isPast && typedRun.status === 'aperta' && (
                     <div className="flex flex-col gap-2">
                       {/* Modifica — disabilitato <2h dalla partenza */}
