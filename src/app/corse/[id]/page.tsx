@@ -514,7 +514,23 @@ export default async function CorsaDetailPage({
                     </div>
                   </div>
                   {!isPast && typedRun.status === 'aperta' && (
-                    <CancelRunButton runId={id} />
+                    <div className="flex flex-col gap-2">
+                      {/* Modifica — disabilitato <2h dalla partenza */}
+                      {diffMin >= 120 ? (
+                        <Link href={`/corse/${id}/modifica`}
+                          className="flex items-center justify-center gap-2 border border-gray-200 text-gray-700 font-semibold text-sm px-4 py-2.5 rounded-full hover:bg-gray-50 transition-colors">
+                          <span className="material-symbols-outlined text-base">edit</span>
+                          Modifica corsa
+                        </Link>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 border border-gray-100 text-gray-300 font-semibold text-sm px-4 py-2.5 rounded-full cursor-not-allowed"
+                          title="Non modificabile a meno di 2 ore dalla partenza">
+                          <span className="material-symbols-outlined text-base">edit</span>
+                          Modifica corsa
+                        </div>
+                      )}
+                      <CancelRunButton runId={id} />
+                    </div>
                   )}
                 </>
               )}
