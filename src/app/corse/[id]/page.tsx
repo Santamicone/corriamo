@@ -138,16 +138,17 @@ export default async function CorsaDetailPage({
   const canSeeLocation = isOrganizer || myParticipation?.status === 'approvata'
   const displayLocation = isPrivateLoc && !canSeeLocation ? null : typedRun.location
 
-  // Crew della corsa (se crew_only) — per bottone WhatsApp organizzatore
+  // Crew della corsa (se crew_only) — nome per badge + link WhatsApp per organizzatore
   const runWithCrew = typedRun as Run & { run_visibility?: string; crew_id?: string }
-  const crewWhatsappLink = (isOrganizer && runWithCrew.run_visibility === 'crew_only' && runWithCrew.crew_id)
+  const crewData = (runWithCrew.run_visibility === 'crew_only' && runWithCrew.crew_id)
     ? await supabase
         .from('crews')
         .select('name, whatsapp_group_link')
         .eq('id', runWithCrew.crew_id)
         .single()
-        .then(r => r.data?.whatsapp_group_link ?? null)
+        .then(r => r.data ?? null)
     : null
+  const crewWhatsappLink = isOrganizer ? (crewData?.whatsapp_group_link ?? null) : null
 
   // Momenti — solo per corse passate
   const momenti: Momento[] = isPast ? await supabase
@@ -226,6 +227,11 @@ export default async function CorsaDetailPage({
               {typedRun.series_id && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
                   <span className="material-symbols-outlined text-sm">event_repeat</span>Serie ricorrente
+                </span>
+              )}
+              {crewData && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+                  <span className="material-symbols-outlined text-sm">group</span>Riservata a {crewData.name}
                 </span>
               )}
               {isPast && (
