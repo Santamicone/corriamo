@@ -14,11 +14,12 @@ interface Props {
 
 export function JoinButton({ runId, userId, myParticipation, myInterest, isFull }: Props) {
   const router = useRouter()
-  const [loading,      setLoading]      = useState(false)
-  const [showForm,     setShowForm]     = useState(false)
-  const [message,      setMessage]      = useState('')
-  const [hasInterest,  setHasInterest]  = useState(!!myInterest)
-  const [interestId,   setInterestId]   = useState(myInterest?.id ?? null)
+  const [loading,        setLoading]        = useState(false)
+  const [showForm,       setShowForm]       = useState(false)
+  const [message,        setMessage]        = useState('')
+  const [hasInterest,    setHasInterest]    = useState(!!myInterest)
+  const [interestId,     setInterestId]     = useState(myInterest?.id ?? null)
+  const [interestToast,  setInterestToast]  = useState(false)   // toast conferma "Mi interessa"
 
   /* ── Interesse ── */
   const handleAddInterest = async () => {
@@ -30,7 +31,12 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
       .insert({ run_id: runId, user_id: userId })
       .select('id')
       .single()
-    if (data) { setHasInterest(true); setInterestId(data.id) }
+    if (data) {
+      setHasInterest(true)
+      setInterestId(data.id)
+      setInterestToast(true)
+      setTimeout(() => setInterestToast(false), 3500)
+    }
     setLoading(false)
     router.refresh()
   }
@@ -125,6 +131,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
         </div>
         <InterestSection
           hasInterest={hasInterest} loading={loading}
+          newlyAdded={interestToast}
           onAdd={handleAddInterest} onRemove={handleRemoveInterest}
           onParticipate={() => {}}  // non disponibile — full
           userId={userId}
@@ -187,6 +194,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
       {/* ── Mi interessa ── */}
       <InterestSection
         hasInterest={hasInterest} loading={loading}
+        newlyAdded={interestToast}
         onAdd={handleAddInterest} onRemove={handleRemoveInterest}
         onParticipate={() => setShowForm(true)}
         userId={userId}
@@ -197,10 +205,11 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
 
 /* ── Sezione "Mi interessa" riutilizzabile ── */
 function InterestSection({
-  hasInterest, loading, onAdd, onRemove, onParticipate, userId,
+  hasInterest, loading, newlyAdded, onAdd, onRemove, onParticipate, userId,
 }: {
   hasInterest: boolean
   loading: boolean
+  newlyAdded?: boolean
   onAdd: () => void
   onRemove: () => void
   onParticipate: () => void
@@ -209,10 +218,23 @@ function InterestSection({
   if (hasInterest) {
     return (
       <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-start gap-3">
-        <span className="material-symbols-filled text-amber-500 text-xl shrink-0">star</span>
+        <span className={`material-symbols-filled text-xl shrink-0 transition-colors ${newlyAdded ? 'text-green-500' : 'text-amber-500'}`}>
+          {newlyAdded ? 'check_circle' : 'star'}
+        </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-amber-800">Hai segnato interesse</p>
-          <p className="text-xs text-amber-600 mt-0.5">Riceverai un avviso se la corsa viene annullata.</p>
+          {newlyAdded ? (
+            <>
+              <p className="text-sm font-bold text-green-800">Interesse registrato!</p>
+              <p className="text-xs text-green-700 mt-0.5">
+                L&apos;organizzatore vedrà che sei interessato. Riceverai un avviso se la corsa viene annullata.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-bold text-amber-800">Hai segnato interesse</p>
+              <p className="text-xs text-amber-600 mt-0.5">Riceverai un avviso se la corsa viene annullata.</p>
+            </>
+          )}
           <div className="flex gap-3 mt-2.5">
             <button onClick={onRemove} disabled={loading}
               className="text-xs text-amber-600 hover:text-red-500 transition-colors font-semibold underline">
@@ -241,8 +263,11 @@ function InterestSection({
       disabled={loading}
       className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 text-sm font-semibold px-5 py-2.5 rounded-2xl hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700 transition-all disabled:opacity-50"
     >
-      <span className="material-symbols-outlined text-base">star</span>
-      Mi interessa
+      {loading
+        ? <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+        : <span className="material-symbols-outlined text-base">star</span>
+      }
+      {loading ? 'Salvataggio…' : 'Mi interessa'}
     </button>
   )
 }
