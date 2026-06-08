@@ -50,9 +50,9 @@ export default function NuovaCrewPage() {
   }
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="min-h-screen bg-gray-50 py-10 px-4">
+      <main className="flex-1 bg-gray-50 py-10 pb-20 px-4">
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Crea la tua crew</h1>
           <p className="text-gray-500 mb-8 text-sm">
@@ -203,6 +203,6 @@ export default function NuovaCrewPage() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   )
 }
