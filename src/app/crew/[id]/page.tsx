@@ -130,7 +130,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           {/* Membri */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-900 mb-4">
-              {members?.length ?? 0} {typeInfo.memberLabel}{(members?.length ?? 0) !== 1 ? 'i' : 'e'}
+              {members?.length ?? 0} {(members?.length ?? 0) !== 1 ? typeInfo.memberLabelPlural : typeInfo.memberLabel}
             </h2>
             <div className="space-y-3">
               {members?.map((m) => (

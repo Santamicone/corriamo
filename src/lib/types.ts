@@ -236,12 +236,13 @@ export interface CrewMember {
   joined_at: string
 }
 
-export const CREW_TYPE_LABELS: Record<CrewType, { name: string; ownerLabel: string; adminLabel: string; memberLabel: string; description: string }> = {
+export const CREW_TYPE_LABELS: Record<CrewType, { name: string; ownerLabel: string; adminLabel: string; memberLabel: string; memberLabelPlural: string; description: string }> = {
   training_group: {
     name: 'Squadra di allenamento',
     ownerLabel: 'Coach',
     adminLabel: 'Coach',
     memberLabel: 'Atleta',
+    memberLabelPlural: 'Atleti',
     description: 'Allenamenti strutturati con un programma definito',
   },
   running_club: {
@@ -249,6 +250,7 @@ export const CREW_TYPE_LABELS: Record<CrewType, { name: string; ownerLabel: stri
     ownerLabel: 'Leader',
     adminLabel: 'Leader',
     memberLabel: 'Membro',
+    memberLabelPlural: 'Membri',
     description: 'Club organizzato per uscite e gare di gruppo',
   },
   friends: {
@@ -256,6 +258,7 @@ export const CREW_TYPE_LABELS: Record<CrewType, { name: string; ownerLabel: stri
     ownerLabel: 'Admin',
     adminLabel: 'Admin',
     memberLabel: 'Membro',
+    memberLabelPlural: 'Membri',
     description: 'Gruppo informale per correre insieme',
   },
 }
