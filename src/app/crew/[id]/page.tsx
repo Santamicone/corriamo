@@ -61,6 +61,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   const typeInfo = CREW_TYPE_LABELS[crew.crew_type]
   const currentMember = members?.find((m) => m.user_id === user?.id)
   const isOwner = user?.id === crew.owner_id
+  const canManage = currentMember?.role === 'owner' || currentMember?.role === 'admin'
 
   return (
     <>
@@ -88,7 +89,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                   <p className="text-gray-600 mt-2 text-sm leading-relaxed">{crew.description}</p>
                 )}
               </div>
-              {isOwner && (
+              {canManage && (
                 <Link
                   href={`/crew/${id}/gestisci`}
                   className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-xl px-3 py-1.5 shrink-0"

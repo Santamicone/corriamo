@@ -8,6 +8,8 @@ import { CREW_TYPE_LABELS } from '@/lib/types'
 import type { Crew, CrewMember } from '@/lib/types'
 import { MemberActions } from './MemberActions'
 import { InviteLinkSection } from './InviteLinkSection'
+import { AddMemberSearch } from './AddMemberSearch'
+import { DeleteCrewButton } from './DeleteCrewButton'
 
 export default async function GestisciCrewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -99,6 +101,9 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
           {/* Link invito */}
           <InviteLinkSection crewId={id} />
 
+          {/* Aggiunta diretta membro */}
+          <AddMemberSearch crewId={id} />
+
           {/* Membri attivi */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-900 mb-4">
@@ -164,6 +169,7 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
                   <span className="material-symbols-outlined text-base">edit</span>
                   Modifica profilo crew
                 </Link>
+                <DeleteCrewButton crewId={id} crewName={crew.name} />
               </div>
             </div>
           )}
