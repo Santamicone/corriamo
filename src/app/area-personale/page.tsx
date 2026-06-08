@@ -8,7 +8,8 @@ import { RunCard } from '@/components/RunCard'
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { SeriesCard } from '@/components/SeriesCard'
 import Link from 'next/link'
-import type { Run, Series } from '@/lib/types'
+import type { Run, Series, CrewType } from '@/lib/types'
+import { CREW_TYPE_LABELS } from '@/lib/types'
 
 export default async function AreaPersonalePage() {
   const supabase = await createClient()
@@ -22,6 +23,7 @@ export default async function AreaPersonalePage() {
     { data: myParticipations },
     { data: mySeries },
     { data: unreadMessages },
+    { data: myCrewMemberships },
   ] = await Promise.all([
     supabase.from('runs')
       .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
@@ -43,7 +45,22 @@ export default async function AreaPersonalePage() {
       .select('id', { count: 'exact', head: true })
       .eq('recipient_id', user.id)
       .is('read_at', null),
+
+    supabase.from('crew_members')
+      .select('role, status, crew:crews!crew_id(id, name, crew_type)')
+      .eq('user_id', user.id)
+      .eq('status', 'active'),
   ])
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const crewMemberships = (myCrewMemberships ?? []).map((m: any) => ({
+    crew_id: m.crew_id as string,
+    role: m.role as string,
+    crew: (Array.isArray(m.crew) ? m.crew[0] : m.crew) as { id: string; name: string; crew_type: CrewType } | null,
+  })).filter(m => m.crew)
+
+  const myOwnedCrews = crewMemberships.filter(m => m.role === 'owner')
+  const myMemberCrews = crewMemberships.filter(m => m.role !== 'owner')
 
   const approvedParticipations = myParticipations?.filter(p => p.status === 'approvata') ?? []
   const pendingParticipations  = myParticipations?.filter(p => p.status === 'in_attesa') ?? []
@@ -97,6 +114,73 @@ export default async function AreaPersonalePage() {
               </div>
               <span className="material-symbols-outlined text-gray-300 ml-auto">chevron_right</span>
             </Link>
+          </section>
+
+          {/* ── Crew ── */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">group</span>
+                La mia crew
+              </h2>
+              {myOwnedCrews.length === 0 && (
+                <Link href="/crew/nuova" className="text-sm font-semibold text-primary hover:underline">
+                  + Crea crew
+                </Link>
+              )}
+            </div>
+
+            {myOwnedCrews.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {myOwnedCrews.map(m => (
+                  <Link key={m.crew_id} href={`/crew/${m.crew_id}/gestisci`}
+                    className="flex items-center gap-4 bg-white border border-gray-100 rounded-2xl px-5 py-4 hover:shadow-sm transition-all">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-primary text-xl">group</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{m.crew!.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {CREW_TYPE_LABELS[m.crew!.crew_type].ownerLabel} · {CREW_TYPE_LABELS[m.crew!.crew_type].name}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-primary border border-primary/30 rounded-full px-3 py-1 shrink-0">
+                      Gestisci
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : myMemberCrews.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {myMemberCrews.map(m => (
+                  <Link key={m.crew_id} href={`/crew/${m.crew_id}`}
+                    className="flex items-center gap-4 bg-white border border-gray-100 rounded-2xl px-5 py-4 hover:shadow-sm transition-all">
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-gray-400 text-xl">group</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{m.crew!.name}</p>
+                      <p className="text-xs text-gray-400">{CREW_TYPE_LABELS[m.crew!.crew_type].name}</p>
+                    </div>
+                    <span className="material-symbols-outlined text-gray-300 shrink-0">chevron_right</span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-4 bg-white border border-dashed border-gray-200 rounded-2xl px-5 py-5">
+                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-gray-300 text-xl">group_add</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-700">Non hai ancora una crew</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Crea il tuo gruppo di runner per corse riservate e coordinamento WhatsApp.</p>
+                </div>
+                <Link href="/crew/nuova"
+                  className="shrink-0 text-sm font-semibold text-white bg-primary rounded-xl px-4 py-2 hover:opacity-90 transition-opacity">
+                  Crea
+                </Link>
+              </div>
+            )}
           </section>
 
           {/* ── Richieste in attesa (organizzatore) ── */}
