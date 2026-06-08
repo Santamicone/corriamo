@@ -1,7 +1,7 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
-> Aggiornato al: **giugno 2026**
+> Aggiornato al: **giugno 2026** — ultima sessione: sistema affidabilità organizzatori
 
 ---
 
@@ -76,6 +76,7 @@ NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email red
 | 15 | `supabase/add-interests.sql` | ✅ | Tabella `interests` ("Mi interessa") + RLS |
 | 16 | `supabase/add-location-public.sql` | ✅ | Colonna `location_public boolean` su `runs` |
 | 17 | `supabase/add-filter-by-city.sql` | ✅ | Colonna `filter_by_city boolean` su `profiles` |
+| 18 | `supabase/reliability.sql` | ⏳ DA ESEGUIRE | Tabella `run_confirmations` + colonne `reliability_*` su `profiles` + funzione score + 4 trigger |
 
 ### Schema tabelle aggiornato
 
@@ -83,7 +84,9 @@ NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email red
 profiles         id, full_name, city, level, pace_min, pace_max, bio,
                  strava_url, garmin_url, instagram_url, avatar_url,
                  age, why_i_run text[], pb_5k, pb_10k, pb_21k, pb_42k,
-                 filter_by_city boolean
+                 filter_by_city boolean,
+                 reliability_score numeric(5,2), reliability_eligible numeric(5,2),
+                 reliability_confirmed numeric(5,2)
 
 runs             id, organizer_id, series_id, title, description, date, time,
                  location, city, lat, lng, distance_km, pace_target, level,
@@ -112,6 +115,9 @@ momenti          id, run_id, author_id, photo_url, body, UNIQUE(run_id, author_i
 run_chat         id, run_id, author_id, body, created_at
 
 check_ins        id, run_id, user_id, checked_in_at, UNIQUE(run_id, user_id)
+
+run_confirmations id, run_id, user_id, confirmed boolean, created_at,
+                  UNIQUE(run_id, user_id)
 ```
 
 ### Storage bucket
@@ -126,6 +132,7 @@ check_ins        id, run_id, user_id, checked_in_at, UNIQUE(run_id, user_id)
   ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
   ALTER PUBLICATION supabase_realtime ADD TABLE public.run_chat;
   ALTER PUBLICATION supabase_realtime ADD TABLE public.check_ins;
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.run_confirmations;
   ```
 
 ---
@@ -220,13 +227,14 @@ src/
 │       └── Textarea.tsx
 │
 ├── lib/
-│   ├── types.ts                      Profile (nuovi campi), Run (gara, location_public...),
-│   │                                 Interest, CheckIn, RunChatMessage, ProfileLevel
+│   ├── types.ts                      Profile (nuovi campi + reliability_*), Run (gara, location_public...),
+│   │                                 Interest, CheckIn, RunChatMessage, RunConfirmation, ProfileLevel
 │   ├── utils.ts                      + parseRunDateTime (fuso Europe/Rome)
 │   │                                 + runRitrovoColor (Purple Screen)
 │   ├── tags.ts
 │   ├── compatibility.ts              Supporto nuovi livelli profilo (amatore_gare, atleta)
 │   ├── geocoding.ts
+│   ├── reliability.ts                getReliabilityBadge() → 'affidabile' | 'organizzatore' | null
 │   └── supabase/
 │       ├── client.ts
 │       └── server.ts
@@ -308,6 +316,16 @@ src/
 ### Mappa
 - [x] Pin colorati per livello, grigio tratteggiato per luogo privato, rosso per spot
 
+### Affidabilità organizzatori
+- [x] Badge **Affidabile** (verde) e **Organizzatore** (blu) calcolati automaticamente
+- [x] Score da segnali passivi: check-in Purple Screen + recensioni + prompt post-run
+- [x] Prompt "La corsa si è svolta?" per partecipanti approvati (2h–7gg dopo la corsa)
+- [x] Corse spot pesano 0.5 nel calcolo
+- [x] Colonne materializzate su `profiles` aggiornate da 4 trigger DB
+- [x] `ReliabilityBadge` componente riutilizzabile (varianti full/icon)
+- [x] Badge visibile nel profilo e nella sidebar del dettaglio corsa
+- ⏳ **`supabase/reliability.sql` ancora da eseguire su Supabase**
+
 ### SEO (Sprint 1 completato)
 - [x] robots.txt, sitemap.xml dinamico, favicon SVG
 - [x] generateMetadata su tutte le pagine pubbliche (canonical, OG, Twitter card)
@@ -354,6 +372,7 @@ src/
 
 | Problema | Priorità | Note |
 |---|---|---|
+| **`supabase/reliability.sql` da eseguire** | **Alta** | Senza questo le colonne `reliability_*` non esistono in produzione |
 | Form "modifica corsa" non esiste | Media | Si può solo annullare, non editare dopo la pubblicazione |
 | Corse esistenti senza coordinate | Bassa | Non appaiono sulla mappa; backfill SQL in DASHBOARD-CONFIG.md |
 | SEO Sprint 2 non ancora fatto | Media | Schema.org JSON-LD (Event, Person, WebSite) |
@@ -363,17 +382,19 @@ src/
 
 ## 9. Prossimi task (in ordine di priorità)
 
+### Urgente (pre-merge)
+1. **Eseguire `supabase/reliability.sql`** su Supabase Dashboard → SQL Editor
+
 ### Alta priorità
-1. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e gira in produzione
+2. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e gira in produzione
 
 ### Media priorità
-2. **Form modifica corsa** — data/orario/luogo modificabili dopo la pubblicazione
-3. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
-4. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
+3. **Form modifica corsa** — data/orario/luogo modificabili dopo la pubblicazione
+4. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
+5. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
 
 ### Bassa priorità / idee future
-5. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
-6. **Badge reputazione organizzatore** — livello di affidabilità basato su recensioni e storico
+6. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
 7. **Push notifications** — invio email da Supabase Edge Functions
 8. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
 
