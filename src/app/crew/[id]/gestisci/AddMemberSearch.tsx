@@ -76,23 +76,29 @@ export function AddMemberSearch({ crewId }: { crewId: string }) {
       </div>
 
       {results.length > 0 && (
-        <ul className="mt-3 space-y-2">
-          {results.map((profile) => (
-            <li key={profile.id} className="flex items-center gap-3">
-              <Avatar name={profile.full_name} src={profile.avatar_url} size="md" />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm text-gray-900 truncate">{profile.full_name}</div>
-                {profile.city && <div className="text-xs text-gray-400">{profile.city}</div>}
-              </div>
-              <button
-                onClick={() => addMember(profile)}
-                disabled={adding === profile.id || added.includes(profile.id)}
-                className="shrink-0 text-xs font-semibold bg-[var(--color-brand)] text-white rounded-full px-3 py-1 hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {added.includes(profile.id) ? 'Aggiunto' : adding === profile.id ? '...' : 'Aggiungi'}
-              </button>
-            </li>
-          ))}
+        <ul className="mt-3 space-y-1">
+          {results.map((profile) => {
+            const isAdded = added.includes(profile.id)
+            const isAdding = adding === profile.id
+            return (
+              <li key={profile.id}>
+                <button
+                  onClick={() => addMember(profile)}
+                  disabled={isAdding || isAdded}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-60 text-left"
+                >
+                  <Avatar name={profile.full_name} src={profile.avatar_url} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-gray-900 truncate">{profile.full_name}</div>
+                    {profile.city && <div className="text-xs text-gray-400">{profile.city}</div>}
+                  </div>
+                  <span className="shrink-0 text-xs font-semibold text-[var(--color-brand)]">
+                    {isAdded ? '✓ Aggiunto' : isAdding ? '…' : '+ Aggiungi'}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
         </ul>
       )}
 
