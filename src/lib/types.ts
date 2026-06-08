@@ -118,6 +118,7 @@ export type NotificationType =
   | 'nuovo_messaggio'
   | 'promemoria_corsa'
   | 'corsa_annullata'
+  | 'corsa_modificata'
 
 export interface Notification {
   id: string

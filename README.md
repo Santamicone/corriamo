@@ -106,14 +106,16 @@ corriamo/
 │   │       ├── Input.tsx / Select.tsx / Textarea.tsx
 │   │       ├── Stars.tsx
 │   │       ├── TagBadge.tsx / TagPicker.tsx
+│   │       ├── ReliabilityBadge.tsx    Badge affidabilità organizzatore
 │   │       └── ...
 │   │
 │   ├── lib/
-│   │   ├── types.ts               Tipi TS (Profile, Run, Series, Interest, CheckIn...)
+│   │   ├── types.ts               Tipi TS (Profile, Run, Series, Interest, CheckIn, RunConfirmation...)
 │   │   ├── utils.ts               cn, formatDate, parseRunDateTime, runRitrovoColor...
 │   │   ├── tags.ts                18 tag + helpers
 │   │   ├── compatibility.ts       Scoring compatibilità (supporta nuovi livelli profilo)
 │   │   ├── geocoding.ts           Nominatim + fallback città
+│   │   ├── reliability.ts         getReliabilityBadge() — score affidabilità organizzatore
 │   │   └── supabase/
 │   │       ├── client.ts
 │   │       └── server.ts
@@ -191,6 +193,7 @@ In produzione (Vercel) `NEXT_PUBLIC_SITE_URL` → `https://vieniacorrere.it`
 | 15 | `supabase/add-interests.sql` |
 | 16 | `supabase/add-location-public.sql` |
 | 17 | `supabase/add-filter-by-city.sql` |
+| 18 | `supabase/reliability.sql` |
 
 ### Abilitare Realtime (SQL Editor)
 
@@ -199,6 +202,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.run_chat;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.check_ins;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.run_confirmations;
 ```
 
 ### Configurazione Dashboard
@@ -301,6 +305,12 @@ main                    ← produzione
 - Pin colorati per livello, grigio tratteggiato per luogo privato, rosso per spot
 - Geocoding Nominatim automatico alla creazione
 
+### Affidabilità organizzatori
+- Badge **Affidabile** (verde, ≥3 corse, score ≥85%) e **Organizzatore** (blu, ≥1 corsa confermata)
+- Score calcolato automaticamente da: check-in Purple Screen + recensioni + prompt post-run
+- Prompt "La corsa si è svolta?" per partecipanti approvati tra 2h e 7gg dalla corsa
+- Corse spot pesano 0.5; colonne materializzate su `profiles` aggiornate da trigger
+
 ### SEO
 - robots.txt, sitemap.xml dinamico, favicon SVG
 - Metadata dinamico su tutte le pagine pubbliche (canonical, OG, Twitter)
@@ -363,6 +373,10 @@ npx tsc --noEmit -p tsconfig.json
 
 ### Messaggi non si aggiornano in real-time
 - Verificare che la tabella sia in `supabase_realtime` publication (SQL sopra)
+
+### Badge affidabilità non appare
+- Verificare che `supabase/reliability.sql` sia stato eseguito (aggiunge colonne `reliability_*` su `profiles`)
+- I badge compaiono solo dopo che il trigger ha calcolato almeno 1 corsa eligible (passata da >24h con partecipanti approvati)
 
 ### Purple Screen non appare
 - Verificare finestra temporale (−60 min → +30 min dall'orario corsa)

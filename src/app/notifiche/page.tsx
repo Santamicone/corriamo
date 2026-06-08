@@ -22,6 +22,7 @@ const TYPE_CONFIG: Record<NotificationType, {
   nuovo_messaggio:     { icon: 'mail',          iconClass: 'text-blue-500',  bgClass: 'bg-blue-50',    href: n => n.run_id && n.actor_id ? `/messaggi/${n.run_id}/${n.actor_id}` : '/messaggi' },
   promemoria_corsa:    { icon: 'alarm',         iconClass: 'text-primary',   bgClass: 'bg-orange-50',  href: n => `/corse/${n.run_id}` },
   corsa_annullata:     { icon: 'event_busy',    iconClass: 'text-red-500',   bgClass: 'bg-red-50',     href: n => `/corse/${n.run_id}` },
+  corsa_modificata:    { icon: 'edit_calendar', iconClass: 'text-blue-500',  bgClass: 'bg-blue-50',    href: n => `/corse/${n.run_id}` },
 }
 
 export default async function NotifichePage() {
