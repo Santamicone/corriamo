@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-const LS_CITY    = 'geo_city'
-const LS_TS      = 'geo_city_ts'
-const LS_DENIED  = 'geo_denied'
-const SS_DISMISSED = 'geo_dismissed'   // sessionStorage: utente ha rimosso il filtro manualmente
-const CACHE_TTL  = 7 * 24 * 60 * 60 * 1000  // 7 giorni
+const LS_CITY      = 'geo_city'
+const LS_COUNTY    = 'geo_county'   // provincia/area metropolitana (fallback)
+const LS_TS        = 'geo_city_ts'
+const LS_DENIED    = 'geo_denied'
+const SS_DISMISSED = 'geo_dismissed'  // sessionStorage: utente ha rimosso il filtro manualmente
+const CACHE_TTL    = 7 * 24 * 60 * 60 * 1000  // 7 giorni
 
 interface Props {
   currentCityParam: string | undefined
@@ -29,11 +30,12 @@ export function GeolocCityDetector({ currentCityParam }: Props) {
     if (sessionStorage.getItem(SS_DISMISSED)) return
 
     // Città già in cache?
-    const cachedCity = localStorage.getItem(LS_CITY)
-    const cachedTs   = parseInt(localStorage.getItem(LS_TS) ?? '0', 10)
-    const cacheValid = cachedCity && Date.now() - cachedTs < CACHE_TTL
+    const cachedCity   = localStorage.getItem(LS_CITY)
+    const cachedCounty = localStorage.getItem(LS_COUNTY)
+    const cachedTs     = parseInt(localStorage.getItem(LS_TS) ?? '0', 10)
+    const cacheValid   = cachedCity && Date.now() - cachedTs < CACHE_TTL
     if (cacheValid) {
-      router.replace(`/bacheca?city=${encodeURIComponent(cachedCity)}&geo=1`)
+      router.replace(buildGeoUrl(cachedCity, cachedCounty ?? undefined))
       return
     }
 
@@ -44,18 +46,16 @@ export function GeolocCityDetector({ currentCityParam }: Props) {
     if (navigator.permissions) {
       navigator.permissions.query({ name: 'geolocation' }).then(status => {
         if (status.state === 'granted') {
-          // Già autorizzato: rileva silenziosamente
           detectSilently()
         } else if (status.state === 'prompt') {
           setShowBanner(true)
         }
         // 'denied' → non fare nulla
       }).catch(() => {
-        // Permissions API non supportata (es. Safari vecchio) → mostra banner
         setShowBanner(true)
       })
     } else {
-      // Fallback (Safari) → mostra banner
+      // Fallback Safari
       setShowBanner(true)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -64,11 +64,9 @@ export function GeolocCityDetector({ currentCityParam }: Props) {
   function detectSilently() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const city = await reverseGeocode(pos.coords.latitude, pos.coords.longitude)
-        if (city) {
-          localStorage.setItem(LS_CITY, city)
-          localStorage.setItem(LS_TS, Date.now().toString())
-          router.replace(`/bacheca?city=${encodeURIComponent(city)}&geo=1`)
+        const result = await reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+        if (result?.city) {
+          cacheAndRedirect(result.city, result.county ?? undefined, /* replace */ true)
         }
       },
       () => { /* silenzioso */ },
@@ -81,11 +79,9 @@ export function GeolocCityDetector({ currentCityParam }: Props) {
     setError(false)
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const city = await reverseGeocode(pos.coords.latitude, pos.coords.longitude)
-        if (city) {
-          localStorage.setItem(LS_CITY, city)
-          localStorage.setItem(LS_TS, Date.now().toString())
-          router.push(`/bacheca?city=${encodeURIComponent(city)}&geo=1`)
+        const result = await reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+        if (result?.city) {
+          cacheAndRedirect(result.city, result.county ?? undefined, /* replace */ false)
         } else {
           setDetecting(false)
           setError(true)
@@ -98,6 +94,16 @@ export function GeolocCityDetector({ currentCityParam }: Props) {
       },
       { timeout: 8000, maximumAge: 300_000 }
     )
+  }
+
+  function cacheAndRedirect(city: string, county: string | undefined, replace: boolean) {
+    localStorage.setItem(LS_CITY, city)
+    localStorage.setItem(LS_TS, Date.now().toString())
+    if (county) localStorage.setItem(LS_COUNTY, county)
+    else localStorage.removeItem(LS_COUNTY)
+    const url = buildGeoUrl(city, county)
+    if (replace) router.replace(url)
+    else router.push(url)
   }
 
   function handleDismiss() {
@@ -148,15 +154,20 @@ export function GeolocCityDetector({ currentCityParam }: Props) {
   )
 }
 
-async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+function buildGeoUrl(city: string, county?: string): string {
+  const params = new URLSearchParams({ city, geo: '1' })
+  if (county) params.set('geo_county', county)
+  return `/bacheca?${params.toString()}`
+}
+
+async function reverseGeocode(lat: number, lng: number): Promise<{ city: string | null; county: string | null } | null> {
   try {
     const res = await fetch(
       `/api/reverse-geocode?lat=${lat}&lng=${lng}`,
       { signal: AbortSignal.timeout(7000) }
     )
     if (!res.ok) return null
-    const data = await res.json()
-    return data.city ?? null
+    return await res.json()
   } catch {
     return null
   }

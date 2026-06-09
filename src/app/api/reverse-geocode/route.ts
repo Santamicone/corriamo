@@ -36,11 +36,13 @@ export async function GET(req: NextRequest) {
       addr.town ??
       addr.municipality ??
       addr.village ??
-      addr.county ??
       null
 
+    // Provincia / area metropolitana — usata come fallback se la città ha 0 risultati
+    const county = addr.county ?? null
+
     return NextResponse.json(
-      { city },
+      { city, county },
       {
         headers: {
           'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
