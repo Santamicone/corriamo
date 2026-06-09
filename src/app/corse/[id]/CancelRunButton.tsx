@@ -7,11 +7,32 @@ export function CancelRunButton({ runId }: { runId: string }) {
   const router = useRouter()
   const [confirm, setConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleCancel = async () => {
     setLoading(true)
+    setError('')
     const supabase = createClient()
-    await supabase.from('runs').update({ status: 'annullata' }).eq('id', runId)
+
+    // .select() ci permette di distinguere un errore da un update a 0 righe
+    // (es. sessione scaduta o permessi insufficienti → RLS blocca silenziosamente)
+    const { data, error: err } = await supabase
+      .from('runs')
+      .update({ status: 'annullata' })
+      .eq('id', runId)
+      .select('id')
+
+    if (err) {
+      setError(err.message)
+      setLoading(false)
+      return
+    }
+    if (!data || data.length === 0) {
+      setError('Annullamento non riuscito. Aggiorna la pagina e riprova: se il problema persiste, prova a effettuare di nuovo l\'accesso.')
+      setLoading(false)
+      return
+    }
+
     // Il trigger notify_run_cancelled genera automaticamente le notifiche
     setLoading(false)
     router.refresh()
@@ -35,6 +56,11 @@ export function CancelRunButton({ runId }: { runId: string }) {
       <p className="text-xs text-red-600 leading-relaxed">
         Tutti i partecipanti approvati riceveranno una notifica. Questa azione non è reversibile.
       </p>
+      {error && (
+        <p className="text-xs font-semibold text-red-700 bg-red-100 border border-red-200 rounded-lg px-3 py-2">
+          {error}
+        </p>
+      )}
       <div className="flex gap-2">
         <button
           onClick={() => setConfirm(false)}
