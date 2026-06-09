@@ -21,10 +21,18 @@ interface CrewOption {
   whatsapp_group_link: string | null
 }
 
+interface Prefill {
+  city?: string
+  pace_target?: string
+  level?: string
+  groupMode?: boolean
+}
+
 interface Props {
   userId: string
   userSeries: { id: string; title: string }[]
   userCrews?: CrewOption[]
+  prefill?: Prefill
 }
 
 const inputCls = "h-11 w-full px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
@@ -62,7 +70,7 @@ function generateDates(startDate: string, recurrenceDay: number, recurrenceType:
   return dates
 }
 
-export function NuovaCorsaForm({ userId, userSeries, userCrews = [] }: Props) {
+export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: Props) {
   const router = useRouter()
   const [tipo, setTipo]       = useState<TipoCorsa>('singola')
   const [loading, setLoading] = useState(false)
@@ -71,8 +79,8 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [] }: Props) {
 
   const [form, setForm] = useState({
     // Campi comuni
-    title: '', description: '', location: '', city: '',
-    distance_km: '', pace_target: '', level: 'tutti',
+    title: '', description: '', location: '', city: prefill?.city ?? '',
+    distance_km: '', pace_target: prefill?.pace_target ?? '', level: prefill?.level || 'tutti',
     max_participants: '', is_no_drop: false, series_id: '',
     location_public: true,
     run_visibility: 'public' as 'public' | 'crew_only',
@@ -261,6 +269,19 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [] }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+
+      {/* ── Banner "gruppo al tuo ritmo" (da /compagni) ── */}
+      {prefill?.groupMode && (
+        <div className="flex items-start gap-3 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3.5">
+          <span className="material-symbols-outlined text-primary shrink-0 mt-0.5">diversity_3</span>
+          <div>
+            <p className="text-sm font-bold text-gray-900">Stai creando un gruppo al tuo ritmo</p>
+            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+              Abbiamo precompilato città, ritmo e livello in base al tuo profilo. Scegli data e luogo: i runner compatibili la vedranno in bacheca.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Selettore tipo ── */}
       <div className="bg-white rounded-3xl border border-gray-100 p-4">

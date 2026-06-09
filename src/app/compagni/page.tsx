@@ -6,8 +6,9 @@ import { Footer } from '@/components/Footer'
 import { Avatar } from '@/components/ui/Avatar'
 import Link from 'next/link'
 import type { Profile } from '@/lib/types'
-import { LEVEL_LABELS } from '@/lib/utils'
+import { LEVEL_LABELS, formatPace } from '@/lib/utils'
 import { rankRunners } from '@/lib/matchmaking'
+import { toRunLevel } from '@/lib/compatibility'
 
 export const metadata: Metadata = {
   title: 'Runner compatibili con te',
@@ -42,6 +43,23 @@ export default async function CompagniPage() {
   }
 
   const matches = me && hasSignal ? rankRunners(me, candidates, 24) : []
+
+  // ── A3: proposta "gruppo al tuo ritmo" se ≥3 runner compatibili nella mia città ──
+  const cityNorm = me?.city?.toLowerCase().trim()
+  const sameCityMatches = cityNorm
+    ? matches.filter(m => {
+        const c = m.profile.city?.toLowerCase().trim()
+        return c && (c === cityNorm || c.includes(cityNorm) || cityNorm.includes(c))
+      })
+    : []
+  let groupHref: string | null = null
+  if (me?.city && sameCityMatches.length >= 3) {
+    const params = new URLSearchParams({ city: me.city, group: '1' })
+    if (me.pace_min) params.set('pace', formatPace(me.pace_min, me.pace_max))
+    const runLevel = toRunLevel(me.level)
+    if (runLevel && runLevel !== 'tutti') params.set('level', runLevel)
+    groupHref = `/nuova-corsa?${params.toString()}`
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -78,11 +96,31 @@ export default async function CompagniPage() {
               cta={{ href: '/nuova-corsa', label: 'Proponi una corsa' }}
             />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {matches.map(m => (
-                <RunnerCard key={m.profile.id} match={m} />
-              ))}
-            </div>
+            <>
+              {groupHref && (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-gradient-to-br from-orange-50 to-white border border-orange-100 rounded-2xl px-5 py-4 mb-6">
+                  <span className="material-symbols-outlined text-primary text-3xl shrink-0">groups</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-gray-900">
+                      Ci sono {sameCityMatches.length} runner come te a {me!.city}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Proponi una corsa al tuo ritmo: la vedranno tutti in bacheca.
+                    </p>
+                  </div>
+                  <Link href={groupHref}
+                    className="shrink-0 inline-flex items-center justify-center gap-1.5 bg-primary text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-primary-hover transition-colors">
+                    <span className="material-symbols-outlined text-lg">add</span>
+                    Crea un gruppo
+                  </Link>
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {matches.map(m => (
+                  <RunnerCard key={m.profile.id} match={m} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </main>
