@@ -11,7 +11,7 @@ import { rankRunners } from '@/lib/matchmaking'
 import { toRunLevel } from '@/lib/compatibility'
 
 export const metadata: Metadata = {
-  title: 'Runner compatibili con te',
+  title: 'Runner come te',
   robots: { index: false, follow: false },
 }
 
@@ -69,7 +69,7 @@ export default async function CompagniPage() {
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-3xl">diversity_3</span>
-              Runner compatibili
+              Runner come te
             </h1>
             <p className="text-gray-500 mt-1">
               Persone vicine a te, allo stesso ritmo e con le stesse motivazioni. Scrivi e organizzate una corsa.
