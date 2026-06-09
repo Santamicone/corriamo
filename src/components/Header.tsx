@@ -116,9 +116,7 @@ export function Header() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-              <span className="material-symbols-outlined text-white text-lg">directions_run</span>
-            </div>
+            <img src="/logo.png" alt="Vieni a correre?" className="w-8 h-8 rounded-xl object-contain" />
             <span className="text-lg font-extrabold text-gray-900 tracking-tight hidden sm:block">
               Vieni a correre?
             </span>

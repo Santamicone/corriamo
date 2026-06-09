@@ -11,9 +11,7 @@ export function Footer() {
           {/* Brand */}
           <div className="flex flex-col items-center md:items-start gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-                <span className="material-symbols-outlined text-white text-base">directions_run</span>
-              </div>
+              <img src="/logo.png" alt="Vieni a correre?" className="w-7 h-7 rounded-lg object-contain" />
               <span className="text-base font-extrabold text-gray-900">Vieni a correre?</span>
             </div>
             <p className="text-sm text-gray-400">

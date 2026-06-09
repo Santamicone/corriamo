@@ -42,9 +42,7 @@ export default function NuovaPasswordPage() {
       <header className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-              <span className="material-symbols-outlined text-white text-lg">directions_run</span>
-            </div>
+            <img src="/logo.png" alt="Vieni a correre?" className="w-8 h-8 rounded-xl object-contain shadow-sm" />
             <span className="text-lg font-extrabold text-gray-900 tracking-tight">Vieni a correre?</span>
           </Link>
         </div>
