@@ -76,7 +76,6 @@ export default async function AreaPersonalePage() {
   if (!profile?.level || profile.level === 'principiante') missingFields.push('livello')
   if (!profile?.age)    missingFields.push('età')
   if (!profile?.pb_5k && !profile?.pb_10k && !profile?.pb_21k && !profile?.pb_42k) missingFields.push('personal best')
-  const profileIncomplete = missingFields.length >= 2
 
   const approvedParticipations = myParticipations?.filter(p => p.status === 'approvata') ?? []
   const pendingParticipations  = myParticipations?.filter(p => p.status === 'in_attesa') ?? []
@@ -88,6 +87,30 @@ export default async function AreaPersonalePage() {
     (myParticipations?.length ?? 0) === 0 &&
     (mySeries?.length ?? 0) === 0 &&
     crewMemberships.length === 0
+
+  // Checklist di attivazione — per chi ha iniziato ma non ha completato i passi chiave
+  const activationSteps = [
+    {
+      label: 'Completa il profilo',
+      hint: missingFields.length > 0 ? `Mancano: ${missingFields.join(', ')}` : 'Profilo completo',
+      done: missingFields.length === 0,
+      href: '/profilo/modifica',
+    },
+    {
+      label: 'Unisciti alla prima corsa',
+      hint: 'Manda “Mi interessa” o chiedi di partecipare',
+      done: (myParticipations?.length ?? 0) > 0,
+      href: '/bacheca',
+    },
+    {
+      label: 'Proponi una corsa o entra in una crew',
+      hint: 'Organizza un appuntamento o unisciti a un gruppo',
+      done: (myRuns?.length ?? 0) > 0 || crewMemberships.length > 0,
+      href: '/nuova-corsa',
+    },
+  ]
+  const activationDone = activationSteps.filter(s => s.done).length
+  const showActivation = !isBrandNew && activationDone < activationSteps.length
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -102,26 +125,42 @@ export default async function AreaPersonalePage() {
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-10">
 
-          {/* ── Banner completa profilo ── */}
-          {profileIncomplete && (
-            <div className="flex items-start gap-4 bg-orange-50 border border-orange-200 rounded-2xl px-5 py-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="material-symbols-outlined text-primary text-xl">person_edit</span>
+          {/* ── Checklist di attivazione ── */}
+          {showActivation && (
+            <div className="bg-white border border-gray-100 rounded-2xl px-5 py-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-gray-900">Completa la tua attivazione</p>
+                <span className="text-xs font-semibold text-gray-400">{activationDone}/{activationSteps.length}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900">Completa il tuo profilo runner</p>
-                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                  Un profilo completo aumenta le probabilità che gli organizzatori ti approvino.
-                  Ti mancano ancora: <span className="font-semibold">{missingFields.join(', ')}</span>.
-                </p>
+              {/* Barra di progresso */}
+              <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-4">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${(activationDone / activationSteps.length) * 100}%` }}
+                />
               </div>
-              <Link
-                href="/profilo/modifica"
-                className="shrink-0 inline-flex items-center gap-1.5 bg-primary text-white text-xs font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
-              >
-                Completa
-                <span className="material-symbols-outlined text-sm">arrow_forward</span>
-              </Link>
+              <div className="flex flex-col gap-2">
+                {activationSteps.map(step => (
+                  <Link
+                    key={step.label}
+                    href={step.href}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+                      step.done ? 'bg-green-50/50' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className={`material-symbols-outlined text-xl shrink-0 ${step.done ? 'text-green-500' : 'text-gray-300'}`}>
+                      {step.done ? 'check_circle' : 'radio_button_unchecked'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold ${step.done ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                        {step.label}
+                      </p>
+                      {!step.done && <p className="text-xs text-gray-400 mt-0.5">{step.hint}</p>}
+                    </div>
+                    {!step.done && <span className="material-symbols-outlined text-gray-300 shrink-0">chevron_right</span>}
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 

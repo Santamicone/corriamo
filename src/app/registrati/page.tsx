@@ -25,10 +25,33 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     email: '', password: '', full_name: '', city: '',
   })
+  const [geoLoading, setGeoLoading] = useState(false)
 
   const update = (field: string) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm(prev => ({ ...prev, [field]: e.target.value }))
+
+  const detectCity = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) return
+    setGeoLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `/api/reverse-geocode?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`,
+            { signal: AbortSignal.timeout(7000) }
+          )
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.city) setForm(prev => ({ ...prev, city: data.city }))
+          }
+        } catch { /* silenzioso: l'utente può digitare a mano */ }
+        finally { setGeoLoading(false) }
+      },
+      () => setGeoLoading(false),
+      { timeout: 8000, maximumAge: 300_000 }
+    )
+  }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,12 +133,25 @@ export default function RegisterPage() {
                 placeholder="Mario Rossi"
                 required
               />
-              <Input
-                label="Città"
-                value={form.city}
-                onChange={update('city')}
-                placeholder="Milano"
-              />
+              <div>
+                <Input
+                  label="Città"
+                  value={form.city}
+                  onChange={update('city')}
+                  placeholder="Milano"
+                />
+                <button
+                  type="button"
+                  onClick={detectCity}
+                  disabled={geoLoading}
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline disabled:opacity-60"
+                >
+                  <span className={`material-symbols-outlined text-sm ${geoLoading ? 'animate-spin' : ''}`}>
+                    {geoLoading ? 'progress_activity' : 'my_location'}
+                  </span>
+                  {geoLoading ? 'Rilevamento…' : 'Usa la mia posizione'}
+                </button>
+              </div>
             </Section>
 
             {error && (
