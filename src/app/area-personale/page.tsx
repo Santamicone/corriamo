@@ -10,6 +10,7 @@ import { SeriesCard } from '@/components/SeriesCard'
 import Link from 'next/link'
 import type { Run, Series, CrewType } from '@/lib/types'
 import { CREW_TYPE_LABELS } from '@/lib/types'
+import { formatDate } from '@/lib/utils'
 
 export default async function AreaPersonalePage() {
   const supabase = await createClient()
@@ -81,6 +82,13 @@ export default async function AreaPersonalePage() {
   const pendingParticipations  = myParticipations?.filter(p => p.status === 'in_attesa') ?? []
   const unreadCount = unreadMessages ? (unreadMessages as unknown as { count: number }).count ?? 0 : 0
 
+  // Utente senza alcuna attività: corse, iscrizioni, serie o crew
+  const isBrandNew =
+    (myRuns?.length ?? 0) === 0 &&
+    (myParticipations?.length ?? 0) === 0 &&
+    (mySeries?.length ?? 0) === 0 &&
+    crewMemberships.length === 0
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -115,6 +123,45 @@ export default async function AreaPersonalePage() {
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </Link>
             </div>
+          )}
+
+          {/* ── Onboarding nuovo utente: percorso guidato in 3 step ── */}
+          {isBrandNew && (
+            <section className="bg-gradient-to-br from-orange-50 to-white border border-orange-100 rounded-3xl px-6 py-7">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="material-symbols-outlined text-primary text-xl">waving_hand</span>
+                <h2 className="text-lg font-extrabold text-gray-900">Benvenuto! Ecco come iniziare</h2>
+              </div>
+              <p className="text-sm text-gray-500 mb-5">Tre passaggi e corri in compagnia.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { n: '1', icon: 'travel_explore', title: 'Trova una corsa', text: 'Cerca appuntamenti vicino a te, al ritmo giusto.' },
+                  { n: '2', icon: 'favorite',       title: "Manda “Mi interessa”", text: 'Fai sapere che ci sei, o chiedi di partecipare.' },
+                  { n: '3', icon: 'directions_run', title: 'Ci vediamo!',    text: 'Coordinatevi in chat e correte insieme.' },
+                ].map(s => (
+                  <div key={s.n} className="flex flex-col gap-2 bg-white border border-gray-100 rounded-2xl p-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">{s.n}</span>
+                      <span className="material-symbols-outlined text-primary text-xl">{s.icon}</span>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900">{s.title}</p>
+                    <p className="text-xs text-gray-500 leading-relaxed">{s.text}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 mt-5">
+                <Link href="/bacheca"
+                  className="inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity">
+                  <span className="material-symbols-outlined text-lg">search</span>
+                  Trova una corsa
+                </Link>
+                <Link href="/nuova-corsa"
+                  className="inline-flex items-center justify-center gap-2 border border-gray-200 text-gray-700 text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                  <span className="material-symbols-outlined text-lg">add</span>
+                  Proponi tu una corsa
+                </Link>
+              </div>
+            </section>
           )}
 
           {/* ── Messaggi in evidenza ── */}
@@ -240,7 +287,7 @@ export default async function AreaPersonalePage() {
                       <span className="material-symbols-outlined text-orange-500 shrink-0">hourglass_empty</span>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-gray-900 truncate">{run.title}</p>
-                        <p className="text-xs text-gray-400">{run.date} · {run.city}</p>
+                        <p className="text-xs text-gray-400">{formatDate(run.date)} · {run.city}</p>
                       </div>
                       <span className="material-symbols-outlined text-gray-300 ml-auto shrink-0">chevron_right</span>
                     </Link>
