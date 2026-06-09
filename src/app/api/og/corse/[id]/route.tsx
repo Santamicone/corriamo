@@ -159,12 +159,12 @@ export async function GET(
         {/* Header: brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: 14,
+            width: 68, height: 68, borderRadius: 16,
             background: 'white',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden',
           }}>
-            <img src={`${siteUrl}/logo_small.png`} width={52} height={52} style={{ objectFit: 'contain' }} />
+            <img src={`${siteUrl}/logo_small.png`} width={64} height={64} style={{ objectFit: 'contain' }} />
           </div>
           <span style={{ fontSize: 20, fontWeight: 700, color: '#374151' }}>
             Vieni a correre?

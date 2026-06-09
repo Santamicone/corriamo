@@ -26,7 +26,7 @@ export function ShareLanding({ run, approvedCount }: Props) {
       {/* Minimal header */}
       <header className="px-6 pt-6 pb-4 flex items-center gap-2">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo_small.png" alt="Vieni a correre?" className="w-10 h-10 rounded-xl object-contain shadow-sm" />
+          <img src="/logo_small.png" alt="Vieni a correre?" className="w-12 h-12 rounded-xl object-contain shadow-sm" />
           <span className="text-base font-extrabold text-gray-900 tracking-tight">Vieni a correre?</span>
         </Link>
       </header>
