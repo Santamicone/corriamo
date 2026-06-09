@@ -159,11 +159,12 @@ export async function GET(
         {/* Header: brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: '#EA580C',
+            width: 44, height: 44, borderRadius: 12,
+            background: 'white',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden',
           }}>
-            <Icon d={ICONS.run} size={24} color="white" />
+            <img src={`${siteUrl}/logo_vieniacorrrere.png`} width={44} height={44} style={{ objectFit: 'contain' }} />
           </div>
           <span style={{ fontSize: 20, fontWeight: 700, color: '#374151' }}>
             Vieni a correre?
