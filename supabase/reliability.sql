@@ -40,6 +40,8 @@ ALTER TABLE public.profiles
 -- =====================
 -- FUNZIONE DI CALCOLO SCORE
 -- =====================
+-- DROP necessario: CREATE OR REPLACE non puo rinominare i parametri (42P13)
+DROP FUNCTION IF EXISTS update_reliability_score(uuid);
 CREATE OR REPLACE FUNCTION update_reliability_score(p_organizer_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE

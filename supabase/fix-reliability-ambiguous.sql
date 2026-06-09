@@ -9,9 +9,14 @@
 -- trigger di check-in/recensione/conferma.
 --
 -- Fix: rinominato il parametro in `p_organizer_id`.
--- Idempotente: CREATE OR REPLACE, stessa firma (uuid) → sostituisce.
--- Eseguire nel Supabase SQL Editor.
+-- Nota: CREATE OR REPLACE non puo rinominare i parametri di input
+-- (ERROR 42P13) → serve DROP FUNCTION prima. La funzione e chiamata
+-- via PERFORM dentro i trigger reliability (non e una dipendenza
+-- tracciata), quindi il DROP non rimuove i trigger.
+-- Idempotente: DROP IF EXISTS + CREATE. Eseguire nel Supabase SQL Editor.
 -- ============================================================
+
+DROP FUNCTION IF EXISTS update_reliability_score(uuid);
 
 CREATE OR REPLACE FUNCTION update_reliability_score(p_organizer_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$

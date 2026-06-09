@@ -69,6 +69,7 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS reliability_eligible  numeric(5,2) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS reliability_confirmed numeric(5,2) NOT NULL DEFAULT 0;
 
+DROP FUNCTION IF EXISTS update_reliability_score(uuid);
 CREATE OR REPLACE FUNCTION update_reliability_score(p_organizer_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
