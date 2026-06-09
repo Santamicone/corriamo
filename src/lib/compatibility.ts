@@ -21,7 +21,7 @@ export type RunHistory = Array<{
 /** Converte una stringa ritmo in range decimale min/km.
  *  Gestisce: "5:30/km", "5:00–5:30/km", "5.5", "5:30-5:45/km"
  */
-function parsePace(raw: string | null): { min: number; max: number } | null {
+export function parsePace(raw: string | null): { min: number; max: number } | null {
   if (!raw) return null
   const s = raw.replace(/\/km.*/i, '').trim()
 
@@ -49,7 +49,7 @@ function parsePace(raw: string | null): { min: number; max: number } | null {
 }
 
 /** Grado di sovrapposizione tra due range (0–1) */
-function overlap(
+export function overlap(
   aMin: number, aMax: number,
   bMin: number, bMax: number
 ): number {
@@ -60,12 +60,12 @@ function overlap(
   return (hi - lo) / union
 }
 
-const LEVEL_IDX: Record<RunLevel, number> = {
+export const LEVEL_IDX: Record<RunLevel, number> = {
   principiante: 0, intermedio: 1, avanzato: 2, tutti: -1,
 }
 
 /** Mappa i livelli profilo estesi al livello di corsa equivalente per il calcolo di compatibilità */
-function toRunLevel(pl: string | null): RunLevel | null {
+export function toRunLevel(pl: string | null): RunLevel | null {
   if (!pl) return null
   const map: Record<string, RunLevel> = {
     principiante: 'principiante',

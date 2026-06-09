@@ -8,9 +8,11 @@ import { RunCard } from '@/components/RunCard'
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { SeriesCard } from '@/components/SeriesCard'
 import Link from 'next/link'
-import type { Run, Series, CrewType } from '@/lib/types'
+import { Avatar } from '@/components/ui/Avatar'
+import type { Run, Series, CrewType, Profile } from '@/lib/types'
 import { CREW_TYPE_LABELS } from '@/lib/types'
 import { formatDate } from '@/lib/utils'
+import { rankRunners } from '@/lib/matchmaking'
 
 export default async function AreaPersonalePage() {
   const supabase = await createClient()
@@ -54,10 +56,20 @@ export default async function AreaPersonalePage() {
       .eq('status', 'active'),
 
     supabase.from('profiles')
-      .select('bio, level, city, age, pb_5k, pb_10k, pb_21k, pb_42k')
+      .select('*')
       .eq('id', user.id)
       .single(),
   ])
+
+  // ── Runner compatibili (anteprima) ──
+  const meProfile = myProfile as Profile | null
+  let topMatches: ReturnType<typeof rankRunners> = []
+  if (meProfile && (meProfile.city || meProfile.pace_min || meProfile.level)) {
+    let candQuery = supabase.from('profiles').select('*').neq('id', user.id).limit(200)
+    if (meProfile.city) candQuery = candQuery.ilike('city', `%${meProfile.city}%`)
+    const { data: cand } = await candQuery
+    topMatches = rankRunners(meProfile, (cand ?? []) as Profile[], 3)
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const crewMemberships = (myCrewMemberships ?? []).map((m: any) => ({
@@ -239,6 +251,33 @@ export default async function AreaPersonalePage() {
               <span className="material-symbols-outlined text-gray-300 ml-auto">chevron_right</span>
             </Link>
           </section>
+
+          {/* ── Runner compatibili ── */}
+          {topMatches.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-xl">diversity_3</span>
+                  Runner come te
+                </h2>
+                <Link href="/compagni" className="text-sm font-semibold text-primary hover:underline">
+                  Vedi tutti →
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {topMatches.map(m => (
+                  <Link key={m.profile.id} href={`/profilo/${m.profile.id}`}
+                    className="flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-4 py-3 hover:shadow-sm transition-all">
+                    <Avatar name={m.profile.full_name} src={m.profile.avatar_url} size="sm" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{m.profile.full_name}</p>
+                      <p className="text-xs text-primary font-semibold truncate">{m.label}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* ── Crew ── */}
           <section>

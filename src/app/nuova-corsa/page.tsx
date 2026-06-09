@@ -7,10 +7,21 @@ export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { Footer } from '@/components/Footer'
 import { NuovaCorsaForm } from './NuovaCorsaForm'
 
-export default async function NuovaCorsaPage() {
+export default async function NuovaCorsaPage(
+  { searchParams }: { searchParams: Promise<{ city?: string; pace?: string; level?: string; group?: string }> }
+) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const sp = await searchParams
+  const validLevels = ['tutti', 'principiante', 'intermedio', 'avanzato']
+  const prefill = {
+    city:        sp.city ?? '',
+    pace_target: sp.pace ?? '',
+    level:       sp.level && validLevels.includes(sp.level) ? sp.level : '',
+    groupMode:   sp.group === '1',
+  }
 
   const [{ data: series }, { data: userCrews }] = await Promise.all([
     supabase.from('series').select('id, title').eq('organizer_id', user.id).order('created_at', { ascending: false }),
@@ -46,7 +57,7 @@ export default async function NuovaCorsaPage() {
       </div>
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NuovaCorsaForm userId={user.id} userSeries={series ?? []} userCrews={crewOptions} />
+        <NuovaCorsaForm userId={user.id} userSeries={series ?? []} userCrews={crewOptions} prefill={prefill} />
       </main>
       <Footer />
     </div>
