@@ -1,7 +1,7 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
-> Aggiornato al: **giugno 2026** — ultima sessione: crew, email notifiche, onboarding, modifica corsa
+> Aggiornato al: **giugno 2026** — allineamento stato reale produzione: tutti gli SQL #18–#24 ed Edge Functions email risultano applicati e attivi (crew, reliability ed email funzionanti in prod)
 
 ---
 
@@ -76,13 +76,13 @@ NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email red
 | 15 | `supabase/add-interests.sql` | ✅ | Tabella `interests` ("Mi interessa") + RLS |
 | 16 | `supabase/add-location-public.sql` | ✅ | Colonna `location_public boolean` su `runs` |
 | 17 | `supabase/add-filter-by-city.sql` | ✅ | Colonna `filter_by_city boolean` su `profiles` |
-| 18 | `supabase/reliability.sql` | ⏳ DA ESEGUIRE | Tabella `run_confirmations` + colonne `reliability_*` su `profiles` + funzione score + 4 trigger |
-| 19 | `supabase/crews.sql` | ⏳ DA ESEGUIRE | Tabelle `crews` + `crew_members` + RLS + 4 trigger + colonne `crew_id`, `run_visibility` su `runs` |
-| 20 | `supabase/crew-invites.sql` | ⏳ DA ESEGUIRE | Tabella `crew_invites` + RLS |
-| 21 | `supabase/crews-fix-rls.sql` | ⏳ DA ESEGUIRE | Fix ricorsione RLS crews/crew_members — funzioni SECURITY DEFINER |
-| 22 | `supabase/edit-run.sql` | ⏳ DA ESEGUIRE | Permessi e trigger per modifica corsa (blocco <2h dalla partenza) |
-| 23 | `supabase/email-notifications.sql` | ⏳ DA ESEGUIRE | Tabella `email_notifications` + preferenze utente + unsubscribe token |
-| 24 | `supabase/email-triggers.sql` | ⏳ DA ESEGUIRE | Trigger DB che accodano email (partecipazione, approvazione, ecc.) |
+| 18 | `supabase/reliability.sql` | ✅ | Tabella `run_confirmations` + colonne `reliability_*` su `profiles` + funzione score + 4 trigger |
+| 19 | `supabase/crews.sql` | ✅ | Tabelle `crews` + `crew_members` + RLS + 4 trigger + colonne `crew_id`, `run_visibility` su `runs` |
+| 20 | `supabase/crew-invites.sql` | ✅ | Tabella `crew_invites` + RLS |
+| 21 | `supabase/crews-fix-rls.sql` | ✅ | Fix ricorsione RLS crews/crew_members — funzioni SECURITY DEFINER |
+| 22 | `supabase/edit-run.sql` | ✅ | Permessi e trigger per modifica corsa (blocco <2h dalla partenza) |
+| 23 | `supabase/email-notifications.sql` | ✅ | Tabella `email_notifications` + preferenze utente + unsubscribe token |
+| 24 | `supabase/email-triggers.sql` | ✅ | Trigger DB che accodano email (partecipazione, approvazione, ecc.) |
 
 ### Schema tabelle aggiornato
 
@@ -364,7 +364,7 @@ src/
 - [x] Colonne materializzate su `profiles` aggiornate da 4 trigger DB
 - [x] `ReliabilityBadge` componente riutilizzabile (varianti full/icon)
 - [x] Badge visibile nel profilo e nella sidebar del dettaglio corsa
-- ⏳ **`supabase/reliability.sql` ancora da eseguire su Supabase**
+- ✅ **`supabase/reliability.sql` applicato in produzione**
 
 ### SEO (Sprint 1 completato)
 - [x] robots.txt, sitemap.xml dinamico, favicon SVG
@@ -381,7 +381,7 @@ src/
 - [x] Corsa privata (run_visibility: crew_only)
 - [x] Fix RLS ricorsione crews/crew_members con funzioni SECURITY DEFINER
 - [x] Sezione Crew in /come-funziona
-- ⏳ **SQL crews.sql / crew-invites.sql / crews-fix-rls.sql ancora da eseguire**
+- ✅ **SQL crews.sql / crew-invites.sql / crews-fix-rls.sql applicati in produzione**
 
 ### Email notifiche
 - [x] Supabase Edge Functions: `send-immediate` e `send-digest` via Resend API
@@ -389,8 +389,8 @@ src/
 - [x] Trigger DB per accodare email (partecipazione, approvazione, modifica, ecc.)
 - [x] Template HTML per ogni tipo di notifica
 - [x] Unsubscribe via token (`/api/unsubscribe`)
-- ⏳ **SQL email-notifications.sql / email-triggers.sql ancora da eseguire**
-- ⏳ **Edge Functions da deployare + RESEND_API_KEY su Supabase Secrets**
+- ✅ **SQL email-notifications.sql / email-triggers.sql applicati in produzione**
+- ✅ **Edge Functions deployate + RESEND_API_KEY configurata — email confermate in arrivo**
 
 ### Onboarding & Registrazione
 - [x] Form registrazione semplificato (solo nome + email + password, profilo completabile dopo)
@@ -444,11 +444,6 @@ src/
 
 | Problema | Priorità | Note |
 |---|---|---|
-| **SQL crews (3 file) da eseguire** | **Alta** | `crews.sql`, `crew-invites.sql`, `crews-fix-rls.sql` |
-| **SQL email (2 file) da eseguire** | **Alta** | `email-notifications.sql`, `email-triggers.sql` |
-| **`supabase/reliability.sql` da eseguire** | **Alta** | Senza questo le colonne `reliability_*` non esistono in produzione |
-| **`supabase/edit-run.sql` da eseguire** | **Alta** | Necessario per la funzionalità modifica corsa |
-| **Edge Functions email da deployare** | **Media** | `send-immediate` e `send-digest` + RESEND_API_KEY su Supabase Secrets |
 | Corse esistenti senza coordinate | Bassa | Non appaiono sulla mappa; backfill SQL in DASHBOARD-CONFIG.md |
 | SEO Sprint 2 non ancora fatto | Media | Schema.org JSON-LD (Event, Person, WebSite) |
 
@@ -456,27 +451,21 @@ src/
 
 ## 9. Prossimi task (in ordine di priorità)
 
-### Urgente (pre-merge)
-1. **Eseguire SQL mancanti** (in ordine):
-   - `supabase/reliability.sql`
-   - `supabase/edit-run.sql`
-   - `supabase/crews.sql`
-   - `supabase/crew-invites.sql`
-   - `supabase/crews-fix-rls.sql`
-   - `supabase/email-notifications.sql`
-   - `supabase/email-triggers.sql`
-2. **Deployare Edge Functions** email (`send-immediate`, `send-digest`) e impostare `RESEND_API_KEY` nei Supabase Secrets
-
 ### Alta priorità
-3. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e gira in produzione
+1. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e gira in produzione
+
+> Nota: SQL #18–#24 ed Edge Functions email risultano **già applicati e attivi in produzione**
+> (crew, reliability ed email verificati funzionanti). Per riconferma a colpo d'occhio è
+> disponibile lo script read-only `supabase/verify-pending.sql`. La migrazione idempotente
+> `supabase/apply-all-pending.sql` resta come riferimento ri-applicabile in sicurezza.
 
 ### Media priorità
-4. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
-5. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
+2. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
+3. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
 
 ### Bassa priorità / idee future
-6. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
-7. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
+4. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
+5. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
 
 ---
 
