@@ -20,6 +20,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
   const [hasInterest,    setHasInterest]    = useState(!!myInterest)
   const [interestId,     setInterestId]     = useState(myInterest?.id ?? null)
   const [interestToast,  setInterestToast]  = useState(false)   // toast conferma "Mi interessa"
+  const [joinToast,      setJoinToast]      = useState(false)   // toast conferma richiesta di partecipazione
 
   /* ── Interesse ── */
   const handleAddInterest = async () => {
@@ -65,6 +66,8 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
     })
     setLoading(false)
     setShowForm(false)
+    setJoinToast(true)
+    setTimeout(() => setJoinToast(false), 6000)
     router.refresh()
   }
 
@@ -100,6 +103,8 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
     }[myParticipation.status]
 
     return (
+      <>
+      {joinToast && <JoinToast />}
       <div className={`rounded-3xl border ${s.color} p-5 flex flex-col gap-3`}>
         <div className="flex items-center gap-3">
           <span className={`material-symbols-filled text-2xl ${s.iconColor}`}>{s.icon}</span>
@@ -115,6 +120,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
           </button>
         )}
       </div>
+      </>
     )
   }
 
@@ -219,6 +225,26 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
       />
     </div>
     </>
+  )
+}
+
+/* ── Toast temporizzato di conferma richiesta inviata ── */
+function JoinToast() {
+  return (
+    <div
+      className="fixed inset-x-0 bottom-0 z-[60] px-4 pt-3 flex justify-center pointer-events-none"
+      style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+    >
+      <div className="pointer-events-auto max-w-md w-full bg-white border border-green-100 rounded-2xl shadow-lg shadow-green-100/50 p-4 flex items-start gap-3">
+        <span className="material-symbols-filled text-2xl text-green-600 shrink-0">check_circle</span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-green-800">Richiesta inviata!</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            L&apos;organizzatore riceverà una notifica e potrà accettarti.
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 
