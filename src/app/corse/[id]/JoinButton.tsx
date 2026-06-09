@@ -144,6 +144,24 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
      STATO: Libero — mostra entrambe le opzioni
   ───────────────────────────────────────── */
   return (
+    <>
+    {/* ── Barra fissa mobile: CTA sempre visibile (iscrizione diretta) ── */}
+    {!showForm && (
+      <div
+        className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-4 pt-3"
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+      >
+        <button
+          onClick={handleJoin}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-white font-semibold text-sm px-6 py-3.5 rounded-2xl hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200 disabled:opacity-60"
+        >
+          <span className="material-symbols-outlined text-lg">directions_run</span>
+          {loading ? 'Invio…' : 'Partecipa alla corsa'}
+        </button>
+      </div>
+    )}
+
     <div className="flex flex-col gap-3">
 
       {/* ── Partecipa ── */}
@@ -200,6 +218,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
         userId={userId}
       />
     </div>
+    </>
   )
 }
 
