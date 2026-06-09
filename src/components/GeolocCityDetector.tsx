@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 const LS_CITY    = 'geo_city'
 const LS_TS      = 'geo_city_ts'
 const LS_DENIED  = 'geo_denied'
+const SS_DISMISSED = 'geo_dismissed'   // sessionStorage: utente ha rimosso il filtro manualmente
 const CACHE_TTL  = 7 * 24 * 60 * 60 * 1000  // 7 giorni
 
 interface Props {
@@ -23,6 +24,9 @@ export function GeolocCityDetector({ currentCityParam }: Props) {
     if (currentCityParam) return
     if (typeof window === 'undefined') return
     if (!navigator.geolocation) return
+
+    // Utente ha rimosso il filtro manualmente in questa sessione → non re-applicare
+    if (sessionStorage.getItem(SS_DISMISSED)) return
 
     // Città già in cache?
     const cachedCity = localStorage.getItem(LS_CITY)

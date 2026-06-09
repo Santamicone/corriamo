@@ -13,6 +13,7 @@ import { computeCompatibility, type CompatibilityResult, type RunHistory } from 
 import type { Run, Series, Profile } from '@/lib/types'
 import { GaraCard } from '@/components/GaraCard'
 import { GeolocCityDetector } from '@/components/GeolocCityDetector'
+import { GeoDismissButton } from '@/components/GeoDismissButton'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -381,11 +382,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
               <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold px-3 py-1.5 rounded-full">
                 <span className="material-symbols-outlined text-sm text-blue-500">near_me</span>
                 Corse vicino a te · {params.city}
-                <a href={buildUrl({ ...params, city: undefined, geo: undefined }, {})}
-                  className="text-blue-400 hover:text-blue-700 transition-colors ml-0.5"
-                  aria-label="Vedi tutte le città">
-                  <span className="material-symbols-outlined text-sm">close</span>
-                </a>
+                <GeoDismissButton href={buildUrl({ ...params, city: undefined, geo: undefined }, {})} />
               </span>
             </div>
           )}
