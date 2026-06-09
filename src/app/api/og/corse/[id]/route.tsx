@@ -164,7 +164,7 @@ export async function GET(
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden',
           }}>
-            <img src={`${siteUrl}/logo_vieniacorrrere.png`} width={44} height={44} style={{ objectFit: 'contain' }} />
+            <img src={`${siteUrl}/logo.png`} width={44} height={44} style={{ objectFit: 'contain' }} />
           </div>
           <span style={{ fontSize: 20, fontWeight: 700, color: '#374151' }}>
             Vieni a correre?
