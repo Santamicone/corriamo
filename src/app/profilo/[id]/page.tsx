@@ -44,7 +44,7 @@ export async function generateMetadata(
       url: `${SITE_URL}/profilo/${id}`,
       images: data.avatar_url && !data.avatar_url.startsWith('preset:') && !data.avatar_url.startsWith('carattere:')
         ? [{ url: data.avatar_url, width: 400, height: 400, alt: data.full_name }]
-        : [{ url: '/logo_vieniacorrere.png', width: 1200, height: 630, alt: 'Vieni a correre?' }],
+        : [{ url: '/orizzontale.png', width: 1200, height: 630, alt: 'Vieni a correre?' }],
     },
   }
 }
