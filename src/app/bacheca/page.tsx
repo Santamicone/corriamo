@@ -13,6 +13,7 @@ import { computeCompatibility, type CompatibilityResult, type RunHistory } from 
 import type { Run, Series, Profile } from '@/lib/types'
 import { GaraCard } from '@/components/GaraCard'
 import { GeolocCityDetector } from '@/components/GeolocCityDetector'
+import { GeoDismissButton } from '@/components/GeoDismissButton'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -41,6 +42,7 @@ interface SearchParams {
   all_cities?:    string   // bypass del filtro città automatico dal profilo
   welcome?:       string   // '1' → primo accesso dopo registrazione
   geo?:           string   // '1' → città rilevata da geolocalizzazione
+  geo_county?:    string   // provincia/area metropolitana — fallback se city dà 0 risultati
 }
 
 /* ─── Helpers date ─── */
@@ -85,6 +87,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
   let runs: Run[] = []
   let series: Series[] = []
   let gare: Run[] = []
+  let geoFallbackUsed = false   // true se city dà 0 risultati e si usa geo_county
 
   // Profilo + storico per compatibilità (solo se loggato)
   let userProfile: Profile | null = null
@@ -146,6 +149,27 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
 
     const { data } = await query
     runs = (data || []) as unknown as Run[]
+
+    // Fallback provincia: se la città dà 0 risultati e c'è geo_county, ritenta con la provincia
+    if (runs.length === 0 && params.geo === '1' && params.geo_county && !params.city) {
+      let fallbackQuery = supabase
+        .from('runs')
+        .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
+        .eq('status', 'aperta')
+        .not('type', 'eq', 'gara')
+        .gte('date', params.from ?? today)
+        .order('date', { ascending: true })
+        .ilike('city', `%${params.geo_county}%`)
+      if (params.to)    fallbackQuery = fallbackQuery.lte('date', params.to)
+      if (params.level) fallbackQuery = fallbackQuery.eq('level', params.level)
+      if (params.q)     fallbackQuery = fallbackQuery.ilike('title', `%${params.q}%`)
+      if (params.tag)   fallbackQuery = fallbackQuery.contains('tags', [params.tag])
+      const { data: fallbackData } = await fallbackQuery
+      if (fallbackData && fallbackData.length > 0) {
+        runs = fallbackData as unknown as Run[]
+        geoFallbackUsed = true
+      }
+    }
 
     if (user) {
       const { data: participations } = await supabase
@@ -227,6 +251,20 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     if (params.tag)   seriesQuery = seriesQuery.contains('tags', [params.tag])
     const { data: seriesData } = await seriesQuery
     series = (seriesData || []) as unknown as Series[]
+
+    // Fallback provincia anche per le serie
+    if (series.length === 0 && geoFallbackUsed && params.geo_county) {
+      let fallbackSeries = supabase
+        .from('series')
+        .select('*, organizer:profiles!series_organizer_id_fkey(*)')
+        .order('created_at', { ascending: false })
+        .ilike('city', `%${params.geo_county}%`)
+      if (params.level) fallbackSeries = fallbackSeries.eq('level', params.level)
+      if (params.q)     fallbackSeries = fallbackSeries.ilike('title', `%${params.q}%`)
+      if (params.tag)   fallbackSeries = fallbackSeries.contains('tags', [params.tag])
+      const { data: fallbackSeriesData } = await fallbackSeries
+      series = (fallbackSeriesData || []) as unknown as Series[]
+    }
   }
 
   const hasFilters    = !!(params.q || filterCity || params.level || params.from || params.to || params.tag || params.race_distance || params.looking_for)
@@ -380,12 +418,10 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             <div className="flex items-center gap-2 -mt-2">
               <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold px-3 py-1.5 rounded-full">
                 <span className="material-symbols-outlined text-sm text-blue-500">near_me</span>
-                Corse vicino a te · {params.city}
-                <a href={buildUrl({ ...params, city: undefined, geo: undefined }, {})}
-                  className="text-blue-400 hover:text-blue-700 transition-colors ml-0.5"
-                  aria-label="Vedi tutte le città">
-                  <span className="material-symbols-outlined text-sm">close</span>
-                </a>
+                {geoFallbackUsed && params.geo_county
+                  ? `Dintorni di ${params.city} · ${params.geo_county}`
+                  : `Corse vicino a te · ${params.city}`}
+                <GeoDismissButton href={buildUrl({ ...params, city: undefined, geo: undefined, geo_county: undefined }, {})} />
               </span>
             </div>
           )}
@@ -411,7 +447,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           {/* Contenuto principale */}
           {tab === 'corse' ? (
             runs.length === 0 && series.length === 0 ? (
-              <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} userCity={filterCity ?? undefined} isLoggedIn={!!user} />
+              <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} userCity={filterCity ?? undefined} isLoggedIn={!!user} geoCity={params.geo === '1' ? params.city : undefined} geoCounty={params.geo_county} />
             ) : view === 'mappa' ? (
               <RunMapWrapper runs={runs} height="520px" />
             ) : (
@@ -742,9 +778,9 @@ function ActiveDatePill({ params }: { params: SearchParams }) {
 /* ═══════════════════════════════════════
    EMPTY STATE
 ═══════════════════════════════════════ */
-function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLoggedIn }: {
+function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLoggedIn, geoCity, geoCounty }: {
   tab: string; hasFilters: boolean; hasDateFilter: boolean; params: SearchParams
-  userCity?: string; isLoggedIn?: boolean
+  userCity?: string; isLoggedIn?: boolean; geoCity?: string; geoCounty?: string
 }) {
   const dateHint = hasDateFilter && (
     <a
@@ -758,9 +794,13 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLogged
 
   const noFilterMessage = tab === 'gare'
     ? 'Sii il primo a cercare compagni per una gara.'
-    : userCity
-      ? `Non ci sono ancora corse a ${userCity}. Sii il primo a proporne una!`
-      : 'Sii il primo a proporre un appuntamento nella tua città.'
+    : geoCity && geoCounty
+      ? `Nessuna corsa trovata né a ${geoCity} né nei dintorni (${geoCounty}). Sii il primo!`
+      : geoCity
+        ? `Nessuna corsa trovata vicino a ${geoCity}. Sii il primo a proporne una!`
+        : userCity
+          ? `Non ci sono ancora corse a ${userCity}. Sii il primo a proporne una!`
+          : 'Sii il primo a proporre un appuntamento nella tua città.'
 
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-white rounded-3xl border border-gray-100">
