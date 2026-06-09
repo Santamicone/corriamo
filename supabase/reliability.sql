@@ -40,7 +40,7 @@ ALTER TABLE public.profiles
 -- =====================
 -- FUNZIONE DI CALCOLO SCORE
 -- =====================
-CREATE OR REPLACE FUNCTION update_reliability_score(organizer_id uuid)
+CREATE OR REPLACE FUNCTION update_reliability_score(p_organizer_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   r               RECORD;
@@ -59,12 +59,12 @@ BEGIN
       -- segnale 1: check-in dell'organizzatore
       EXISTS(
         SELECT 1 FROM public.check_ins ci
-        WHERE ci.run_id = ru.id AND ci.user_id = organizer_id
+        WHERE ci.run_id = ru.id AND ci.user_id = p_organizer_id
       ) AS has_checkin,
       -- segnale 2: almeno 1 recensione ricevuta
       EXISTS(
         SELECT 1 FROM public.reviews rv
-        WHERE rv.run_id = ru.id AND rv.reviewed_id = organizer_id
+        WHERE rv.run_id = ru.id AND rv.reviewed_id = p_organizer_id
       ) AS has_review,
       -- segnale 3: >= 50% partecipanti ha risposto "sì"
       COALESCE((
@@ -80,7 +80,7 @@ BEGIN
         WHERE p.run_id = ru.id AND p.status = 'approvata'
       ) AS has_participants
     FROM public.runs ru
-    WHERE ru.organizer_id = organizer_id
+    WHERE ru.organizer_id = p_organizer_id
       AND ru.status != 'annullata'
   LOOP
     -- Calcola l'ora della corsa come timestamptz Europe/Rome
@@ -108,7 +108,7 @@ BEGIN
       THEN ROUND((total_confirmed / total_eligible * 100)::numeric, 2)
       ELSE NULL
     END
-  WHERE id = organizer_id;
+  WHERE id = p_organizer_id;
 END;
 $$;
 

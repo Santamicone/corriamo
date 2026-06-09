@@ -69,7 +69,7 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS reliability_eligible  numeric(5,2) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS reliability_confirmed numeric(5,2) NOT NULL DEFAULT 0;
 
-CREATE OR REPLACE FUNCTION update_reliability_score(organizer_id uuid)
+CREATE OR REPLACE FUNCTION update_reliability_score(p_organizer_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   r               RECORD;
@@ -87,11 +87,11 @@ BEGIN
       COALESCE((ru.is_spot)::boolean, false) AS is_spot,
       EXISTS(
         SELECT 1 FROM public.check_ins ci
-        WHERE ci.run_id = ru.id AND ci.user_id = organizer_id
+        WHERE ci.run_id = ru.id AND ci.user_id = p_organizer_id
       ) AS has_checkin,
       EXISTS(
         SELECT 1 FROM public.reviews rv
-        WHERE rv.run_id = ru.id AND rv.reviewed_id = organizer_id
+        WHERE rv.run_id = ru.id AND rv.reviewed_id = p_organizer_id
       ) AS has_review,
       COALESCE((
         SELECT
@@ -105,7 +105,7 @@ BEGIN
         WHERE p.run_id = ru.id AND p.status = 'approvata'
       ) AS has_participants
     FROM public.runs ru
-    WHERE ru.organizer_id = organizer_id
+    WHERE ru.organizer_id = p_organizer_id
       AND ru.status != 'annullata'
   LOOP
     run_datetime := (r.date::text || ' ' || r.time::text || '+00')::timestamptz
@@ -131,7 +131,7 @@ BEGIN
       THEN ROUND((total_confirmed / total_eligible * 100)::numeric, 2)
       ELSE NULL
     END
-  WHERE id = organizer_id;
+  WHERE id = p_organizer_id;
 END;
 $$;
 
