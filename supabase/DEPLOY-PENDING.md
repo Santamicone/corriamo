@@ -82,6 +82,21 @@ eseguire, e non committare mai il file compilato.
 
 ---
 
+## Step 4 — Crew stats (C1) — sicuro, nessun segreto
+
+Supabase Dashboard → **SQL Editor** → incolla ed esegui:
+
+- `supabase/crew-stats.sql` ← crea l'indice `idx_runs_crew_date` e la funzione
+  RPC `crew_stats(uuid)` (SECURITY DEFINER, restituisce solo aggregati).
+
+Idempotente. La pagina `/crew/[id]` chiama già `rpc('crew_stats')`: **prima**
+dell'esecuzione la chiamata fallisce in modo silenzioso (sezione statistiche
+semplicemente nascosta), **dopo** mostra km collettivi · corse · membri.
+
+Rollback: `DROP FUNCTION IF EXISTS public.crew_stats(uuid);`
+
+---
+
 ## Note
 
 I file originali #18–#24 restano nel repo come riferimento storico.

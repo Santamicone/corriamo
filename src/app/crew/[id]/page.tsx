@@ -5,7 +5,8 @@ import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { CREW_TYPE_LABELS } from '@/lib/types'
-import type { Crew, CrewMember } from '@/lib/types'
+import type { Crew, CrewMember, Run } from '@/lib/types'
+import { RunCard } from '@/components/RunCard'
 import { JoinCrewButton } from './JoinCrewButton'
 import type { Metadata } from 'next'
 
@@ -58,6 +59,23 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
     crewRuns = data
   }
 
+  // Corse pubbliche della crew (visibili a tutti) + statistiche aggregate
+  const today = new Date().toISOString().split('T')[0]
+  const [{ data: publicRuns }, { data: statsRows }] = await Promise.all([
+    supabase
+      .from('runs')
+      .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
+      .eq('crew_id', id)
+      .eq('run_visibility', 'public')
+      .eq('status', 'aperta')
+      .gte('date', today)
+      .order('date', { ascending: true })
+      .limit(6),
+    supabase.rpc('crew_stats', { p_crew_id: id }),
+  ])
+  const stats = (Array.isArray(statsRows) ? statsRows[0] : statsRows) as
+    { total_runs: number; total_km: number; member_count: number } | null
+
   const typeInfo = CREW_TYPE_LABELS[crew.crew_type]
   const currentMember = members?.find((m) => m.user_id === user?.id)
   const isOwner = user?.id === crew.owner_id
@@ -108,6 +126,23 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                 {' '}&mdash; {crew.owner.full_name}
               </span>
             </div>
+
+            {/* Statistiche collettive del gruppo */}
+            {stats && (stats.total_runs > 0 || stats.member_count > 0) && (
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                {[
+                  { value: stats.member_count ?? 0, label: (stats.member_count ?? 0) === 1 ? typeInfo.memberLabel : typeInfo.memberLabelPlural, icon: 'group' },
+                  { value: stats.total_runs ?? 0, label: (stats.total_runs ?? 0) === 1 ? 'corsa insieme' : 'corse insieme', icon: 'directions_run' },
+                  { value: Math.round(stats.total_km ?? 0), label: 'km di gruppo', icon: 'footprint' },
+                ].map(s => (
+                  <div key={s.label} className="flex flex-col items-center gap-0.5 bg-gray-50 rounded-2xl py-3 px-2 text-center">
+                    <span className="material-symbols-outlined text-[var(--color-brand)] text-lg">{s.icon}</span>
+                    <span className="text-lg font-extrabold text-gray-900 leading-none">{s.value}</span>
+                    <span className="text-[11px] text-gray-400 leading-tight">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Azione: entra / stato */}
@@ -154,6 +189,19 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
               ))}
             </div>
           </div>
+
+          {/* Corse pubbliche della crew (bacheca aperta a tutti) */}
+          {publicRuns && publicRuns.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--color-brand)] text-base">calendar_month</span>
+                Prossime corse della crew
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(publicRuns as unknown as Run[]).map(run => <RunCard key={run.id} run={run} />)}
+              </div>
+            </div>
+          )}
 
           {/* Corse riservate (solo per membri) */}
           {isMember && crewRuns && crewRuns.length > 0 && (
