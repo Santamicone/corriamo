@@ -143,7 +143,8 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
 
     if (params.to)    query = query.lte('date', params.to)
     if (filterCity)   query = query.ilike('city', `%${filterCity}%`)
-    if (params.level) query = query.eq('level', params.level)
+    // Le corse 'tutti' (aperte a ogni livello) compaiono sempre col filtro livello
+    if (params.level) query = query.in('level', [params.level, 'tutti'])
     if (params.q)     query = query.ilike('title', `%${params.q}%`)
     if (params.tag)   query = query.contains('tags', [params.tag])
 
@@ -161,7 +162,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
         .order('date', { ascending: true })
         .ilike('city', `%${params.geo_county}%`)
       if (params.to)    fallbackQuery = fallbackQuery.lte('date', params.to)
-      if (params.level) fallbackQuery = fallbackQuery.eq('level', params.level)
+      if (params.level) fallbackQuery = fallbackQuery.in('level', [params.level, 'tutti'])
       if (params.q)     fallbackQuery = fallbackQuery.ilike('title', `%${params.q}%`)
       if (params.tag)   fallbackQuery = fallbackQuery.contains('tags', [params.tag])
       const { data: fallbackData } = await fallbackQuery
@@ -171,6 +172,9 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       }
     }
 
+    // ID delle corse visibili — calcolato una sola volta e riusato sotto
+    const runIds = runs.map(r => r.id)
+
     if (user) {
       const { data: participations } = await supabase
         .from('participations').select('run_id, status').eq('user_id', user.id)
@@ -178,11 +182,14 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       runs = runs.map(r => ({ ...r, my_participation: partMap.get(r.id) ?? null })) as Run[]
     }
 
-    const { data: counts } = await supabase
-      .from('participations').select('run_id').eq('status', 'approvata')
-    const countMap = new Map<string, number>()
-    counts?.forEach(c => countMap.set(c.run_id, (countMap.get(c.run_id) ?? 0) + 1))
-    runs = runs.map(r => ({ ...r, participants_count: countMap.get(r.id) ?? 0 })) as Run[]
+    // Conteggio partecipanti approvati — limitato alle sole corse visibili
+    if (runIds.length > 0) {
+      const { data: counts } = await supabase
+        .from('participations').select('run_id').eq('status', 'approvata').in('run_id', runIds)
+      const countMap = new Map<string, number>()
+      counts?.forEach(c => countMap.set(c.run_id, (countMap.get(c.run_id) ?? 0) + 1))
+      runs = runs.map(r => ({ ...r, participants_count: countMap.get(r.id) ?? 0 })) as Run[]
+    }
 
     // Calcola punteggio di compatibilità per ogni corsa
     if (userProfile) {
@@ -204,7 +211,6 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     }
 
     // Conta interessi per ogni corsa
-    const runIds = runs.map(r => r.id)
     if (runIds.length > 0) {
       const { data: interestRows } = await supabase
         .from('interests').select('run_id').in('run_id', runIds)
@@ -246,7 +252,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       .select('*, organizer:profiles!series_organizer_id_fkey(*)')
       .order('created_at', { ascending: false })
     if (filterCity)   seriesQuery = seriesQuery.ilike('city', `%${filterCity}%`)
-    if (params.level) seriesQuery = seriesQuery.eq('level', params.level)
+    if (params.level) seriesQuery = seriesQuery.in('level', [params.level, 'tutti'])
     if (params.q)     seriesQuery = seriesQuery.ilike('title', `%${params.q}%`)
     if (params.tag)   seriesQuery = seriesQuery.contains('tags', [params.tag])
     const { data: seriesData } = await seriesQuery
@@ -259,7 +265,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
         .select('*, organizer:profiles!series_organizer_id_fkey(*)')
         .order('created_at', { ascending: false })
         .ilike('city', `%${params.geo_county}%`)
-      if (params.level) fallbackSeries = fallbackSeries.eq('level', params.level)
+      if (params.level) fallbackSeries = fallbackSeries.in('level', [params.level, 'tutti'])
       if (params.q)     fallbackSeries = fallbackSeries.ilike('title', `%${params.q}%`)
       if (params.tag)   fallbackSeries = fallbackSeries.contains('tags', [params.tag])
       const { data: fallbackSeriesData } = await fallbackSeries
