@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     url: SITE_URL,
     images: [
       {
-        url: '/logo_vieniacorrere.png',
+        url: '/orizzontale.png',
         width: 1200,
         height: 630,
         alt: SITE_NAME,
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: ['/logo_vieniacorrere.png'],
+    images: ['/orizzontale.png'],
   },
   alternates: {
     canonical: SITE_URL,
