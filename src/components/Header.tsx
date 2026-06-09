@@ -58,6 +58,7 @@ function useUnreadNotifications(userId: string | null) {
 
 const navLinks = [
   { href: '/bacheca',        label: 'Bacheca',                icon: 'directions_run', help: false },
+  { href: '/compagni',       label: 'Trova compagni',         icon: 'diversity_3',    help: false },
   { href: '/nuova-corsa',    label: 'Proponi una corsa',      icon: 'add_circle',     help: false },
   { href: '/gare',           label: 'Cerca compagni di gara', icon: 'emoji_events',   help: false },
   { href: '/come-funziona',  label: 'Come funziona',          icon: 'help_outline',   help: true  },
