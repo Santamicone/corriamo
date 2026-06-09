@@ -831,11 +831,20 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLogged
         {dateHint}
       </div>
       {tab === 'corse' && isLoggedIn && (
-        <Link href="/nuova-corsa"
-          className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors mt-1">
-          <span className="material-symbols-outlined text-lg">add</span>
-          Proponi una corsa
-        </Link>
+        <div className="flex flex-col items-center gap-2 mt-1">
+          <Link href="/nuova-corsa"
+            className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors">
+            <span className="material-symbols-outlined text-lg">add</span>
+            Proponi una corsa
+          </Link>
+          {!hasFilters && (
+            <Link href="/compagni"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-primary transition-colors">
+              <span className="material-symbols-outlined text-base">diversity_3</span>
+              Oppure scopri i runner come te
+            </Link>
+          )}
+        </div>
       )}
       {tab === 'corse' && !isLoggedIn && (
         <Link href="/registrati"
