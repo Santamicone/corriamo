@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Participation } from '@/lib/types'
@@ -23,6 +23,15 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
   const [interestToast,  setInterestToast]  = useState(false)   // toast conferma "Mi interessa"
   const [joinToast,      setJoinToast]      = useState(false)   // toast conferma richiesta di partecipazione
   const [errorMsg,       setErrorMsg]       = useState<string | null>(null)
+
+  const formCardRef = useRef<HTMLDivElement>(null)
+
+  // Apre il form di presentazione e lo porta in vista (la barra fissa
+  // mobile è in fondo allo schermo, il form può essere fuori viewport)
+  const openForm = () => {
+    setShowForm(true)
+    setTimeout(() => formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60)
+  }
 
   const showError = (msg: string) => {
     setErrorMsg(msg)
@@ -206,14 +215,15 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
   return (
     <>
     {errorMsg && <ErrorToast message={errorMsg} />}
-    {/* ── Barra fissa mobile: CTA sempre visibile (iscrizione diretta) ── */}
+    {/* ── Barra fissa mobile: CTA sempre visibile — apre il form di presentazione,
+           stesso flusso del desktop ── */}
     {!showForm && (
       <div
         className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-4 pt-3"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         <button
-          onClick={handleJoin}
+          onClick={openForm}
           disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-primary text-white font-semibold text-sm px-6 py-3.5 rounded-2xl hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200 disabled:opacity-60"
         >
@@ -226,7 +236,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
     <div className="flex flex-col gap-3">
 
       {/* ── Partecipa ── */}
-      <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-5 flex flex-col gap-4">
+      <div ref={formCardRef} className="bg-white border border-gray-100 rounded-3xl shadow-sm p-5 flex flex-col gap-4">
         {!showForm ? (
           <>
             <div>
@@ -272,7 +282,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
         hasInterest={hasInterest} loading={loading}
         newlyAdded={interestToast}
         onAdd={handleAddInterest} onRemove={handleRemoveInterest}
-        onParticipate={() => setShowForm(true)}
+        onParticipate={openForm}
         userId={userId}
       />
     </div>
