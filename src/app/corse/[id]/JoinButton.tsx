@@ -113,10 +113,12 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
             <p className="text-xs text-gray-500 mt-0.5">{s.subtitle}</p>
           </div>
         </div>
-        {myParticipation.status !== 'approvata' && (
+        {myParticipation.status !== 'rifiutata' && (
           <button onClick={handleCancel} disabled={loading}
             className="text-xs font-semibold text-gray-400 hover:text-red-500 transition-colors underline text-left">
-            {loading ? 'Annullamento…' : 'Annulla richiesta'}
+            {loading
+              ? 'Annullamento…'
+              : myParticipation.status === 'approvata' ? 'Annulla partecipazione' : 'Annulla richiesta'}
           </button>
         )}
       </div>
