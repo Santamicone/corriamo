@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { Avatar } from '@/components/ui/Avatar'
 import type { Run, Series, CrewType, Profile } from '@/lib/types'
 import { CREW_TYPE_LABELS } from '@/lib/types'
-import { formatDate } from '@/lib/utils'
+import { formatDate, todayItaly } from '@/lib/utils'
 import { rankRunners } from '@/lib/matchmaking'
 
 export default async function AreaPersonalePage() {
@@ -19,7 +19,7 @@ export default async function AreaPersonalePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayItaly()
 
   const [
     { data: myRuns },
@@ -85,7 +85,7 @@ export default async function AreaPersonalePage() {
   const profile = myProfile as { bio?: string; level?: string; city?: string; age?: number; pb_5k?: string; pb_10k?: string; pb_21k?: string; pb_42k?: string } | null
   const missingFields: string[] = []
   if (!profile?.bio)    missingFields.push('bio')
-  if (!profile?.level || profile.level === 'principiante') missingFields.push('livello')
+  if (!profile?.level) missingFields.push('livello')
   if (!profile?.age)    missingFields.push('età')
   if (!profile?.pb_5k && !profile?.pb_10k && !profile?.pb_21k && !profile?.pb_42k) missingFields.push('personal best')
 

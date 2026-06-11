@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { addWeeks, addDays, format, nextDay, parseISO, getDay } from 'date-fns'
-import { DAY_LABELS } from '@/lib/utils'
+import { DAY_LABELS, todayItaly } from '@/lib/utils'
 import { TagPicker } from '@/components/ui/TagPicker'
 
 const WEEKS_AHEAD = 8
@@ -49,7 +49,7 @@ export function NuovaSerieForm({ userId }: { userId: string }) {
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.value }))
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayItaly()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

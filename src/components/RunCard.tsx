@@ -122,7 +122,7 @@ export function RunCard({ run, className }: RunCardProps) {
             <DataPill
               icon={isPrivateLoc ? 'lock' : 'place'}
               label="Luogo"
-              value={isPrivateLoc ? run.city : run.city}
+              value={isPrivateLoc ? run.city : (run.location || run.city)}
               muted={isPrivateLoc}
             />
             <DataPill icon="schedule" label="Orario" value={run.time.slice(0, 5)} />

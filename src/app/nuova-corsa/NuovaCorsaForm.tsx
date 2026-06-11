@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { geocodeAddress, type GeoResult } from '@/lib/geocoding'
 import { TagPicker } from '@/components/ui/TagPicker'
 import { addWeeks, addDays, format, nextDay, parseISO, getDay } from 'date-fns'
-import { DAY_LABELS, cn } from '@/lib/utils'
+import { DAY_LABELS, cn, todayItaly } from '@/lib/utils'
 
 const LocationPreviewMap = dynamic(() => import('@/components/LocationPreviewMap'), {
   ssr: false,
@@ -127,7 +127,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
   }, [form.location, form.city, runGeocode])
 
   const effectiveCoords = userDragged ? manualCoords : geoResult
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayItaly()
 
   /* ── Submit ── */
   const handleSubmit = async (e: React.FormEvent) => {

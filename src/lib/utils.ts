@@ -35,6 +35,18 @@ export function parseRunDateTime(dateStr: string, timeStr: string): Date {
   return new Date(naiveUtc + diffMs)
 }
 
+/**
+ * Data odierna (YYYY-MM-DD) in ora italiana (Europe/Rome).
+ * Il server Vercel gira in UTC: tra mezzanotte e le 2 di notte italiane
+ * `new Date().toISOString()` restituirebbe il giorno precedente.
+ */
+export function todayItaly(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Rome',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date())
+}
+
 /* ── Purple Screen — colori ritrovo ── */
 const RITROVO_COLORS = [
   { bg: '#7C3AED', text: '#FFFFFF', name: 'Viola' },

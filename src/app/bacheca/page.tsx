@@ -15,6 +15,7 @@ import { GaraCard } from '@/components/GaraCard'
 import { GeolocCityDetector } from '@/components/GeolocCityDetector'
 import { GeoDismissButton } from '@/components/GeoDismissButton'
 import type { Metadata } from 'next'
+import { todayItaly } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Trova una corsa vicino a te',
@@ -47,7 +48,7 @@ interface SearchParams {
 
 /* ─── Helpers date ─── */
 const toISO = (d: Date) => format(d, 'yyyy-MM-dd')
-const todayStr = () => toISO(new Date())
+const todayStr = () => todayItaly()
 
 function getChipRanges(today: Date) {
   const day = today.getDay() // 0=Dom … 6=Sab
@@ -285,8 +286,8 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
   const activeTag     = params.tag ? getTag(params.tag) : null
   const count = tab === 'corse' ? runs.length + series.length : gare.length
 
-  // Chips — calcolate al momento del render server-side
-  const chips = getChipRanges(new Date())
+  // Chips — calcolate sulla data italiana (il server Vercel è in UTC)
+  const chips = getChipRanges(parseISO(todayItaly()))
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -554,9 +555,14 @@ function FilterBar({
       {/* ── Riga 1: testo + città + livello ── */}
       <form method="GET" action="/bacheca" className="flex flex-wrap gap-3 items-end p-4 border-b border-gray-50">
         <input type="hidden" name="tab" value={tab} />
-        {/* Preserva i filtri data nel form testo */}
-        {current.from && <input type="hidden" name="from" value={current.from} />}
-        {current.to   && <input type="hidden" name="to"   value={current.to} />}
+        {/* Preserva tutti gli altri filtri attivi nel form testo */}
+        {current.from          && <input type="hidden" name="from"          value={current.from} />}
+        {current.to            && <input type="hidden" name="to"            value={current.to} />}
+        {current.tag           && <input type="hidden" name="tag"           value={current.tag} />}
+        {current.view          && <input type="hidden" name="view"          value={current.view} />}
+        {current.race_distance && <input type="hidden" name="race_distance" value={current.race_distance} />}
+        {current.looking_for   && <input type="hidden" name="looking_for"   value={current.looking_for} />}
+        {current.all_cities    && <input type="hidden" name="all_cities"    value={current.all_cities} />}
 
         <div className="flex flex-col gap-1.5 min-w-[150px] flex-1">
           <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cerca</label>
@@ -578,6 +584,8 @@ function FilterBar({
             <option value="principiante">Principiante</option>
             <option value="intermedio">Intermedio</option>
             <option value="avanzato">Avanzato</option>
+            <option value="amatore_gare">Amatore, ma faccio gare</option>
+            <option value="atleta">Atleta agonista</option>
           </select>
         </div>
 
@@ -631,9 +639,12 @@ function FilterBar({
           {/* Range personalizzato */}
           <form method="GET" action="/bacheca" className="flex items-center gap-2 flex-wrap">
             <input type="hidden" name="tab"   value={tab} />
-            {current.q     && <input type="hidden" name="q"     value={current.q} />}
-            {current.city  && <input type="hidden" name="city"  value={current.city} />}
-            {current.level && <input type="hidden" name="level" value={current.level} />}
+            {current.q          && <input type="hidden" name="q"          value={current.q} />}
+            {current.city       && <input type="hidden" name="city"       value={current.city} />}
+            {current.level      && <input type="hidden" name="level"      value={current.level} />}
+            {current.tag        && <input type="hidden" name="tag"        value={current.tag} />}
+            {current.view       && <input type="hidden" name="view"       value={current.view} />}
+            {current.all_cities && <input type="hidden" name="all_cities" value={current.all_cities} />}
 
             <div className="flex items-center gap-1.5">
               <label className="text-xs text-gray-400 font-medium shrink-0">Dal</label>

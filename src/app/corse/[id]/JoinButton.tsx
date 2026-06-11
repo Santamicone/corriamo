@@ -22,18 +22,26 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
   const [interestId,     setInterestId]     = useState(myInterest?.id ?? null)
   const [interestToast,  setInterestToast]  = useState(false)   // toast conferma "Mi interessa"
   const [joinToast,      setJoinToast]      = useState(false)   // toast conferma richiesta di partecipazione
+  const [errorMsg,       setErrorMsg]       = useState<string | null>(null)
+
+  const showError = (msg: string) => {
+    setErrorMsg(msg)
+    setTimeout(() => setErrorMsg(null), 5000)
+  }
 
   /* ── Interesse ── */
   const handleAddInterest = async () => {
     if (!userId) { router.push(loginHref); return }
     setLoading(true)
     const supabase = createClient()
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('interests')
       .insert({ run_id: runId, user_id: userId })
       .select('id')
       .single()
-    if (data) {
+    if (error || !data) {
+      showError('Non siamo riusciti a registrare il tuo interesse. Riprova tra un momento.')
+    } else {
       setHasInterest(true)
       setInterestId(data.id)
       setInterestToast(true)
@@ -47,9 +55,13 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
     if (!interestId) return
     setLoading(true)
     const supabase = createClient()
-    await supabase.from('interests').delete().eq('id', interestId)
-    setHasInterest(false)
-    setInterestId(null)
+    const { error } = await supabase.from('interests').delete().eq('id', interestId)
+    if (error) {
+      showError('Non siamo riusciti a rimuovere il tuo interesse. Riprova tra un momento.')
+    } else {
+      setHasInterest(false)
+      setInterestId(null)
+    }
     setLoading(false)
     router.refresh()
   }
@@ -61,11 +73,15 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
     const supabase = createClient()
     // Rimuovi interesse se presente (partecipazione prende il posto)
     if (interestId) await supabase.from('interests').delete().eq('id', interestId)
-    await supabase.from('participations').insert({
+    const { error } = await supabase.from('participations').insert({
       run_id: runId, user_id: userId,
       status: 'in_attesa', message: message || null,
     })
     setLoading(false)
+    if (error) {
+      showError('Invio della richiesta non riuscito. Riprova tra un momento.')
+      return
+    }
     setShowForm(false)
     setJoinToast(true)
     setTimeout(() => setJoinToast(false), 6000)
@@ -74,10 +90,18 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
 
   const handleCancel = async () => {
     if (!myParticipation) return
+    const confirmMsg = myParticipation.status === 'approvata'
+      ? 'Vuoi davvero annullare la partecipazione? Per tornare dovrai inviare una nuova richiesta.'
+      : 'Vuoi davvero annullare la richiesta?'
+    if (!window.confirm(confirmMsg)) return
     setLoading(true)
     const supabase = createClient()
-    await supabase.from('participations').delete().eq('id', myParticipation.id)
+    const { error } = await supabase.from('participations').delete().eq('id', myParticipation.id)
     setLoading(false)
+    if (error) {
+      showError('Annullamento non riuscito. Riprova tra un momento.')
+      return
+    }
     router.refresh()
   }
 
@@ -106,6 +130,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
     return (
       <>
       {joinToast && <JoinToast />}
+      {errorMsg && <ErrorToast message={errorMsg} />}
       <div className={`rounded-3xl border ${s.color} p-5 flex flex-col gap-3`}>
         <div className="flex items-center gap-3">
           <span className={`material-symbols-filled text-2xl ${s.iconColor}`}>{s.icon}</span>
@@ -159,6 +184,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
   if (isFull) {
     return (
       <div className="flex flex-col gap-3">
+        {errorMsg && <ErrorToast message={errorMsg} />}
         <div className="bg-gray-50 border border-gray-100 rounded-3xl p-5 text-center">
           <span className="material-symbols-outlined text-3xl text-gray-300 block mb-2">group_off</span>
           <p className="text-sm font-bold text-gray-700">Corsa al completo</p>
@@ -168,7 +194,6 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
           hasInterest={hasInterest} loading={loading}
           newlyAdded={interestToast}
           onAdd={handleAddInterest} onRemove={handleRemoveInterest}
-          onParticipate={() => {}}  // non disponibile — full
           userId={userId}
         />
       </div>
@@ -180,6 +205,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
   ───────────────────────────────────────── */
   return (
     <>
+    {errorMsg && <ErrorToast message={errorMsg} />}
     {/* ── Barra fissa mobile: CTA sempre visibile (iscrizione diretta) ── */}
     {!showForm && (
       <div
@@ -274,6 +300,24 @@ function JoinToast() {
   )
 }
 
+/* ── Toast temporizzato di errore ── */
+function ErrorToast({ message }: { message: string }) {
+  return (
+    <div
+      className="fixed inset-x-0 bottom-0 z-[60] px-4 pt-3 flex justify-center pointer-events-none"
+      style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+    >
+      <div className="pointer-events-auto max-w-md w-full bg-white border border-red-100 rounded-2xl shadow-lg shadow-red-100/50 p-4 flex items-start gap-3">
+        <span className="material-symbols-filled text-2xl text-red-500 shrink-0">error</span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-red-800">Qualcosa è andato storto</p>
+          <p className="text-xs text-gray-500 mt-0.5">{message}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Sezione "Mi interessa" riutilizzabile ── */
 function InterestSection({
   hasInterest, loading, newlyAdded, onAdd, onRemove, onParticipate, userId,
@@ -283,7 +327,7 @@ function InterestSection({
   newlyAdded?: boolean
   onAdd: () => void
   onRemove: () => void
-  onParticipate: () => void
+  onParticipate?: () => void   // assente quando la corsa è al completo
   userId: string | null
 }) {
   if (hasInterest) {
@@ -311,7 +355,7 @@ function InterestSection({
               className="text-xs text-amber-600 hover:text-red-500 transition-colors font-semibold underline">
               Rimuovi interesse
             </button>
-            {onParticipate !== (() => {}) && (
+            {onParticipate && (
               <>
                 <span className="text-amber-300">·</span>
                 <button onClick={onParticipate}
