@@ -14,6 +14,7 @@ interface Props {
 
 export function JoinButton({ runId, userId, myParticipation, myInterest, isFull }: Props) {
   const router = useRouter()
+  const loginHref = `/login?next=${encodeURIComponent(`/corse/${runId}`)}`
   const [loading,        setLoading]        = useState(false)
   const [showForm,       setShowForm]       = useState(false)
   const [message,        setMessage]        = useState('')
@@ -24,7 +25,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
 
   /* ── Interesse ── */
   const handleAddInterest = async () => {
-    if (!userId) { router.push('/login'); return }
+    if (!userId) { router.push(loginHref); return }
     setLoading(true)
     const supabase = createClient()
     const { data } = await supabase
@@ -55,7 +56,7 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
 
   /* ── Partecipazione ── */
   const handleJoin = async () => {
-    if (!userId) { router.push('/login'); return }
+    if (!userId) { router.push(loginHref); return }
     setLoading(true)
     const supabase = createClient()
     // Rimuovi interesse se presente (partecipazione prende il posto)
@@ -127,6 +128,32 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
   }
 
   /* ─────────────────────────────────────────
+     STATO: Utente non autenticato
+     Niente CTA ambigue: invitiamo all'accesso preservando la destinazione.
+  ───────────────────────────────────────── */
+  if (!userId) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-5 flex flex-col gap-4">
+        <div>
+          <p className="text-sm font-bold text-gray-900">Vuoi partecipare?</p>
+          <p className="text-xs text-gray-400 mt-0.5">Accedi per iscriverti e vedere il tuo stato.</p>
+        </div>
+        <button
+          onClick={() => router.push(loginHref)}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-white font-semibold text-sm px-6 py-3.5 rounded-2xl hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200"
+        >
+          <span className="material-symbols-outlined text-lg">login</span>
+          Accedi per partecipare
+        </button>
+        <p className="text-xs text-gray-400 text-center">
+          Non hai un account?{' '}
+          <a href="/registrati" className="font-semibold text-primary hover:underline">Registrati gratis</a>
+        </p>
+      </div>
+    )
+  }
+
+  /* ─────────────────────────────────────────
      STATO: Corsa al completo
   ───────────────────────────────────────── */
   if (isFull) {
@@ -181,15 +208,12 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
               <p className="text-xs text-gray-400 mt-0.5">Invia una richiesta all&apos;organizzatore.</p>
             </div>
             <button
-              onClick={() => userId ? setShowForm(true) : router.push('/login')}
+              onClick={() => setShowForm(true)}
               className="w-full flex items-center justify-center gap-2 bg-primary text-white font-semibold text-sm px-6 py-3.5 rounded-2xl hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200"
             >
               <span className="material-symbols-outlined text-lg">directions_run</span>
               Partecipa alla corsa
             </button>
-            {!userId && (
-              <p className="text-xs text-gray-400 text-center">Devi effettuare il login per iscriverti.</p>
-            )}
           </>
         ) : (
           <>
