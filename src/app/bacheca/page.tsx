@@ -62,6 +62,13 @@ function getChipRanges(today: Date) {
   }
 }
 
+/* Filtro ricerca libera: cerca su titolo, luogo e descrizione.
+   Rimuove i caratteri che romperebbero la sintassi .or() di PostgREST (virgole/parentesi). */
+function buildSearchOr(q: string): string {
+  const safe = q.replace(/[(),]/g, ' ').trim()
+  return `title.ilike.%${safe}%,location.ilike.%${safe}%,description.ilike.%${safe}%`
+}
+
 function buildUrl(base: SearchParams, extra: Partial<SearchParams>): string {
   const merged = { ...base, ...extra }
   const p = new URLSearchParams()
@@ -125,7 +132,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       .order('date', { ascending: true })
 
     if (filterCity)           query = query.ilike('city', `%${filterCity}%`)
-    if (params.q)             query = query.ilike('title', `%${params.q}%`)
+    if (params.q)             query = query.or(buildSearchOr(params.q))
     if (params.race_distance) query = query.eq('race_distance', params.race_distance)
     if (params.looking_for)   query = query.contains('looking_for', [params.looking_for])
 
@@ -145,7 +152,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     if (filterCity)   query = query.ilike('city', `%${filterCity}%`)
     // Le corse 'tutti' (aperte a ogni livello) compaiono sempre col filtro livello
     if (params.level) query = query.in('level', [params.level, 'tutti'])
-    if (params.q)     query = query.ilike('title', `%${params.q}%`)
+    if (params.q)     query = query.or(buildSearchOr(params.q))
     if (params.tag)   query = query.contains('tags', [params.tag])
 
     const { data } = await query
@@ -163,7 +170,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
         .ilike('city', `%${params.geo_county}%`)
       if (params.to)    fallbackQuery = fallbackQuery.lte('date', params.to)
       if (params.level) fallbackQuery = fallbackQuery.in('level', [params.level, 'tutti'])
-      if (params.q)     fallbackQuery = fallbackQuery.ilike('title', `%${params.q}%`)
+      if (params.q)     fallbackQuery = fallbackQuery.or(buildSearchOr(params.q))
       if (params.tag)   fallbackQuery = fallbackQuery.contains('tags', [params.tag])
       const { data: fallbackData } = await fallbackQuery
       if (fallbackData && fallbackData.length > 0) {
@@ -253,7 +260,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       .order('created_at', { ascending: false })
     if (filterCity)   seriesQuery = seriesQuery.ilike('city', `%${filterCity}%`)
     if (params.level) seriesQuery = seriesQuery.in('level', [params.level, 'tutti'])
-    if (params.q)     seriesQuery = seriesQuery.ilike('title', `%${params.q}%`)
+    if (params.q)     seriesQuery = seriesQuery.or(buildSearchOr(params.q))
     if (params.tag)   seriesQuery = seriesQuery.contains('tags', [params.tag])
     const { data: seriesData } = await seriesQuery
     series = (seriesData || []) as unknown as Series[]
@@ -266,7 +273,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
         .order('created_at', { ascending: false })
         .ilike('city', `%${params.geo_county}%`)
       if (params.level) fallbackSeries = fallbackSeries.in('level', [params.level, 'tutti'])
-      if (params.q)     fallbackSeries = fallbackSeries.ilike('title', `%${params.q}%`)
+      if (params.q)     fallbackSeries = fallbackSeries.or(buildSearchOr(params.q))
       if (params.tag)   fallbackSeries = fallbackSeries.contains('tags', [params.tag])
       const { data: fallbackSeriesData } = await fallbackSeries
       series = (fallbackSeriesData || []) as unknown as Series[]
@@ -553,7 +560,7 @@ function FilterBar({
 
         <div className="flex flex-col gap-1.5 min-w-[150px] flex-1">
           <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cerca</label>
-          <input name="q" defaultValue={current.q} placeholder="Nome corsa..."
+          <input name="q" defaultValue={current.q} placeholder="Luogo, parola chiave..."
             className="h-10 px-3.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
         </div>
 
