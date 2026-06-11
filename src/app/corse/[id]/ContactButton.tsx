@@ -40,7 +40,7 @@ export function ContactButton({ runId, organizerId, userId, organizerName }: Pro
   if (!userId) {
     return (
       <button
-        onClick={() => router.push('/login')}
+        onClick={() => router.push(`/login?next=${encodeURIComponent(`/corse/${runId}`)}`)}
         className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-700 font-semibold text-sm px-5 py-3 rounded-2xl hover:bg-gray-50 transition-colors"
       >
         <span className="material-symbols-outlined text-lg">mail</span>
