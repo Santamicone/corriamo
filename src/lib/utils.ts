@@ -78,11 +78,11 @@ export function runRitrovoColor(runId: string): RitrovoColor {
 }
 
 export function formatDate(dateStr: string): string {
-  return format(parseISO(dateStr), "d MMMM yyyy", { locale: it })
+  return format(parseISO(dateStr), "EEE d MMMM yyyy", { locale: it })
 }
 
 export function formatDateShort(dateStr: string): string {
-  return format(parseISO(dateStr), "d MMM", { locale: it })
+  return format(parseISO(dateStr), "EEE d MMM", { locale: it })
 }
 
 export function formatPace(paceMin: number, paceMax?: number | null): string {

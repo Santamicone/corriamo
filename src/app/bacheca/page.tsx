@@ -579,7 +579,7 @@ function FilterBar({
   )?.[0]
 
   const CHIP_LABELS: Record<string, string> = {
-    oggi: 'Oggi', domani: 'Domani', weekend: 'Weekend', settimana: '+7 giorni',
+    oggi: 'Oggi', domani: 'Domani', weekend: 'Weekend', settimana: 'Prossimi 7 giorni',
   }
   const CHIP_ICONS: Record<string, string> = {
     oggi: 'today', domani: 'event', weekend: 'weekend', settimana: 'date_range',
@@ -626,7 +626,7 @@ function FilterBar({
         </div>
 
         <button type="submit"
-          className="h-10 px-5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-700 transition-colors">
+          className="h-10 px-5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200">
           Filtra
         </button>
 
