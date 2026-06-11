@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { todayItaly } from '@/lib/utils'
 
 const inputCls = "h-11 w-full px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/50 focus:border-indigo-400 transition-all"
 const labelCls = "block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5"
@@ -83,7 +84,7 @@ export function NuovaGaraForm({ userId }: { userId: string }) {
     router.refresh()
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayItaly()
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">

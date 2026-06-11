@@ -5,6 +5,7 @@ import { Footer } from '@/components/Footer'
 import { GaraCard } from '@/components/GaraCard'
 import Link from 'next/link'
 import type { Run } from '@/lib/types'
+import { todayItaly } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Cerca compagni di gara',
@@ -49,7 +50,7 @@ export default async function GarePage({ searchParams }: { searchParams: Promise
   const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayItaly()
 
   let query = supabase
     .from('runs')

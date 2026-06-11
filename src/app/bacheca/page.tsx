@@ -15,6 +15,7 @@ import { GaraCard } from '@/components/GaraCard'
 import { GeolocCityDetector } from '@/components/GeolocCityDetector'
 import { GeoDismissButton } from '@/components/GeoDismissButton'
 import type { Metadata } from 'next'
+import { todayItaly } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Trova una corsa vicino a te',
@@ -43,11 +44,20 @@ interface SearchParams {
   welcome?:       string   // '1' → primo accesso dopo registrazione
   geo?:           string   // '1' → città rilevata da geolocalizzazione
   geo_county?:    string   // provincia/area metropolitana — fallback se city dà 0 risultati
+  limit?:         string   // numero massimo di risultati da mostrare (paginazione "Mostra altre")
+}
+
+/* ─── Paginazione ─── */
+const PAGE_SIZE = 30
+function parseLimit(raw?: string): number {
+  const n = parseInt(raw ?? '', 10)
+  if (isNaN(n)) return PAGE_SIZE
+  return Math.min(Math.max(n, PAGE_SIZE), 300)
 }
 
 /* ─── Helpers date ─── */
 const toISO = (d: Date) => format(d, 'yyyy-MM-dd')
-const todayStr = () => toISO(new Date())
+const todayStr = () => todayItaly()
 
 function getChipRanges(today: Date) {
   const day = today.getDay() // 0=Dom … 6=Sab
@@ -95,6 +105,8 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
   let series: Series[] = []
   let gare: Run[] = []
   let geoFallbackUsed = false   // true se city dà 0 risultati e si usa geo_county
+  const pageLimit = parseLimit(params.limit)
+  let hasMore = false           // true se esistono altri risultati oltre il limite
 
   // Profilo + storico per compatibilità (solo se loggato)
   let userProfile: Profile | null = null
@@ -136,8 +148,10 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     if (params.race_distance) query = query.eq('race_distance', params.race_distance)
     if (params.looking_for)   query = query.contains('looking_for', [params.looking_for])
 
-    const { data } = await query
+    // Un risultato in più del limite per sapere se mostrare "Mostra altri"
+    const { data } = await query.limit(pageLimit + 1)
     gare = (data || []) as unknown as Run[]
+    if (gare.length > pageLimit) { hasMore = true; gare = gare.slice(0, pageLimit) }
   } else if (tab === 'corse') {
     // Base query — se c'è un `from` esplicito lo usa, altrimenti mostra da oggi
     let query = supabase
@@ -155,8 +169,10 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     if (params.q)     query = query.or(buildSearchOr(params.q))
     if (params.tag)   query = query.contains('tags', [params.tag])
 
-    const { data } = await query
+    // Un risultato in più del limite per sapere se mostrare "Mostra altre"
+    const { data } = await query.limit(pageLimit + 1)
     runs = (data || []) as unknown as Run[]
+    if (runs.length > pageLimit) { hasMore = true; runs = runs.slice(0, pageLimit) }
 
     // Fallback provincia: se la città dà 0 risultati e c'è geo_county, ritenta con la provincia
     if (runs.length === 0 && params.geo === '1' && params.geo_county && !params.city) {
@@ -172,9 +188,10 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       if (params.level) fallbackQuery = fallbackQuery.in('level', [params.level, 'tutti'])
       if (params.q)     fallbackQuery = fallbackQuery.or(buildSearchOr(params.q))
       if (params.tag)   fallbackQuery = fallbackQuery.contains('tags', [params.tag])
-      const { data: fallbackData } = await fallbackQuery
+      const { data: fallbackData } = await fallbackQuery.limit(pageLimit + 1)
       if (fallbackData && fallbackData.length > 0) {
         runs = fallbackData as unknown as Run[]
+        if (runs.length > pageLimit) { hasMore = true; runs = runs.slice(0, pageLimit) }
         geoFallbackUsed = true
       }
     }
@@ -253,7 +270,10 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       return r
     }) as Run[]
 
-    // Anche le serie (mostrate in fondo al tab Corse)
+    // Anche le serie (mostrate in fondo al tab Corse).
+    // Con un filtro data attivo le serie vengono escluse: non hanno una data
+    // propria e i loro appuntamenti generati compaiono già tra le corse.
+    if (!params.from && !params.to) {
     let seriesQuery = supabase
       .from('series')
       .select('*, organizer:profiles!series_organizer_id_fkey(*)')
@@ -278,6 +298,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       const { data: fallbackSeriesData } = await fallbackSeries
       series = (fallbackSeriesData || []) as unknown as Series[]
     }
+    }
   }
 
   const hasFilters    = !!(params.q || filterCity || params.level || params.from || params.to || params.tag || params.race_distance || params.looking_for)
@@ -285,8 +306,8 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
   const activeTag     = params.tag ? getTag(params.tag) : null
   const count = tab === 'corse' ? runs.length + series.length : gare.length
 
-  // Chips — calcolate al momento del render server-side
-  const chips = getChipRanges(new Date())
+  // Chips — calcolate sulla data italiana (il server Vercel è in UTC)
+  const chips = getChipRanges(parseISO(todayItaly()))
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -357,7 +378,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
               ].map(t => (
                 <Link
                   key={t.value}
-                  href={buildUrl({ tab: t.value }, {})}
+                  href={buildUrl({ tab: t.value, q: params.q, city: params.city, all_cities: params.all_cities }, {})}
                   className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                     tab === t.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -448,11 +469,11 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           {(hasFilters || count > 0) && (
             <p className="text-sm text-gray-400 -mt-2">
               {hasFilters
-                ? `${count} risultat${count === 1 ? 'o' : 'i'} trovati`
-                : `${count} ${
+                ? `${count}${hasMore ? '+' : ''} risultat${count === 1 && !hasMore ? 'o' : 'i'} trovati`
+                : `${count}${hasMore ? '+' : ''} ${
                     tab === 'corse'
-                      ? (count === 1 ? 'proposta disponibile' : 'proposte disponibili')
-                      : (count === 1 ? 'post pubblicato' : 'post pubblicati')
+                      ? (count === 1 && !hasMore ? 'proposta disponibile' : 'proposte disponibili')
+                      : (count === 1 && !hasMore ? 'post pubblicato' : 'post pubblicati')
                   }`}
             </p>
           )}
@@ -462,7 +483,17 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             runs.length === 0 && series.length === 0 ? (
               <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} userCity={filterCity ?? undefined} isLoggedIn={!!user} geoCity={params.geo === '1' ? params.city : undefined} geoCounty={params.geo_county} />
             ) : view === 'mappa' ? (
-              <RunMapWrapper runs={runs} height="520px" />
+              <div className="flex flex-col gap-3">
+                <RunMapWrapper runs={runs} height="520px" />
+                {series.length > 0 && (
+                  <p className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <span className="material-symbols-outlined text-sm text-purple-400">event_repeat</span>
+                    {series.length === 1
+                      ? '1 serie ricorrente non mostrata sulla mappa — passa alla vista Lista per vederla.'
+                      : `${series.length} serie ricorrenti non mostrate sulla mappa — passa alla vista Lista per vederle.`}
+                  </p>
+                )}
+              </div>
             ) : (
               <div className="flex flex-col gap-8">
                 {/* Corse singole */}
@@ -470,6 +501,9 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {runs.map(run => <RunCard key={run.id} run={run} />)}
                   </div>
+                )}
+                {hasMore && (
+                  <ShowMoreButton href={buildUrl(params, { limit: String(pageLimit + PAGE_SIZE) })} />
                 )}
                 {/* Serie ricorrenti — sotto le corse */}
                 {series.length > 0 && (
@@ -500,6 +534,9 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {gare.map(g => <GaraCard key={g.id} run={g} />)}
                 </div>
+                {hasMore && (
+                  <ShowMoreButton href={buildUrl(params, { limit: String(pageLimit + PAGE_SIZE) })} />
+                )}
               </div>
             ) : (
               <EmptyState tab="gare" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
@@ -554,9 +591,14 @@ function FilterBar({
       {/* ── Riga 1: testo + città + livello ── */}
       <form method="GET" action="/bacheca" className="flex flex-wrap gap-3 items-end p-4 border-b border-gray-50">
         <input type="hidden" name="tab" value={tab} />
-        {/* Preserva i filtri data nel form testo */}
-        {current.from && <input type="hidden" name="from" value={current.from} />}
-        {current.to   && <input type="hidden" name="to"   value={current.to} />}
+        {/* Preserva tutti gli altri filtri attivi nel form testo */}
+        {current.from          && <input type="hidden" name="from"          value={current.from} />}
+        {current.to            && <input type="hidden" name="to"            value={current.to} />}
+        {current.tag           && <input type="hidden" name="tag"           value={current.tag} />}
+        {current.view          && <input type="hidden" name="view"          value={current.view} />}
+        {current.race_distance && <input type="hidden" name="race_distance" value={current.race_distance} />}
+        {current.looking_for   && <input type="hidden" name="looking_for"   value={current.looking_for} />}
+        {current.all_cities    && <input type="hidden" name="all_cities"    value={current.all_cities} />}
 
         <div className="flex flex-col gap-1.5 min-w-[150px] flex-1">
           <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cerca</label>
@@ -578,6 +620,8 @@ function FilterBar({
             <option value="principiante">Principiante</option>
             <option value="intermedio">Intermedio</option>
             <option value="avanzato">Avanzato</option>
+            <option value="amatore_gare">Amatore, ma faccio gare</option>
+            <option value="atleta">Atleta agonista</option>
           </select>
         </div>
 
@@ -631,9 +675,12 @@ function FilterBar({
           {/* Range personalizzato */}
           <form method="GET" action="/bacheca" className="flex items-center gap-2 flex-wrap">
             <input type="hidden" name="tab"   value={tab} />
-            {current.q     && <input type="hidden" name="q"     value={current.q} />}
-            {current.city  && <input type="hidden" name="city"  value={current.city} />}
-            {current.level && <input type="hidden" name="level" value={current.level} />}
+            {current.q          && <input type="hidden" name="q"          value={current.q} />}
+            {current.city       && <input type="hidden" name="city"       value={current.city} />}
+            {current.level      && <input type="hidden" name="level"      value={current.level} />}
+            {current.tag        && <input type="hidden" name="tag"        value={current.tag} />}
+            {current.view       && <input type="hidden" name="view"       value={current.view} />}
+            {current.all_cities && <input type="hidden" name="all_cities" value={current.all_cities} />}
 
             <div className="flex items-center gap-1.5">
               <label className="text-xs text-gray-400 font-medium shrink-0">Dal</label>
@@ -750,6 +797,23 @@ function FilterBar({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════
+   MOSTRA ALTRI RISULTATI
+═══════════════════════════════════════ */
+function ShowMoreButton({ href }: { href: string }) {
+  return (
+    <div className="flex justify-center">
+      <Link
+        href={href}
+        className="inline-flex items-center gap-2 border border-gray-200 bg-white text-gray-700 px-6 py-2.5 rounded-full font-semibold text-sm hover:border-primary hover:text-primary transition-colors"
+      >
+        <span className="material-symbols-outlined text-base">expand_more</span>
+        Mostra altre
+      </Link>
     </div>
   )
 }

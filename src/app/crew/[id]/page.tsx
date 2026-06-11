@@ -9,6 +9,7 @@ import type { Crew, CrewMember, Run } from '@/lib/types'
 import { RunCard } from '@/components/RunCard'
 import { JoinCrewButton } from './JoinCrewButton'
 import type { Metadata } from 'next'
+import { todayItaly } from '@/lib/utils'
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
@@ -60,7 +61,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   }
 
   // Corse pubbliche della crew (visibili a tutti) + statistiche aggregate
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayItaly()
   const [{ data: publicRuns }, { data: statsRows }] = await Promise.all([
     supabase
       .from('runs')

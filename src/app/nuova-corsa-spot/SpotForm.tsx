@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { geocodeAddress } from '@/lib/geocoding'
+import { todayItaly } from '@/lib/utils'
 
 const inputCls = "h-12 w-full px-4 rounded-xl bg-white border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all font-medium"
 const labelCls = "block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5"
@@ -23,7 +24,7 @@ export function SpotForm({ userId, defaultCity }: Props) {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayItaly()
 
   const [form, setForm] = useState({
     location: '',

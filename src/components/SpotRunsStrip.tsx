@@ -54,11 +54,15 @@ export function SpotRunsStrip() {
     const now      = new Date()
     const plus3h   = new Date(now.getTime() + 3 * 60 * 60 * 1000)
 
-    const todayStr = now.toISOString().split('T')[0]
-    const nowTime  = now.toTimeString().slice(0, 5)
-    const maxTime  = plus3h.toISOString().split('T')[0] === todayStr
-      ? plus3h.toTimeString().slice(0, 5)
-      : '23:59'
+    // Date e orari calcolati in ora italiana (le corse nel DB sono in Europe/Rome)
+    const romeDate = (d: Date) =>
+      new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+    const romeTime = (d: Date) =>
+      new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hour12: false }).format(d)
+
+    const todayStr = romeDate(now)
+    const nowTime  = romeTime(now)
+    const maxTime  = romeDate(plus3h) === todayStr ? romeTime(plus3h) : '23:59'
 
     const { data } = await supabase
       .from('runs')

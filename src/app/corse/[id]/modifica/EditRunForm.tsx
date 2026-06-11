@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { geocodeAddress, type GeoResult } from '@/lib/geocoding'
 import { TagPicker } from '@/components/ui/TagPicker'
-import { cn } from '@/lib/utils'
+import { cn, todayItaly } from '@/lib/utils'
 import type { Run } from '@/lib/types'
 
 const LocationPreviewMap = dynamic(() => import('@/components/LocationPreviewMap'), {
@@ -118,7 +118,7 @@ export function EditRunForm({ run, approvedCount }: Props) {
     ? manualCoords
     : geoResult ?? (run.lat && run.lng ? { lat: run.lat, lng: run.lng, display_name: run.location } as GeoResult : null)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayItaly()
 
   // Controlla se ci sono cambiamenti importanti
   function hasImportantChanges(): boolean {

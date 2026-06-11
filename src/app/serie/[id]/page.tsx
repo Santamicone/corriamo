@@ -6,7 +6,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { RunCard } from '@/components/RunCard'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { formatDate, LEVEL_LABELS, RECURRENCE_LABELS, DAY_LABELS } from '@/lib/utils'
+import { formatDate, LEVEL_LABELS, RECURRENCE_LABELS, DAY_LABELS, todayItaly } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/TagBadge'
 import type { Series, Run } from '@/lib/types'
 import type { Metadata } from 'next'
@@ -60,7 +60,7 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
     .from('runs')
     .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
     .eq('series_id', id)
-    .gte('date', new Date().toISOString().split('T')[0])
+    .gte('date', todayItaly())
     .order('date', { ascending: true })
     .limit(6)
 

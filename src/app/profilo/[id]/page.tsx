@@ -9,7 +9,7 @@ import { MomentoCard } from '@/components/MomentoCard'
 import { RatingBadge, StarsDisplay } from '@/components/ui/Stars'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { LEVEL_LABELS } from '@/lib/utils'
+import { LEVEL_LABELS, todayItaly } from '@/lib/utils'
 import type { Profile, Run, Review, Momento } from '@/lib/types'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityBadge'
 import type { Metadata } from 'next'
@@ -63,7 +63,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
       .from('runs')
       .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
       .eq('organizer_id', id)
-      .gte('date', new Date().toISOString().split('T')[0])
+      .gte('date', todayItaly())
       .order('date', { ascending: true })
       .limit(6),
 

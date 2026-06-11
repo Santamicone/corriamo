@@ -56,6 +56,11 @@ function useUnreadNotifications(userId: string | null) {
   return count
 }
 
+/* Cache a livello di modulo: evita il flash dello stato "sloggato"
+   a ogni navigazione (l'Header rimonta su ogni pagina e rifetcha il profilo).
+   Il fetch in background la tiene comunque aggiornata. */
+let profileCache: Profile | null = null
+
 const navLinks = [
   { href: '/bacheca',        label: 'Bacheca',                icon: 'directions_run', help: false },
   { href: '/nuova-corsa',    label: 'Proponi una corsa',      icon: 'add_circle',     help: false },
@@ -66,7 +71,7 @@ const navLinks = [
 export function Header() {
   const pathname  = usePathname()
   const router    = useRouter()
-  const [profile,    setProfile]    = useState<Profile | null>(null)
+  const [profile,    setProfile]    = useState<Profile | null>(profileCache)
   const [mobileOpen,  setMobileOpen]  = useState(false)  // hamburger mobile
   const [userOpen,    setUserOpen]    = useState(false)  // dropdown avatar desktop
   const [loggingOut,  setLoggingOut]  = useState(false)  // feedback logout
@@ -75,12 +80,19 @@ export function Header() {
   const unreadNotifications = useUnreadNotifications(profile?.id ?? null)
 
   useEffect(() => {
+    let cancelled = false
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) { setProfile(null); return }
+      if (!user) {
+        profileCache = null
+        if (!cancelled) setProfile(null)
+        return
+      }
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-      setProfile(data)
+      profileCache = data
+      if (!cancelled) setProfile(data)
     })
+    return () => { cancelled = true }
   }, [pathname])
 
   // Chiudi menu al cambio pagina
@@ -90,6 +102,7 @@ export function Header() {
     setMobileOpen(false)
     setUserOpen(false)
     setLoggingOut(true)
+    profileCache = null
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
