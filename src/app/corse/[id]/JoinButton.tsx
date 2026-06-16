@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Participation } from '@/lib/types'
@@ -25,6 +25,21 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
   const [errorMsg,       setErrorMsg]       = useState<string | null>(null)
 
   const formCardRef = useRef<HTMLDivElement>(null)
+
+  // La barra fissa mobile resta visibile solo finché la CTA dentro la card
+  // è fuori dal viewport: appena l'utente scrolla fin sopra la card, l'overlay
+  // sparisce per non sovrapporsi al bottone "vero" (evita la doppia CTA).
+  const [cardCtaVisible, setCardCtaVisible] = useState(false)
+  useEffect(() => {
+    const el = formCardRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setCardCtaVisible(entry.isIntersecting),
+      { rootMargin: '0px 0px -96px 0px' },   // ~altezza della barra fissa
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   // Apre il form di presentazione e lo porta in vista (la barra fissa
   // mobile è in fondo allo schermo, il form può essere fuori viewport)
@@ -217,9 +232,9 @@ export function JoinButton({ runId, userId, myParticipation, myInterest, isFull 
     {errorMsg && <ErrorToast message={errorMsg} />}
     {/* ── Barra fissa mobile: CTA sempre visibile — apre il form di presentazione,
            stesso flusso del desktop ── */}
-    {!showForm && (
+    {!showForm && !cardCtaVisible && (
       <div
-        className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-4 pt-3"
+        className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-4 pt-3 transition-opacity duration-200"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         <button
