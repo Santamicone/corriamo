@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 const LS_DISMISSED = 'pwa_install_dismissed_ts'
 const SNOOZE_MS = 14 * 24 * 60 * 60 * 1000 // 14 giorni prima di riproporlo
@@ -31,6 +32,7 @@ function snoozed(): boolean {
 }
 
 export function InstallPrompt() {
+  const pathname = usePathname()
   const [show, setShow] = useState(false)
   const [iosMode, setIosMode] = useState(false)
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
@@ -87,6 +89,9 @@ export function InstallPrompt() {
     }
     setDeferred(null)
   }
+
+  // Escluso dalle pagine corsa: lì c'è già una barra sticky "Partecipa" su mobile
+  if (pathname?.startsWith('/corse/')) return null
 
   if (!show) return null
 
