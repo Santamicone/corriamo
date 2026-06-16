@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { InstallPrompt } from '@/components/InstallPrompt'
 
 const SITE_URL = 'https://www.vieniacorrere.it'
 const SITE_NAME = 'Vieni a correre?'
@@ -90,6 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-background flex flex-col">
         {children}
+        <InstallPrompt />
       </body>
     </html>
   )
