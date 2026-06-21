@@ -9,6 +9,7 @@ const DEFAULT_DESCRIPTION = 'La piattaforma italiana per runner che vogliono cor
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  verification: { google: 'MmVdU2aMH5qcpNa5Or-7xxfXetmFXFSKJtPmEcwezm4' },
   title: {
     default: DEFAULT_TITLE,
     template: `%s — ${SITE_NAME}`,
