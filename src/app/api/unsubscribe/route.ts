@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token')
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.vieniacorrere.it'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.vieniacorrere.it'
 
   if (!token) {
     return NextResponse.redirect(`${siteUrl}/login?error=invalid_unsubscribe`)

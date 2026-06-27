@@ -21,7 +21,7 @@ export function ShareButton({ runId, title, date, time, location, city, distance
   const [copied, setCopied] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://vieniacorrere.it'
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.vieniacorrere.it'
   const runUrl  = `${siteUrl}/corse/${runId}?ref=share`
 
   const dateFormatted = (() => {

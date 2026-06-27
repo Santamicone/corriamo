@@ -6,7 +6,7 @@
 
 ## Riferimenti rapidi
 
-- **App in produzione:** https://www.vieniacorrere.it
+- **App in produzione:** https://app.vieniacorrere.it
 - **Branch attivo:** `feat/ui-ux-redesign` (tutto lo sviluppo avviene qui)
 - **Stack:** Next.js 16.2.7 App Router · TypeScript · Tailwind v4 · Supabase · Vercel
 

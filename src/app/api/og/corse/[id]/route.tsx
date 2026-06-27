@@ -131,7 +131,7 @@ export async function GET(
   // Organizzatore + partecipanti approvati
   const joinedCount = (approvedCount ?? 0) + (organizer ? 1 : 0)
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.vieniacorrere.it'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.vieniacorrere.it'
   const lc = LEVEL_COLORS[level] ?? LEVEL_COLORS.tutti
 
   // Risolve l'avatar dell'organizzatore nei vari formati supportati dall'app

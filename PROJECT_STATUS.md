@@ -8,7 +8,7 @@
 ## 1. Panoramica
 
 **App:** Vieni a correre? — web app per runner che vogliono proporre corse, trovare compagni e gestire appuntamenti singoli o ricorrenti.  
-**URL produzione:** https://www.vieniacorrere.it  
+**URL produzione:** https://app.vieniacorrere.it  
 **Repository:** https://github.com/Santamicone/corriamo  
 **Branch attivo:** `feat/ui-ux-redesign` (tutto lo sviluppo avviene qui, non ancora mergiato su `main`)
 
@@ -45,7 +45,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 NEXT_PUBLIC_SUPABASE_URL  → https://wshjtgtmxbxhpdqtxpiq.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY → eyJhbGci... (JWT legacy)
-NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email redirect
+NEXT_PUBLIC_SITE_URL → https://app.vieniacorrere.it   ← IMPORTANTE per email redirect
 ```
 
 ---
@@ -145,7 +145,7 @@ runs             + crew_id → crews.id (nullable)
 - `momenti` — foto post-run
 
 ### Configurazione Dashboard Supabase (manuale)
-- **Authentication → URL Configuration:** Site URL = `https://vieniacorrere.it`
+- **Authentication → URL Configuration:** Site URL = `https://app.vieniacorrere.it`
 - **Database → Replication (via SQL):** Abilitare Realtime con:
   ```sql
   ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
@@ -497,6 +497,6 @@ npm run build # verifica prima di push
 | Risorsa | URL |
 |---|---|
 | Repository | https://github.com/Santamicone/corriamo |
-| Produzione | https://www.vieniacorrere.it |
+| Produzione | https://app.vieniacorrere.it |
 | Supabase Dashboard | https://supabase.com/dashboard/project/wshjtgtmxbxhpdqtxpiq |
 | Vercel Dashboard | https://vercel.com/santamicone/corriamo |

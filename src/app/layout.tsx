@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { InstallPrompt } from '@/components/InstallPrompt'
 
-const SITE_URL = 'https://www.vieniacorrere.it'
+const SITE_URL = 'https://app.vieniacorrere.it'
 const SITE_NAME = 'Vieni a correre?'
 const DEFAULT_TITLE = 'Vieni a correre? — Trova e organizza corse con altri runner'
 const DEFAULT_DESCRIPTION = 'La piattaforma italiana per runner che vogliono correre insieme. Trova corse nella tua città, unisciti a un allenamento o proponi il tuo. Gratuito.'

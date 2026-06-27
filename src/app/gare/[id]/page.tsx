@@ -10,7 +10,7 @@ import { ContactButton } from '@/app/corse/[id]/ContactButton'
 import { CancelRunButton } from '@/app/corse/[id]/CancelRunButton'
 import type { Metadata } from 'next'
 
-const SITE_URL = 'https://www.vieniacorrere.it'
+const SITE_URL = 'https://app.vieniacorrere.it'
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }

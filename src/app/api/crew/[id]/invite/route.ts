@@ -44,6 +44,6 @@ export async function POST(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.vieniacorrere.it'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.vieniacorrere.it'
   return NextResponse.json({ link: `${siteUrl}/crew/invite/${data.token}` }, { status: 201 })
 }

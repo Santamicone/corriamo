@@ -8,7 +8,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
-const SITE_URL       = 'https://www.vieniacorrere.it'
+const SITE_URL       = 'https://app.vieniacorrere.it'
 const FROM           = 'Vieni a correre? <info@vieniacorrere.it>'
 const EXPIRY_DAYS    = 30
 const PRIMARY        = '#EA580C'

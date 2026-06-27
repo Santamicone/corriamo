@@ -1,4 +1,4 @@
-const SITE_URL    = 'https://www.vieniacorrere.it'
+const SITE_URL    = 'https://app.vieniacorrere.it'
 const PRIMARY     = '#EA580C'
 const BG          = '#FAFAF9'
 

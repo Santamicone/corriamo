@@ -41,7 +41,7 @@ export async function generateMetadata(
 
   if (!run) return { title: 'Corsa — Vieni a correre?' }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://vieniacorrere.it'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.vieniacorrere.it'
   const desc = [
     LEVEL_LABELS[run.level],
     run.distance_km ? `${run.distance_km} km` : null,
@@ -533,7 +533,7 @@ export default async function CorsaDetailPage({
                   {/* Bottone WhatsApp — solo se corsa crew_only con gruppo configurato */}
                   {crewWhatsappLink && !isPast && (
                     <a
-                      href={`whatsapp://send?text=${encodeURIComponent(`🏃 ${typedRun.title}\n📅 ${new Date(typedRun.date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })} · ore ${typedRun.time?.slice(0,5)}\n📍 ${typedRun.location}, ${typedRun.city}\n\n👉 ${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.vieniacorrere.it'}/corse/${id}`)}`}
+                      href={`whatsapp://send?text=${encodeURIComponent(`🏃 ${typedRun.title}\n📅 ${new Date(typedRun.date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })} · ore ${typedRun.time?.slice(0,5)}\n📍 ${typedRun.location}, ${typedRun.city}\n\n👉 ${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.vieniacorrere.it'}/corse/${id}`)}`}
                       className="flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity"
                     >
                       <span className="material-symbols-outlined text-base">chat</span>

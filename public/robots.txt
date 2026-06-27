@@ -19,4 +19,4 @@ Disallow: /nuova-gara
 Disallow: /nuova-corsa-spot
 Disallow: /auth/
 
-Sitemap: https://www.vieniacorrere.it/sitemap.xml
+Sitemap: https://app.vieniacorrere.it/sitemap.xml

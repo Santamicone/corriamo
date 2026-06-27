@@ -2,7 +2,7 @@
 
 Web app per runner che vogliono proporre corse, trovare compagni di allenamento e gestire appuntamenti singoli o ricorrenti.
 
-**URL produzione:** https://www.vieniacorrere.it  
+**URL produzione:** https://app.vieniacorrere.it  
 **Repository:** https://github.com/Santamicone/corriamo  
 **Branch principale:** `main`  
 **Branch di sviluppo attivo:** `feat/ui-ux-redesign`
@@ -180,7 +180,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-In produzione (Vercel) `NEXT_PUBLIC_SITE_URL` → `https://vieniacorrere.it`
+In produzione (Vercel) `NEXT_PUBLIC_SITE_URL` → `https://app.vieniacorrere.it`
 
 ---
 
@@ -237,7 +237,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 ```
 
 ### Configurazione Dashboard
-- **Authentication → URL Configuration:** Site URL = `https://vieniacorrere.it`, Redirect URLs = `https://vieniacorrere.it/**`
+- **Authentication → URL Configuration:** Site URL = `https://app.vieniacorrere.it`, Redirect URLs = `https://app.vieniacorrere.it/**`
 - **Authentication → Email Templates:** 4 template in `supabase/email-templates/`
 
 ---

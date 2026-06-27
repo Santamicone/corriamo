@@ -55,7 +55,7 @@ export default async function AccettaInvitoPage({ params }: { params: Promise<{ 
     redirect(`/crew/${crew.id}`)
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.vieniacorrere.it'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.vieniacorrere.it'
 
   return (
     <>
