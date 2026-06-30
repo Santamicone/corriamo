@@ -15,6 +15,15 @@ export default function ZoneDiPassoPage() {
       title="Zone di passo"
       subtitle="Dalla tua ultima gara, i ritmi per ogni tipo di allenamento."
       icon="speed"
+      howTo={
+        <>
+          Inserisci distanza e tempo della tua gara più recente (o di una prova in cui hai dato
+          davvero il massimo): più il dato è fresco e sincero, più i ritmi saranno affidabili.
+          In un attimo ti restituiamo i passi indicativi per ogni tipo di allenamento — facile,
+          lungo, medio, soglia e ripetute. Usali come bussola, non come regola ferrea: ascolta
+          sempre le sensazioni.
+        </>
+      }
       disclaimer={
         <>
           I valori sono <strong>indicativi</strong> e basati su modelli pubblici (formula di Riegel).

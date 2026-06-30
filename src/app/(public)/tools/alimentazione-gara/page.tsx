@@ -23,6 +23,14 @@ export default function AlimentazioneGaraPage() {
       title="Piano alimentazione gara"
       subtitle="Cosa mangiare nei giorni prima, a colazione e durante la corsa."
       icon="nutrition"
+      howTo={
+        <>
+          Indica la distanza che corri e qualche dettaglio su orario e durata previsti: noi
+          costruiamo un piano pratico per i giorni prima, la colazione del mattino gara e
+          l&apos;integrazione mentre corri — gel, sali e acqua compresi. Provalo sempre in
+          allenamento prima del giorno della gara: lo stomaco non ama le sorprese.
+        </>
+      }
       disclaimer={NUTRITION_DISCLAIMER}
     >
       <NutritionPlanTool />
