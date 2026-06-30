@@ -255,6 +255,91 @@ export function emailSchedaRitmi(opts: {
   return { subject, html }
 }
 
+// ── Template 7: piano alimentazione gara (tool) ───────────────────────────────
+export interface NutritionEmailSection {
+  title: string
+  subtitle?: string
+  items: string[]
+}
+
+export interface NutritionEmailMeal {
+  title: string
+  when: string
+  items: string[]
+}
+
+export function emailPianoNutrizione(opts: {
+  recipientName: string
+  headline: string
+  gelSummary: string | null
+  sections: NutritionEmailSection[]
+  menus: NutritionEmailMeal[]
+  unsubscribeUrl: string
+}): { subject: string; html: string } {
+  const subject = `🍝 Il tuo piano alimentazione — ${opts.headline}`
+
+  const li = (items: string[]) =>
+    items
+      .map(
+        it => `<li style="margin:0 0 6px;font-size:14px;color:#374151;line-height:1.6;">${it}</li>`,
+      )
+      .join('')
+
+  const sectionBlocks = opts.sections
+    .map(
+      s => `
+    <div style="margin-top:20px;">
+      <p style="margin:0;font-size:15px;font-weight:800;color:#111827;">${s.title}</p>
+      ${s.subtitle ? `<p style="margin:2px 0 8px;font-size:12px;color:#9ca3af;">${s.subtitle}</p>` : '<div style="height:6px;"></div>'}
+      <ul style="margin:0;padding-left:18px;">${li(s.items)}</ul>
+    </div>`,
+    )
+    .join('')
+
+  const menuBlocks = opts.menus
+    .map(
+      m => `
+    <div style="margin-top:12px;background:#FAFAF9;border-radius:14px;padding:14px 16px;">
+      <p style="margin:0;font-size:14px;font-weight:800;color:#111827;">${m.title}
+        <span style="font-size:11px;font-weight:600;color:${PRIMARY};">· ${m.when}</span>
+      </p>
+      <ul style="margin:8px 0 0;padding-left:18px;">${li(m.items)}</ul>
+    </div>`,
+    )
+    .join('')
+
+  const html = base(`
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111827;">Il tuo piano alimentazione 🍝</h2>
+    <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">
+      Ciao <strong>${opts.recipientName}</strong>,<br>
+      ecco il piano per la tua gara: <strong>${opts.headline}</strong>.
+    </p>
+    ${opts.gelSummary ? `<p style="margin:16px 0 0;font-size:14px;color:#6b7280;line-height:1.6;">⚡ ${opts.gelSummary}</p>` : ''}
+
+    ${sectionBlocks}
+
+    <p style="margin:28px 0 4px;font-size:11px;font-weight:700;letter-spacing:1px;color:#9ca3af;text-transform:uppercase;">
+      Menù tipo, pasto per pasto
+    </p>
+    ${menuBlocks}
+
+    <div style="margin-top:20px;background:#FEF2F2;border:1px solid #fecaca;border-radius:14px;padding:14px 16px;">
+      <p style="margin:0;font-size:13px;color:#991b1b;line-height:1.6;">
+        <strong>Mai provare cose nuove il giorno della gara.</strong> Tutto va testato in allenamento.
+      </p>
+    </div>
+
+    ${cta('Trova compagni per la tua gara →', `${SITE_URL}/bacheca`)}
+
+    <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;line-height:1.6;">
+      Guida orientativa, non un piano nutrizionale personalizzato. Per esigenze specifiche
+      (patologie, intolleranze, obiettivi agonistici) rivolgiti a un professionista.
+    </p>
+  `, opts.unsubscribeUrl)
+
+  return { subject, html }
+}
+
 // ── Template 5: digest (richieste + messaggi non letti) ───────────────────────
 export interface DigestItem {
   type: 'nuova_richiesta' | 'nuovo_messaggio'
