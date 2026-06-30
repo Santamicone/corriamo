@@ -184,6 +184,77 @@ export function emailPromemoria(opts: {
   return { subject, html }
 }
 
+// ── Template 6: scheda zone di passo (tool) ───────────────────────────────────
+export interface SchedaZona {
+  label: string
+  hint: string
+  range: string
+}
+
+export interface SchedaRitmoGara {
+  label: string
+  time: string
+  pace: string
+}
+
+export function emailSchedaRitmi(opts: {
+  recipientName: string
+  raceLabel: string
+  raceTime: string
+  zones: SchedaZona[]
+  racePaces: SchedaRitmoGara[]
+  unsubscribeUrl: string
+}): { subject: string; html: string } {
+  const subject = `🏃 La tua scheda ritmi — dal ${opts.raceLabel} in ${opts.raceTime}`
+
+  const zoneRows = opts.zones.map(z => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;">
+        <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">${z.label}</p>
+        <p style="margin:2px 0 0;font-size:12px;color:#9ca3af;">${z.hint}</p>
+      </td>
+      <td align="right" style="padding:10px 0;border-bottom:1px solid #f3f4f6;white-space:nowrap;">
+        <span style="font-size:14px;font-weight:800;color:${PRIMARY};">${z.range}</span>
+      </td>
+    </tr>`).join('')
+
+  const racePaceRows = opts.racePaces.map(r => `
+    <td align="center" style="padding:8px;background:#FAFAF9;border-radius:12px;">
+      <p style="margin:0;font-size:10px;font-weight:700;letter-spacing:0.5px;color:#9ca3af;text-transform:uppercase;">${r.label}</p>
+      <p style="margin:2px 0 0;font-size:15px;font-weight:800;color:#111827;">${r.time}</p>
+      <p style="margin:0;font-size:11px;color:#9ca3af;">${r.pace}/km</p>
+    </td>`).join('')
+
+  const html = base(`
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111827;">La tua scheda ritmi 🏃</h2>
+    <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">
+      Ciao <strong>${opts.recipientName}</strong>,<br>
+      dal tuo <strong>${opts.raceLabel} in ${opts.raceTime}</strong>, ecco i tuoi ritmi indicativi
+      per ogni tipo di allenamento.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+      ${zoneRows}
+    </table>
+
+    <p style="margin:24px 0 8px;font-size:11px;font-weight:700;letter-spacing:1px;color:#9ca3af;text-transform:uppercase;">
+      I tuoi ritmi gara indicativi
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="6" style="border-collapse:separate;">
+      <tr>${racePaceRows}</tr>
+    </table>
+
+    ${cta('Trova compagni con cui allenarti →', `${SITE_URL}/bacheca`)}
+
+    <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;line-height:1.6;">
+      Valori indicativi basati su modelli pubblici (formula di Riegel). La risposta reale
+      all'allenamento dipende da preparazione, fondo, clima e percorso. Non è un consiglio medico.
+    </p>
+  `, opts.unsubscribeUrl)
+
+  return { subject, html }
+}
+
 // ── Template 5: digest (richieste + messaggi non letti) ───────────────────────
 export interface DigestItem {
   type: 'nuova_richiesta' | 'nuovo_messaggio'

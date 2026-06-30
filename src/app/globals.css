@@ -112,6 +112,23 @@ body {
   user-select: none;
 }
 
+/* ── Input dei tool runner ── */
+.tool-input {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.95rem;
+  color: #111827;
+  transition: border-color 0.15s;
+}
+.tool-input:focus {
+  outline: none;
+  border-color: #EA580C;
+  box-shadow: 0 0 0 3px rgba(234,88,12,0.12);
+}
+
 /* ── Focus ring accessibile ── */
 :focus-visible {
   outline: 2px solid #EA580C;
