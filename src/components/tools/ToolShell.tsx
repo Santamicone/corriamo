@@ -4,6 +4,8 @@ interface ToolShellProps {
   title: string
   subtitle: string
   icon: string
+  /** Breve spiegazione di come si usa il tool, mostrata sopra al contenuto. */
+  howTo?: React.ReactNode
   /** Testo del disclaimer in fondo. Se omesso, usa quello generico. */
   disclaimer?: React.ReactNode
   children: React.ReactNode
@@ -18,7 +20,7 @@ const DEFAULT_DISCLAIMER = (
 )
 
 /** Guscio comune dei tool: breadcrumb, intestazione, contenuto, disclaimer. */
-export function ToolShell({ title, subtitle, icon, disclaimer, children }: ToolShellProps) {
+export function ToolShell({ title, subtitle, icon, howTo, disclaimer, children }: ToolShellProps) {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Breadcrumb */}
@@ -40,6 +42,17 @@ export function ToolShell({ title, subtitle, icon, disclaimer, children }: ToolS
           <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
         </div>
       </div>
+
+      {/* Come si usa */}
+      {howTo && (
+        <div className="mb-8 rounded-2xl bg-orange-50/60 border border-orange-100 p-4 sm:p-5">
+          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-primary mb-2">
+            <span className="material-symbols-outlined text-sm">lightbulb</span>
+            Come si usa
+          </div>
+          <div className="text-sm text-gray-600 leading-relaxed">{howTo}</div>
+        </div>
+      )}
 
       {children}
 

@@ -15,6 +15,14 @@ export default function PredittorePage() {
       title="Predittore tempi gara"
       subtitle="Da una gara recente, il tuo potenziale sulle altre distanze."
       icon="timer"
+      howTo={
+        <>
+          Scegli una distanza su cui hai un tempo recente — 5K, 10K, mezza o maratona — e
+          inseriscilo. Noi proiettiamo quel risultato sulle altre distanze, così hai un&apos;idea
+          realistica di cosa potresti fare. È una stima di potenziale: per trasformarla in un
+          tempo reale servono allenamento specifico e una buona gestione di gara.
+        </>
+      }
       disclaimer={
         <>
           La previsione usa la <strong>formula di Riegel</strong> (modello pubblico) ed è puramente
