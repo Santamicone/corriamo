@@ -13,6 +13,8 @@ import {
   type RaceGoal,
 } from '@/lib/running/nutrition'
 
+const STORAGE_KEY = 'vac:piano-gara:form'
+
 export function NutritionPlanTool() {
   const [distance, setDistance] = useState<RaceDistance>('21k')
   const [startTime, setStartTime] = useState('')
@@ -30,6 +32,25 @@ export function NutritionPlanTool() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => setIsLogged(!!data.user))
+  }, [])
+
+  // Ripristina il modulo al ritorno (es. dopo la registrazione) così l'utente
+  // ritrova i dati già compilati e il piano pronto per l'invio via email.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY)
+      if (!raw) return
+      const s = JSON.parse(raw)
+      if (s.distance) setDistance(s.distance)
+      if (typeof s.startTime === 'string') setStartTime(s.startTime)
+      if (typeof s.expectedTime === 'string') setExpectedTime(s.expectedTime)
+      if (typeof s.weight === 'string') setWeight(s.weight)
+      if (typeof s.temperature === 'string') setTemperature(s.temperature)
+      if (s.gelExperience) setGelExperience(s.gelExperience)
+      if (s.gastric) setGastric(s.gastric)
+      if (s.goal) setGoal(s.goal)
+      if (s.submitted) setSubmitted(true)
+    } catch { /* sessionStorage non disponibile o dato corrotto: si ignora */ }
   }, [])
 
   const buildInput = (): NutritionInput => ({
@@ -54,9 +75,20 @@ export function NutritionPlanTool() {
     setSubmitted(true)
     setEmailState('idle')
     setEmailMsg(null)
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        distance, startTime, expectedTime, weight, temperature,
+        gelExperience, gastric, goal, submitted: true,
+      }))
+    } catch { /* sessionStorage non disponibile: si ignora */ }
   }
 
-  const reset = () => { setSubmitted(false); setEmailState('idle'); setEmailMsg(null) }
+  const reset = () => {
+    setSubmitted(false)
+    setEmailState('idle')
+    setEmailMsg(null)
+    try { sessionStorage.removeItem(STORAGE_KEY) } catch { /* ignora */ }
+  }
 
   const sendByEmail = async () => {
     setEmailState('sending')

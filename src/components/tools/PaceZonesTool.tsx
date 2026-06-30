@@ -29,6 +29,8 @@ const OBJECTIVE_OPTIONS = [
   { value: 'salute', label: 'Stare in forma / divertirmi' },
 ]
 
+const STORAGE_KEY = 'vac:zone-passo:form'
+
 export function PaceZonesTool() {
   const [mode, setMode] = useState<InputMode>('race')
   const [meters, setMeters] = useState(10000)
@@ -46,6 +48,24 @@ export function PaceZonesTool() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => setIsLogged(!!data.user))
+  }, [])
+
+  // Ripristina il modulo al ritorno (es. dopo la registrazione) così l'utente
+  // ritrova i dati già compilati e la scheda pronta per l'invio via email.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY)
+      if (!raw) return
+      const s = JSON.parse(raw)
+      if (s.mode) setMode(s.mode)
+      if (typeof s.meters === 'number') setMeters(s.meters)
+      if (typeof s.trainingKm === 'string') setTrainingKm(s.trainingKm)
+      if (typeof s.time === 'string') setTime(s.time)
+      if (s.experience) setExperience(s.experience)
+      if (s.objective) setObjective(s.objective)
+      if (typeof s.daysPerWeek === 'number') setDaysPerWeek(s.daysPerWeek)
+      if (s.submitted) setSubmitted(true)
+    } catch { /* sessionStorage non disponibile o dato corrotto: si ignora */ }
   }, [])
 
   // Distanza e tempo effettivi da dare al modello: in modalità "allenamento"
@@ -81,6 +101,11 @@ export function PaceZonesTool() {
     setSubmitted(true)
     setEmailState('idle')
     setEmailMsg(null)
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        mode, meters, trainingKm, time, experience, objective, daysPerWeek, submitted: true,
+      }))
+    } catch { /* sessionStorage non disponibile: si ignora */ }
   }
 
   const sendByEmail = async () => {
