@@ -22,6 +22,13 @@ const TOOLS = [
     desc: 'Poche domande per capire il percorso giusto per te, da zero alla tua prima 5K.',
     ready: true,
   },
+  {
+    href: '/tools/alimentazione-gara',
+    icon: 'nutrition',
+    title: 'Piano alimentazione gara',
+    desc: 'Cosa mangiare prima e durante la gara: cena, colazione, gel e idratazione su misura.',
+    ready: true,
+  },
 ]
 
 export default function ToolsHubPage() {

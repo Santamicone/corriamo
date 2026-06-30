@@ -241,10 +241,11 @@ src/
 │   │   └── conferma/page.tsx         Pagina "Controlla la tua email"
 │   ├── (public)/tools/               Sezione Strumenti per runner — route group PUBBLICO (no auth, indicizzabile)
 │   │   ├── layout.tsx                Guscio Header/Footer + metadata SEO
-│   │   ├── page.tsx                  Hub: card dei 3 tool
+│   │   ├── page.tsx                  Hub: card dei 4 tool
 │   │   ├── zone-di-passo/page.tsx    Calcolatore zone di passo (SSR + <PaceZonesTool/>)
 │   │   ├── predittore/page.tsx       Predittore tempi gara (SSR + <RacePredictorTool/>)
-│   │   └── da-dove-inizio/page.tsx   Quiz "da dove inizio?" (SSR + <StartQuiz/>)
+│   │   ├── da-dove-inizio/page.tsx   Quiz "da dove inizio?" (SSR + <StartQuiz/>)
+│   │   └── alimentazione-gara/page.tsx Piano alimentazione pre-gara/gara (SSR + <NutritionPlanTool/>, disclaimer medico)
 │   ├── api/og/corse/[id]/route.tsx
 │   ├── api/unsubscribe/route.ts      Unsubscribe email notifiche via token
 │   └── api/tools/scheda-ritmi/route.ts  POST: invia scheda zone di passo via email (auth + ricalcolo server-side)
@@ -265,7 +266,8 @@ src/
 │   │   ├── ToolShell.tsx             Guscio comune: breadcrumb, intestazione, disclaimer (override opzionale)
 │   │   ├── PaceZonesTool.tsx         Form + risultati zone + CTA + invio scheda via email (se loggato)
 │   │   ├── RacePredictorTool.tsx     Form + previsione realistica/ottimistica (Riegel)
-│   │   └── StartQuiz.tsx             Quiz a step + esito personalizzato + link editoriali (target _blank)
+│   │   ├── StartQuiz.tsx             Quiz a step + esito personalizzato + link editoriali (target _blank)
+│   │   └── NutritionPlanTool.tsx     Form + piano alimentazione a sezioni (48h, cena, colazione, gara, dopo)
 │   └── ui/
 │       ├── Avatar.tsx                CHARACTER_PRESETS (9 img) + COLOR_PRESETS (6)
 │       ├── AvatarLightbox.tsx
@@ -297,7 +299,8 @@ src/
 │   │   ├── time.ts                   Parse/format tempi e ritmi (mm:ss, m:ss/km)
 │   │   ├── riegel.ts                 Predizione tempi gara — formula pubblica di Riegel
 │   │   ├── paceZones.ts              Zone di passo: ancora al ritmo soglia + modulazione esperienza/giorni
-│   │   └── quiz.ts                   Grafo dichiarativo del quiz + computeOutcome()
+│   │   ├── quiz.ts                   Grafo dichiarativo del quiz + computeOutcome()
+│   │   └── nutrition.ts              Campi form + computeNutritionPlan() (piano alimentazione gara, calcolo puro)
 │   └── supabase/
 │       ├── client.ts
 │       └── server.ts
