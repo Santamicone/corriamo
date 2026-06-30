@@ -279,7 +279,7 @@ export function NutritionPlanTool() {
                   </button>
                 ) : (
                   <Link
-                    href="/registrati"
+                    href="/registrati?next=/tools/alimentazione-gara"
                     className="inline-flex items-center gap-2 bg-primary text-on-primary text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-primary-hover transition-colors"
                   >
                     <span className="material-symbols-outlined text-lg">mail</span>
