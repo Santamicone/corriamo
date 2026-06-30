@@ -6,6 +6,16 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
+/**
+ * Destinazione post-registrazione: rispetta ?next=… (es. tornare a un tool),
+ * altrimenti la bacheca di benvenuto. Letto lato client per evitare Suspense.
+ */
+function getNextDestination(): string {
+  if (typeof window === 'undefined') return '/bacheca?welcome=1'
+  const next = new URLSearchParams(window.location.search).get('next')
+  return next || '/bacheca?welcome=1'
+}
+
 function OAuthButtons() {
   const [loadingGoogle, setLoadingGoogle] = useState(false)
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -15,7 +25,9 @@ function OAuthButtons() {
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${siteUrl}/auth/callback?next=/bacheca?welcome=1` },
+      options: {
+        redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(getNextDestination())}`,
+      },
     })
   }
 
@@ -93,12 +105,13 @@ export default function RegisterPage() {
     setError('')
     const supabase = createClient()
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const next = getNextDestination()
 
     const { data, error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
-        emailRedirectTo: `${siteUrl}/auth/callback`,
+        emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}`,
         data: {
           full_name: form.full_name,
           city:      form.city,
@@ -119,7 +132,7 @@ export default function RegisterPage() {
       return
     }
 
-    router.push('/bacheca?welcome=1')
+    router.push(next)
     router.refresh()
   }
 
