@@ -83,6 +83,18 @@ function thresholdPace(raceTimeSec: number, raceMeters: number): number {
   return 3600 / (dThr / 1000)
 }
 
+/**
+ * Conversione da sforzo di allenamento "a ritmo sostenuto" a prestazione gara equivalente.
+ * Un allenamento corso a ritmo sostenuto (ma non a tutta come una gara) è tipicamente
+ * un po' più lento della reale capacità di gara sulla stessa distanza: applico un piccolo
+ * margine per stimare il tempo-gara equivalente da usare come ancora fisiologica.
+ */
+export const TRAINING_TO_RACE_FACTOR = 0.97
+
+export function trainingToRaceTimeSec(trainingTimeSec: number): number {
+  return Math.round(trainingTimeSec * TRAINING_TO_RACE_FACTOR)
+}
+
 export function computePaceZones(input: ZoneInput): PaceZonesOutput {
   const { raceMeters, raceTimeSec, experience, daysPerWeek } = input
 

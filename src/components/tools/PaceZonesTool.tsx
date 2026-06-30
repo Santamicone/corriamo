@@ -4,7 +4,9 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { parseTime, formatPace, formatPaceRange, formatTime } from '@/lib/running/time'
-import { computePaceZones, type Experience } from '@/lib/running/paceZones'
+import { computePaceZones, trainingToRaceTimeSec, type Experience } from '@/lib/running/paceZones'
+
+type InputMode = 'race' | 'training'
 
 const DISTANCE_OPTIONS = [
   { label: '5K', meters: 5000 },
@@ -28,7 +30,9 @@ const OBJECTIVE_OPTIONS = [
 ]
 
 export function PaceZonesTool() {
+  const [mode, setMode] = useState<InputMode>('race')
   const [meters, setMeters] = useState(10000)
+  const [trainingKm, setTrainingKm] = useState('')
   const [time, setTime] = useState('')
   const [experience, setExperience] = useState<Experience>('intermedio')
   const [objective, setObjective] = useState('k10')
@@ -44,18 +48,32 @@ export function PaceZonesTool() {
     supabase.auth.getUser().then(({ data }) => setIsLogged(!!data.user))
   }, [])
 
-  const result = useMemo(() => {
-    if (!submitted) return null
+  // Distanza e tempo effettivi da dare al modello: in modalità "allenamento"
+  // la distanza è libera (km) e il tempo viene riportato a una prestazione gara equivalente.
+  const effective = useMemo(() => {
     const sec = parseTime(time)
     if (!sec) return null
-    return computePaceZones({ raceMeters: meters, raceTimeSec: sec, experience, daysPerWeek })
-  }, [submitted, time, meters, experience, daysPerWeek])
+    if (mode === 'training') {
+      const km = Number(trainingKm.replace(',', '.'))
+      if (!km || km <= 0) return null
+      return { raceMeters: km * 1000, raceTimeSec: trainingToRaceTimeSec(sec) }
+    }
+    return { raceMeters: meters, raceTimeSec: sec }
+  }, [mode, time, trainingKm, meters])
+
+  const result = useMemo(() => {
+    if (!submitted || !effective) return null
+    return computePaceZones({ ...effective, experience, daysPerWeek })
+  }, [submitted, effective, experience, daysPerWeek])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const sec = parseTime(time)
-    if (!sec) {
-      setError('Inserisci un tempo valido nel formato mm:ss oppure h:mm:ss.')
+    if (!effective) {
+      setError(
+        mode === 'training'
+          ? 'Inserisci una distanza in km e un tempo valido (mm:ss oppure h:mm:ss).'
+          : 'Inserisci un tempo valido nel formato mm:ss oppure h:mm:ss.',
+      )
       setSubmitted(false)
       return
     }
@@ -66,15 +84,14 @@ export function PaceZonesTool() {
   }
 
   const sendByEmail = async () => {
-    const sec = parseTime(time)
-    if (!sec) return
+    if (!effective) return
     setEmailState('sending')
     setEmailMsg(null)
     try {
       const res = await fetch('/api/tools/scheda-ritmi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ raceMeters: meters, raceTimeSec: sec, experience, daysPerWeek }),
+        body: JSON.stringify({ ...effective, experience, daysPerWeek }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Invio non riuscito.')
@@ -86,26 +103,72 @@ export function PaceZonesTool() {
     }
   }
 
-  const distLabel = DISTANCE_OPTIONS.find(d => d.meters === meters)?.label ?? ''
+  const distLabel =
+    mode === 'training'
+      ? `${trainingKm.replace('.', ',')} km`
+      : DISTANCE_OPTIONS.find(d => d.meters === meters)?.label ?? ''
 
   return (
     <div>
       {/* ── Form ── */}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 grid gap-5">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Distanza gara recente">
-            <select
-              value={meters}
-              onChange={e => { setMeters(Number(e.target.value)); setSubmitted(false) }}
-              className="tool-input"
+        {/* ── Selettore modalità: gara recente vs allenamento ── */}
+        <div className="grid grid-cols-2 gap-1 bg-gray-100 rounded-full p-1">
+          {([
+            { value: 'race', label: 'Da una gara' },
+            { value: 'training', label: 'Da un allenamento' },
+          ] as const).map(m => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => { setMode(m.value); setSubmitted(false) }}
+              className={[
+                'text-sm font-semibold py-2 rounded-full transition-colors',
+                mode === m.value ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700',
+              ].join(' ')}
             >
-              {DISTANCE_OPTIONS.map(d => (
-                <option key={d.meters} value={d.meters}>{d.label}</option>
-              ))}
-            </select>
-          </Field>
+              {m.label}
+            </button>
+          ))}
+        </div>
 
-          <Field label="Tempo ottenuto" hint="es. 45:00 oppure 1:32:00">
+        {mode === 'training' && (
+          <p className="text-sm text-gray-500 -mt-1">
+            Non hai ancora fatto una gara, o almeno non negli ultimi mesi? Scrivi distanza e tempo
+            di un tuo allenamento corso a <strong>ritmo sostenuto</strong>: stimiamo i passi da lì.
+          </p>
+        )}
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          {mode === 'race' ? (
+            <Field label="Distanza gara recente">
+              <select
+                value={meters}
+                onChange={e => { setMeters(Number(e.target.value)); setSubmitted(false) }}
+                className="tool-input"
+              >
+                {DISTANCE_OPTIONS.map(d => (
+                  <option key={d.meters} value={d.meters}>{d.label}</option>
+                ))}
+              </select>
+            </Field>
+          ) : (
+            <Field label="Distanza allenamento (km)" hint="es. 8 oppure 10,5">
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="km"
+                value={trainingKm}
+                onChange={e => { setTrainingKm(e.target.value); setSubmitted(false) }}
+                className="tool-input"
+              />
+            </Field>
+          )}
+
+          <Field
+            label={mode === 'training' ? 'Tempo dell’allenamento' : 'Tempo ottenuto'}
+            hint="es. 45:00 oppure 1:32:00"
+          >
             <input
               type="text"
               inputMode="numeric"
