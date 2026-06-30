@@ -80,6 +80,8 @@ export function StartQuiz() {
               <Link
                 key={i}
                 href={r.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 px-4 py-3 hover:border-primary/30 transition-colors"
               >
                 <span className="material-symbols-outlined text-gray-400">menu_book</span>

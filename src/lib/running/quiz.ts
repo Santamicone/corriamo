@@ -151,13 +151,13 @@ export function computeOutcome(a: Answers): QuizOutcome {
     ]
   }
 
-  // ── Letture consigliate (segnaposto editoriali) ──
+  // ── Letture consigliate (articoli editoriali) ──
   const readings: QuizReading[] = [
-    { label: 'Come iniziare a correre senza farsi male', href: '#' },
-    { label: 'Quanto andare piano (davvero) nelle uscite facili', href: '#' },
+    { label: 'Come iniziare a correre senza farsi male', href: 'https://www.vieniacorrere.it/iniziare-a-correre' },
+    { label: 'Quanto andare piano nelle uscite facili', href: 'https://www.vieniacorrere.it/correre-piano' },
   ]
   if (showZeroTo5k) {
-    readings.push({ label: 'Il metodo cammina-corri spiegato bene', href: '#' })
+    readings.push({ label: '10 motivi per iniziare a correre', href: 'https://www.vieniacorrere.it/motivi-per-iniziare-a-correre' })
   }
 
   return { title, summary, steps, readings, showZeroTo5k, medicalWarning }
