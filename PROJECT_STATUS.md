@@ -1,7 +1,7 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
-> Aggiornato al: **giugno 2026** — allineamento stato reale produzione: tutti gli SQL #18–#24 ed Edge Functions email risultano applicati e attivi (crew, reliability ed email funzionanti in prod)
+> Aggiornato al: **giugno 2026** — aggiunta sezione **Strumenti per runner** (`/tools`): calcolatore zone di passo, predittore tempi gara, test "da dove inizio?" + backend email scheda ritmi. Mergiata su `main`. Allineamento stato reale produzione: tutti gli SQL #18–#24 ed Edge Functions email risultano applicati e attivi (crew, reliability ed email funzionanti in prod)
 
 ---
 
@@ -46,7 +46,12 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL  → https://wshjtgtmxbxhpdqtxpiq.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY → eyJhbGci... (JWT legacy)
 NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email redirect
+RESEND_API_KEY → re_...   ← invio email dalle API route Next (es. scheda ritmi tool)
+SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token unsubscribe lato Next
 ```
+
+> Nota: `RESEND_API_KEY` esiste anche come secret delle Edge Functions Supabase (ambiente separato).
+> Le API route Next girano su Vercel, quindi la chiave va presente **anche** nelle env di Vercel.
 
 ---
 
@@ -234,8 +239,15 @@ src/
 │   ├── registrati/
 │   │   ├── page.tsx                  Form semplificato (solo nome + email + password)
 │   │   └── conferma/page.tsx         Pagina "Controlla la tua email"
+│   ├── (public)/tools/               Sezione Strumenti per runner — route group PUBBLICO (no auth, indicizzabile)
+│   │   ├── layout.tsx                Guscio Header/Footer + metadata SEO
+│   │   ├── page.tsx                  Hub: card dei 3 tool
+│   │   ├── zone-di-passo/page.tsx    Calcolatore zone di passo (SSR + <PaceZonesTool/>)
+│   │   ├── predittore/page.tsx       Predittore tempi gara (SSR + <RacePredictorTool/>)
+│   │   └── da-dove-inizio/page.tsx   Quiz "da dove inizio?" (SSR + <StartQuiz/>)
 │   ├── api/og/corse/[id]/route.tsx
-│   └── api/unsubscribe/route.ts      Unsubscribe email notifiche via token
+│   ├── api/unsubscribe/route.ts      Unsubscribe email notifiche via token
+│   └── api/tools/scheda-ritmi/route.ts  POST: invia scheda zone di passo via email (auth + ricalcolo server-side)
 │
 ├── components/
 │   ├── Header.tsx                    Mobile overlay menu (mobileOpen/userOpen separati)
@@ -249,6 +261,11 @@ src/
 │   ├── LocationPreviewMap.tsx
 │   ├── RunMap.tsx                    Pin grigio tratteggiato per luogo privato
 │   ├── RunMapWrapper.tsx
+│   ├── tools/                        Componenti client dei tool runner
+│   │   ├── ToolShell.tsx             Guscio comune: breadcrumb, intestazione, disclaimer (override opzionale)
+│   │   ├── PaceZonesTool.tsx         Form + risultati zone + CTA + invio scheda via email (se loggato)
+│   │   ├── RacePredictorTool.tsx     Form + previsione realistica/ottimistica (Riegel)
+│   │   └── StartQuiz.tsx             Quiz a step + esito personalizzato + link editoriali (target _blank)
 │   └── ui/
 │       ├── Avatar.tsx                CHARACTER_PRESETS (9 img) + COLOR_PRESETS (6)
 │       ├── AvatarLightbox.tsx
@@ -273,8 +290,14 @@ src/
 │   ├── geocoding.ts
 │   ├── reliability.ts                getReliabilityBadge() → 'affidabile' | 'organizzatore' | null
 │   ├── email/
-│   │   ├── templates.ts              Template HTML email (partecipazione, approvazione, ecc.)
+│   │   ├── templates.ts              Template HTML email (partecipazione, approvazione, ... + emailSchedaRitmi)
+│   │   ├── send.ts                   Helper invio Resend lato Next (per le API route)
 │   │   └── token.ts                  Generazione/verifica token unsubscribe
+│   ├── running/                      Logica dei tool runner (calcolo puro, testabile)
+│   │   ├── time.ts                   Parse/format tempi e ritmi (mm:ss, m:ss/km)
+│   │   ├── riegel.ts                 Predizione tempi gara — formula pubblica di Riegel
+│   │   ├── paceZones.ts              Zone di passo: ancora al ritmo soglia + modulazione esperienza/giorni
+│   │   └── quiz.ts                   Grafo dichiarativo del quiz + computeOutcome()
 │   └── supabase/
 │       ├── client.ts
 │       └── server.ts
@@ -403,6 +426,16 @@ src/
 - [x] Blocco modifica se mancano meno di 2 ore alla partenza
 - [x] Notifica automatica ai partecipanti approvati in caso di modifica
 
+### Strumenti per runner (/tools)
+- [x] Route group **pubblico** `src/app/(public)/tools/` — niente auth (proxy protegge solo whitelist), pagine SSR indicizzabili, prerenderizzate statiche
+- [x] **Calcolatore zone di passo** — da gara recente deriva facile/lungo/medio/soglia/ripetute + ritmi gara 5K/10K/mezza/maratona. Modello proprietario: ritmo soglia derivato da Riegel (distanza coperta in 60'), zone come range % sul soglia, ampiezza modulata da esperienza e giorni/settimana
+- [x] **Predittore tempi gara** — formula di Riegel; realistico (esp. 1.10) e ottimistico (esp. 1.06)
+- [x] **Test "da dove inizio?"** — quiz a step con grafo dichiarativo (`quiz.ts`), esito personalizzato (cammina-corri, prima 5K, dimagrire, compagnia, benessere), avviso medico se dolori frequenti, invito "Da zero a 5K" (CTA placeholder)
+- [x] Link editoriali del quiz verso il sito WordPress (`www.vieniacorrere.it/...`), aperti in nuova scheda
+- [x] CTA "Trova compagni" → `/bacheca` su ogni tool; disclaimer legale (solo modelli pubblici, no VDOT)
+- [x] **Backend email scheda ritmi**: `POST /api/tools/scheda-ritmi` con auth + validazione + **ricalcolo server-side** → invio via Resend (template `emailSchedaRitmi` branded). Utente non loggato → CTA `/registrati`
+- ✅ **Mergiata su `main` (PR #81, #82). Env `RESEND_API_KEY` + `SUPABASE_SERVICE_ROLE_KEY` configurate su Vercel**
+
 ### UX
 - [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
 - [x] Homepage: hero video/img + "Perché Vieni a correre?" con foto fondatori
@@ -437,6 +470,11 @@ src/
 | Fuso orario | `parseRunDateTime` con `Intl.DateTimeFormat Europe/Rome` | Server Vercel in UTC, corse in ora italiana |
 | Chat di gruppo | Insert ottimistico in ChatWindow, Realtime solo per altri utenti | Messaggio appare subito senza attesa Realtime |
 | Menu mobile | Due state separati (mobileOpen / userOpen) + overlay fixed | No overlap, no voci duplicate |
+| Tools — collocazione | Route group `(public)/tools` nell'app, non WordPress/mini-sito | SEO + design system condiviso + CTA native; pubbliche di default (proxy a whitelist) |
+| Tools — modelli | Solo formule pubbliche (Riegel), logica zone proprietaria documentata | Evita IP protetta (tabelle/logiche VDOT); disclaimer "valori indicativi" |
+| Tools — calcolo | `lib/running/*` puro client-side per i calcolatori; ricalcolo server-side per l'email | Istantaneo e a costo zero; l'email non si fida dell'input del client |
+| Tools — quiz | Grafo dichiarativo (`QUIZ_STEPS` + `computeOutcome`) | Aggiungere domande/esiti senza toccare la UI |
+| Tools — email | API route Next + Resend (non Edge Function) | Azione utente autenticata; pattern coerente con `/api/*` esistenti |
 
 ---
 
@@ -463,9 +501,14 @@ src/
 2. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
 3. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
 
+### Follow-up sezione Tools
+6. **Programma "Da zero a 5K"** — oggi è una CTA placeholder nel quiz; va creato il contenuto/percorso reale
+7. **Voce "Strumenti" nella nav** — i tool sono raggiungibili solo via URL; manca il link in Header (desktop + mobile)
+8. **Allineamento dominio template email** — su `main` i template usano `www.vieniacorrere.it`; valutare allineamento a `app.` quando la migrazione domini arriva su `main`
+
 ### Bassa priorità / idee future
-4. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
-5. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
+9. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
+10. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
 
 ---
 
