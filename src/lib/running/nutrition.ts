@@ -38,6 +38,26 @@ export interface PlanSection {
   items: string[]
 }
 
+/** Strategia gel calcolata in modo concreto: quanti, quando, con quanti carboidrati. */
+export interface GelStrategy {
+  /** Numero indicativo di gel da portare. */
+  count: number
+  /** Carboidrati per gel (g) usati per il calcolo. */
+  carbsPerGel: number
+  /** Carboidrati totali stimati dai gel (g). */
+  totalCarbs: number
+  /** Obiettivo di carboidrati all'ora (g/h). */
+  carbsPerHour: number
+  /** Minuto in cui prendere il primo gel. */
+  firstAtMin: number
+  /** Cadenza indicativa tra un gel e l'altro (minuti). */
+  everyMin: number
+  /** Quanti gel, tra quelli totali, possono essere con caffeina (0 = nessuno). */
+  caffeineCount: number
+  /** Nota sintetica sull'uso della caffeina. */
+  caffeineNote: string
+}
+
 export interface NutritionPlan {
   /** Riga di sintesi tipo "Mezza maratona — partenza ore 9:30 — tempo previsto 1h45". */
   headline: string
@@ -45,7 +65,19 @@ export interface NutritionPlan {
   needsFueling: boolean
   /** Numero indicativo di gel, 0 se non servono. */
   gelCount: number
+  /** Dettaglio della strategia gel, presente solo quando servono i gel. */
+  gel: GelStrategy | null
   sections: PlanSection[]
+}
+
+/** Un pasto di esempio per il "menù tipo" inviato via email. */
+export interface MenuMeal {
+  icon: string
+  title: string
+  /** Quando consumarlo, es. "circa 3 ore prima". */
+  when: string
+  /** Voci concrete del menù. */
+  items: string[]
 }
 
 const DISTANCE_LABEL: Record<RaceDistance, string> = {
@@ -108,6 +140,52 @@ function shiftTime(time: string, minusMinutes: number): string | null {
   const h = Math.floor(total / 60)
   const m = total % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+/**
+ * Calcola una strategia gel concreta: numero di gel, carboidrati, cadenza e
+ * indicazione sulla caffeina. Restituisce null per le gare troppo brevi.
+ */
+export function computeGelStrategy(input: NutritionInput, minutes: number): GelStrategy | null {
+  const { distance, gelExperience, gastric, goal } = input
+  if (minutes < 75) return null
+
+  // Carboidrati/ora: più alti sulle gare lunghe, dove conta integrare con regolarità.
+  const longEffort = distance === '42k' || distance === 'trail' || minutes >= 150
+  const carbsPerHour = longEffort ? 60 : 40
+  const carbsPerGel = 25
+
+  // Si inizia a integrare dopo i primi ~40' (prima le scorte bastano).
+  const firstAtMin = 45
+  const fuelingHours = Math.max(0.5, (minutes - firstAtMin) / 60)
+  const totalCarbs = Math.round(carbsPerHour * fuelingHours)
+  const count = Math.max(1, Math.round(totalCarbs / carbsPerGel))
+  const everyMin = Math.min(45, Math.max(25, Math.round((minutes - firstAtMin) / count)))
+
+  // Caffeina: utile nella seconda metà se l'atleta è abituato e ben tollerante.
+  // Si evita a chi ha lo stomaco delicato o non ha mai provato i gel.
+  let caffeineCount = 0
+  let caffeineNote =
+    'Per questa gara meglio gel senza caffeina: la tieni come arma solo quando sei sicuro di tollerarla.'
+  const caffeineOk = gelExperience !== 'mai' && gastric !== 'alta'
+  if (caffeineOk && (goal === 'pb' || longEffort)) {
+    caffeineCount = Math.min(count, longEffort ? 2 : 1)
+    caffeineNote =
+      caffeineCount >= count
+        ? `Prendi il gel nella seconda metà di gara con caffeina (~50-100 mg) per la spinta finale.`
+        : `Negli ultimi terzi di gara usa ${caffeineCount} gel con caffeina (~50-100 mg l'uno) per la spinta finale; gli altri senza caffeina.`
+  }
+
+  return {
+    count,
+    carbsPerGel,
+    totalCarbs,
+    carbsPerHour,
+    firstAtMin,
+    everyMin,
+    caffeineCount,
+    caffeineNote,
+  }
 }
 
 export function computeNutritionPlan(input: NutritionInput): NutritionPlan {
@@ -201,34 +279,45 @@ export function computeNutritionPlan(input: NutritionInput): NutritionPlan {
   })
 
   // ── Durante la gara ──
-  let gelCount = 0
+  const gel = computeGelStrategy(input, minutes)
+  let gelCount = gel?.count ?? 0
   const duringItems: string[] = []
-  if (needsFueling) {
-    // ~30-60 g di carboidrati l'ora → un gel ogni ~35-45 minuti dopo i primi 40-50'.
-    gelCount = neverTriedGels ? 0 : Math.max(1, Math.round((minutes - 40) / 40))
+  if (gel) {
+    // Idratazione prima di tutto.
     duringItems.push(
       hot
         ? 'Bevi a ogni ristoro, anche poco: con il caldo l\'idratazione viene prima dell\'energia.'
         : 'Bevi ai ristori secondo sete, senza saltarli nei tratti centrali.',
     )
+    duringItems.push(`Obiettivo carboidrati: circa ${gel.carbsPerHour} g all'ora di sforzo.`)
+    duringItems.push(
+      `Porta ${gel.count} gel da ~${gel.carbsPerGel} g di carboidrati l'uno (totale ~${gel.totalCarbs} g di carbo).`,
+    )
+    duringItems.push(
+      `Primo gel intorno al ${gel.firstAtMin}', poi uno ogni ${gel.everyMin}' circa, sempre con qualche sorso d'acqua (mai con bevande zuccherate).`,
+    )
+    duringItems.push(gel.caffeineNote)
     if (neverTriedGels) {
       duringItems.push(
-        'Non hai mai usato i gel: per questa gara affidati ai ristori (acqua, eventuale integrazione del percorso) e prova i gel in allenamento per le prossime.',
+        'Non hai mai usato i gel: questi numeri valgono come bersaglio, ma provali PRIMA in allenamento. Il giorno della gara non si sperimenta.',
       )
-    } else {
-      duringItems.push(
-        `Primo gel intorno al 40'-50', poi circa uno ogni 35-45 minuti: per te indicativamente ${gelCount} gel.`,
-      )
-      duringItems.push('Accompagna sempre il gel con qualche sorso d\'acqua, mai con bevande zuccherate.')
+      gelCount = gel.count
     }
     if (distance === '42k') {
       duringItems.push('Sulla maratona inizia a integrare presto e con regolarità: non aspettare di sentirti vuoto.')
     }
     if (distance === 'trail') {
-      duringItems.push('Sul trail alterna gel e cibo solido (barrette, frutta secca) se lo digerisci bene.')
+      duringItems.push('Sul trail puoi sostituire qualche gel con cibo solido (barrette, frutta secca) a parità di carboidrati, se lo digerisci bene.')
     }
   } else {
-    duringItems.push('Gara breve: l\'energia che hai già basta. Non servono gel.')
+    // Gara breve: i gel non servono, ma per chi punta alla prestazione un gel può aiutare.
+    if (goal === 'pb' && !neverTriedGels && minutes >= 40) {
+      duringItems.push(
+        'Gara breve: le scorte bastano. Se punti al PB, un solo gel da ~25 g di carboidrati intorno a metà gara può dare una spinta — ma solo se lo hai già provato.',
+      )
+    } else {
+      duringItems.push('Gara breve: l\'energia che hai già basta. Non servono gel.')
+    }
     duringItems.push(
       hot
         ? 'Con il caldo, un sorso d\'acqua a metà o ai ristori è più che sufficiente.'
@@ -239,7 +328,7 @@ export function computeNutritionPlan(input: NutritionInput): NutritionPlan {
   sections.push({
     icon: 'bolt',
     title: 'Durante la gara',
-    subtitle: needsFueling ? 'Quando bere, quando integrare' : 'Idratazione essenziale',
+    subtitle: gel ? 'Quanti gel, quando bere e integrare' : 'Idratazione essenziale',
     items: duringItems,
   })
 
@@ -259,5 +348,91 @@ export function computeNutritionPlan(input: NutritionInput): NutritionPlan {
     items: afterItems,
   })
 
-  return { headline, needsFueling, gelCount, sections }
+  return { headline, needsFueling, gelCount, gel, sections }
+}
+
+/**
+ * Costruisce un "menù tipo" concreto pasto per pasto, da inviare via email.
+ * Adatta le scelte a stomaco delicato e gare lunghe.
+ */
+export function buildMenuExamples(input: NutritionInput): MenuMeal[] {
+  const { distance, gastric, goal } = input
+  const minutes = input.expectedMinutes ?? TYPICAL_MINUTES[distance]
+  const gel = computeGelStrategy(input, minutes)
+  const delicate = gastric === 'alta'
+  const longEffort = distance === '42k' || distance === 'trail'
+
+  const breakfastTime = input.startTime ? shiftTime(input.startTime, 180) : null
+
+  const meals: MenuMeal[] = [
+    {
+      icon: 'dinner_dining',
+      title: 'Cena pre-gara',
+      when: 'la sera prima',
+      items: [
+        longEffort
+          ? 'Riso o pasta (100-130 g a crudo) con olio e parmigiano, condimento semplice.'
+          : 'Pasta o riso (80-100 g a crudo) con pomodoro o olio e parmigiano.',
+        delicate ? 'Pane bianco al posto di quello integrale.' : 'Una porzione di pane.',
+        'Una fonte proteica magra: petto di pollo, pesce bianco o un uovo.',
+        delicate
+          ? 'Niente verdure crude o legumi: una banana matura come dessert.'
+          : 'Verdura cotta leggera; come dessert una banana o una composta di frutta.',
+        'Acqua naturale. Evita fritti, salse pesanti e alcol.',
+      ],
+    },
+    {
+      icon: 'free_breakfast',
+      title: 'Colazione pre-gara',
+      when: breakfastTime ? `verso le ${breakfastTime} (≈ 3 h prima)` : 'circa 3 ore prima',
+      items: [
+        delicate
+          ? '3-4 fette biscottate con miele o marmellata (senza burro).'
+          : 'Pane bianco o fette biscottate con miele/marmellata, oppure una porzione di fiocchi d\'avena.',
+        'Una banana matura.',
+        delicate ? 'Un tè leggero o un caffè solo se ci sei abituato.' : 'Un caffè o un tè se sei abituato.',
+        'Acqua a piccoli sorsi. Niente latte abbondante, niente cibi grassi o ricchi di fibre.',
+      ],
+    },
+    {
+      icon: 'sports',
+      title: 'Spuntino pre-partenza',
+      when: '30-60 min prima del via',
+      items: [
+        'Mezza banana o un piccolo pacchetto di gallette di riso.',
+        goal === 'pb'
+          ? 'Eventuale gel "di partenza" da ~25 g di carbo 10-15\' prima del via, solo se già testato.'
+          : 'Qualche sorso d\'acqua, senza appesantirti.',
+      ],
+    },
+  ]
+
+  // Pasto "durante" solo se la gara è abbastanza lunga da richiedere integrazione.
+  if (gel) {
+    meals.push({
+      icon: 'bolt',
+      title: 'Durante la gara',
+      when: `dal ${gel.firstAtMin}', ogni ${gel.everyMin}' circa`,
+      items: [
+        `${gel.count} gel da ~${gel.carbsPerGel} g di carbo l'uno (≈ ${gel.carbsPerHour} g/h, totale ~${gel.totalCarbs} g).`,
+        gel.caffeineCount > 0
+          ? `Di questi, ${gel.caffeineCount} con caffeina negli ultimi terzi di gara.`
+          : 'Tutti senza caffeina.',
+        'Ogni gel accompagnato da qualche sorso d\'acqua ai ristori.',
+      ],
+    })
+  }
+
+  meals.push({
+    icon: 'self_improvement',
+    title: 'Dopo la gara',
+    when: 'entro 1-2 ore',
+    items: [
+      'Reidratazione a piccoli sorsi: acqua, con sali se hai sudato molto.',
+      'Carboidrati per ricaricare (pasta, riso, pane o frutta) + proteine per i muscoli.',
+      'Frutta fresca per vitamine e liquidi.',
+    ],
+  })
+
+  return meals
 }

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import {
   NUTRITION_FIELDS,
   computeNutritionPlan,
@@ -22,28 +23,60 @@ export function NutritionPlanTool() {
   const [gastric, setGastric] = useState<GastricSensitivity>('media')
   const [goal, setGoal] = useState<RaceGoal>('finire')
   const [submitted, setSubmitted] = useState(false)
+  const [isLogged, setIsLogged] = useState(false)
+  const [emailState, setEmailState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [emailMsg, setEmailMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => setIsLogged(!!data.user))
+  }, [])
+
+  const buildInput = (): NutritionInput => ({
+    distance,
+    startTime: startTime.trim() || undefined,
+    expectedMinutes: parseExpected(expectedTime),
+    weightKg: weight.trim() ? Number(weight) : undefined,
+    temperatureC: temperature.trim() ? Number(temperature) : undefined,
+    gelExperience,
+    gastric,
+    goal,
+  })
 
   const plan = useMemo(() => {
     if (!submitted) return null
-    const input: NutritionInput = {
-      distance,
-      startTime: startTime.trim() || undefined,
-      expectedMinutes: parseExpected(expectedTime),
-      weightKg: weight.trim() ? Number(weight) : undefined,
-      temperatureC: temperature.trim() ? Number(temperature) : undefined,
-      gelExperience,
-      gastric,
-      goal,
-    }
-    return computeNutritionPlan(input)
+    return computeNutritionPlan(buildInput())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted, distance, startTime, expectedTime, weight, temperature, gelExperience, gastric, goal])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitted(true)
+    setEmailState('idle')
+    setEmailMsg(null)
   }
 
-  const reset = () => setSubmitted(false)
+  const reset = () => { setSubmitted(false); setEmailState('idle'); setEmailMsg(null) }
+
+  const sendByEmail = async () => {
+    setEmailState('sending')
+    setEmailMsg(null)
+    const input = buildInput()
+    try {
+      const res = await fetch('/api/tools/piano-gara', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Invio non riuscito.')
+      setEmailState('sent')
+      setEmailMsg(data.sentTo ? `Inviato a ${data.sentTo}` : 'Piano inviato!')
+    } catch (err) {
+      setEmailState('error')
+      setEmailMsg(err instanceof Error ? err.message : 'Invio non riuscito.')
+    }
+  }
 
   return (
     <div>
@@ -170,9 +203,11 @@ export function NutritionPlanTool() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 mb-5">
             <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Il tuo piano</p>
             <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-tight">{plan.headline}</h2>
-            {plan.needsFueling && plan.gelCount > 0 && (
+            {plan.gel && (
               <p className="text-sm text-gray-500 mt-2">
-                Integrazione indicativa: <strong>circa {plan.gelCount} gel</strong> distribuiti durante la gara.
+                Integrazione indicativa: <strong>{plan.gel.count} gel</strong> da ~{plan.gel.carbsPerGel} g
+                di carboidrati (≈ {plan.gel.carbsPerHour} g/h
+                {plan.gel.caffeineCount > 0 ? `, di cui ${plan.gel.caffeineCount} con caffeina` : ''}).
               </p>
             )}
           </div>
@@ -210,6 +245,52 @@ export function NutritionPlanTool() {
               <strong>Mai provare cose nuove il giorno della gara.</strong> Tutto ciò che mangi o bevi
               in gara dev'essere già stato testato in allenamento.
             </p>
+          </div>
+
+          {/* ── Piano via email ── */}
+          <div className="mt-5 bg-orange-50 border border-primary/20 rounded-2xl p-5 text-center">
+            {emailState === 'sent' ? (
+              <>
+                <span className="material-symbols-filled text-tertiary" style={{ fontSize: 36 }}>
+                  mark_email_read
+                </span>
+                <p className="text-sm font-bold text-gray-900 mt-1">Piano inviato! 📩</p>
+                <p className="text-xs text-gray-500 mt-1">{emailMsg} — controlla anche lo spam.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-bold text-gray-900">Vuoi il piano dettagliato via email?</p>
+                <p className="text-xs text-gray-500 mt-1 mb-3">
+                  {isLogged
+                    ? 'Te lo inviamo all’indirizzo del tuo account, con un menù tipo pasto per pasto.'
+                    : 'Accedi o registrati: ti inviamo il piano completo con il menù tipo per ogni pasto.'}
+                </p>
+                {isLogged ? (
+                  <button
+                    type="button"
+                    onClick={sendByEmail}
+                    disabled={emailState === 'sending'}
+                    className="inline-flex items-center gap-2 bg-primary text-on-primary text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-primary-hover transition-colors disabled:opacity-60"
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      {emailState === 'sending' ? 'progress_activity' : 'mail'}
+                    </span>
+                    {emailState === 'sending' ? 'Invio in corso…' : 'Ricevi il piano via email'}
+                  </button>
+                ) : (
+                  <Link
+                    href="/registrati"
+                    className="inline-flex items-center gap-2 bg-primary text-on-primary text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-primary-hover transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-lg">mail</span>
+                    Ricevi il piano via email
+                  </Link>
+                )}
+                {emailState === 'error' && (
+                  <p className="text-xs text-error font-medium mt-2">{emailMsg}</p>
+                )}
+              </>
+            )}
           </div>
 
           {/* ── CTA principale ── */}
