@@ -70,6 +70,26 @@ export const QUIZ_STEPS: QuizStep[] = [
         max: 99,
       },
       {
+        id: 'genere',
+        label: 'Genere',
+        type: 'select',
+        options: [
+          { value: 'donna', label: 'Donna' },
+          { value: 'uomo',  label: 'Uomo' },
+          { value: 'na',    label: 'Preferisco non dirlo' },
+        ],
+      },
+      {
+        id: 'altezza',
+        label: 'Quanto sei alto/a? (facoltativo)',
+        type: 'number',
+        suffix: 'cm',
+        placeholder: 'es. 175',
+        min: 120,
+        max: 220,
+        optional: true,
+      },
+      {
         id: 'peso',
         label: 'Quanto pesi? (facoltativo)',
         type: 'number',
@@ -237,6 +257,12 @@ export function computeOutcome(a: Answers): QuizOutcome {
   const sportPast = a.sportPast as string | undefined
   const sportNow = a.sportNow as string | undefined
   const eta = a.eta ? Number(a.eta) : undefined
+  const peso = a.peso ? Number(a.peso) : undefined
+  const altezza = a.altezza ? Number(a.altezza) : undefined
+  const genere = a.genere as string | undefined
+  // BMI solo se abbiamo entrambi i dati e sono plausibili.
+  const bmi =
+    peso && altezza && altezza > 0 ? peso / (altezza / 100) ** 2 : undefined
 
   const medicalWarning = pain === 'spesso'
   const beginner = can10 === 'no'
@@ -258,6 +284,35 @@ export function computeOutcome(a: Answers): QuizOutcome {
     profileNote =
       (profileNote ? profileNote + ' ' : '') +
       'Alla tua età la corsa fa benissimo: aumenta i carichi con ancora più gradualità e, se non lo fai da tempo, valuta un check-up prima di partire.'
+  }
+  // ── Nota su peso/altezza (BMI): impatto sulle articolazioni ──
+  // Nota: il BMI è un'indicazione grezza (non distingue massa magra da grassa),
+  // per questo i messaggi restano prudenziali e rimandano a un professionista.
+  const femminile = genere === 'donna'
+  if (bmi !== undefined && bmi >= 30) {
+    profileNote =
+      (profileNote ? profileNote + ' ' : '') +
+      'Il rapporto tra il tuo peso e la tua altezza indica un evidente sovrappeso: la corsa è un ottimo alleato, ma all\'inizio carica molto ginocchia e caviglie. ' +
+      'Parti soprattutto camminando, inserisci la corsa un pezzetto alla volta, dai priorità alle superfici morbide (sterrato, pista) e a scarpe ammortizzate. ' +
+      'Prima di iniziare, meglio un check-up medico. I risultati arriveranno con la costanza, senza infortuni.'
+  } else if (bmi !== undefined && bmi >= 25) {
+    profileNote =
+      (profileNote ? profileNote + ' ' : '') +
+      'Con qualche chilo in più dai molto valore alle uscite facili e alla progressione lenta: proteggi le articolazioni e i risultati sul peso arrivano proprio dalla costanza.'
+  } else if (bmi !== undefined && bmi < 18.5) {
+    profileNote =
+      (profileNote ? profileNote + ' ' : '') +
+      'Il rapporto tra il tuo peso e la tua altezza indica un possibile sottopeso: la corsa consuma parecchia energia, quindi assicurati di mangiare a sufficienza e non puntare a perdere peso. ' +
+      (femminile
+        ? 'Un sottopeso, specie nelle donne, può incidere su ciclo, ossa ed energie: '
+        : 'Un sottopeso può incidere su energie, recupero e salute delle ossa: ') +
+      'meglio confrontarti con un medico o un nutrizionista prima di aumentare i carichi.'
+  }
+  // Obiettivo "dimagrire" ma peso già nella norma o basso: nota gentile.
+  if (goal === 'dimagrire' && bmi !== undefined && bmi < 25) {
+    profileNote =
+      (profileNote ? profileNote + ' ' : '') +
+      'Hai scelto "dimagrire", ma il tuo peso sembra già nella norma: usa la corsa più per stare bene e tonificarti che per perdere chili, senza forzare la bilancia.'
   }
 
   // ── Percorso base in funzione del punto di partenza e dell'obiettivo ──
