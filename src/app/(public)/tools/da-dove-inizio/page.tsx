@@ -13,14 +13,14 @@ export default function DaDoveInizioPage() {
   return (
     <ToolShell
       title="Da dove inizio?"
-      subtitle="Rispondi a 4 domande: ti diciamo il percorso giusto per te."
+      subtitle="Poche domande: ti diciamo il percorso giusto per te."
       icon="directions_walk"
       howTo={
         <>
-          Rispondi con calma a 4 domande sul tuo punto di partenza e su cosa cerchi dalla corsa:
-          non ci sono risposte giuste o sbagliate. In base a quello che ci dici ti suggeriamo il
-          percorso più adatto — dal cammina-corri alla tua prima 5K — con qualche consiglio
-          pratico per iniziare senza strafare. Bastano un paio di minuti.
+          Rispondi con calma a qualche domanda sul tuo punto di partenza, su cosa cerchi dalla corsa
+          e su cosa finora ti ha frenato: non ci sono risposte giuste o sbagliate. In base a quello
+          che ci dici ti costruiamo un percorso su misura — dal cammina-corri alla tua prima 5K — con
+          piccoli obiettivi, come superare i blocchi e trucchi per non mollare. Bastano un paio di minuti.
         </>
       }
     >
