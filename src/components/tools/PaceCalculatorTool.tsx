@@ -26,6 +26,23 @@ const SHORTCUTS: { label: string; meters: number }[] = [
   { label: '100K', meters: 100000 },
 ]
 
+/** Punti di passaggio per gli split automatici (v2). */
+const SPLIT_POINTS: { label: string; m: number }[] = [
+  { label: '1 km', m: 1000 },
+  { label: '5 km', m: 5000 },
+  { label: '10 km', m: 10000 },
+  { label: '15 km', m: 15000 },
+  { label: '20 km', m: 20000 },
+  { label: 'Mezza maratona', m: 21097.5 },
+  { label: '30 km', m: 30000 },
+  { label: 'Maratona', m: 42195 },
+]
+
+/** Voce salvata nella cronologia (metri, secondi/km, secondi). */
+type HistoryEntry = { d: number; p: number; t: number }
+
+const HISTORY_KEY = 'vac:passo:history'
+
 /**
  * Calcolatore passo · tempo · distanza.
  * L'utente compila due campi qualsiasi; il terzo — l'ultimo NON toccato — è quello
@@ -128,6 +145,90 @@ export function PaceCalculatorTool() {
     touch(field)
   }
 
+  // ── v2 · Arrotondamenti passo ──
+  // Quando il passo è il valore calcolato e non è "tondo", proponiamo i multipli
+  // di 5 secondi vicini, comodi per programmare gli allenamenti.
+  const paceRoundings = useMemo(() => {
+    if (computed !== 'pace' || effPaceSec == null) return null
+    const s = Math.round(effPaceSec)
+    if (s % 5 === 0) return null
+    const base = Math.floor(s / 5) * 5
+    return [base, base + 5, base + 10]
+  }, [computed, effPaceSec])
+
+  const applyRounding = (sec: number) => {
+    // Fissa il passo scelto tenendo la distanza: ricalcoliamo il tempo.
+    setPaceRaw(formatPace(sec))
+    setOrder(['pace', 'distance', 'time'])
+  }
+
+  // ── v2 · Split automatici ──
+  // Passaggi cumulativi ai punti chiave, fino alla distanza inserita.
+  const splits = useMemo(() => {
+    if (effPaceSec == null || effDistanceM == null || effDistanceM < 1000) return null
+    const rows = SPLIT_POINTS.filter(p => p.m <= effDistanceM + 1).map(p => ({
+      label: p.label,
+      timeSec: effPaceSec * (p.m / 1000),
+    }))
+    // Aggiunge la distanza totale se non coincide con un punto standard.
+    const isStandard = SPLIT_POINTS.some(p => Math.abs(p.m - effDistanceM) < 1)
+    if (!isStandard) {
+      rows.push({ label: formatDistance(effDistanceM), timeSec: effPaceSec * (effDistanceM / 1000) })
+    }
+    return rows.length ? rows : null
+  }, [effPaceSec, effDistanceM])
+
+  // ── v2 · Cronologia (localStorage) ──
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY)
+      if (raw) setHistory(JSON.parse(raw))
+    } catch {
+      /* localStorage non disponibile o dato corrotto: si ignora */
+    }
+  }, [])
+
+  // Salva l'ultimo calcolo completo dopo una breve pausa (debounce), deduplicando.
+  useEffect(() => {
+    if (effDistanceM == null || effPaceSec == null || effTimeSec == null) return
+    if (!(effDistanceM > 0 && effPaceSec > 0 && effTimeSec > 0)) return
+    const entry: HistoryEntry = {
+      d: Math.round(effDistanceM),
+      p: Math.round(effPaceSec),
+      t: Math.round(effTimeSec),
+    }
+    const id = setTimeout(() => {
+      setHistory(prev => {
+        const next = [entry, ...prev.filter(e => !(e.d === entry.d && e.p === entry.p))].slice(0, 6)
+        try {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+        } catch {
+          /* localStorage non disponibile: si ignora */
+        }
+        return next
+      })
+    }, 1200)
+    return () => clearTimeout(id)
+  }, [effDistanceM, effPaceSec, effTimeSec])
+
+  const restore = (e: HistoryEntry) => {
+    setDistanceRaw(formatDistance(e.d))
+    setPaceRaw(formatPace(e.p))
+    setTimeRaw(formatTime(e.t))
+    setOrder(['pace', 'distance', 'time'])
+  }
+
+  const clearHistory = () => {
+    setHistory([])
+    try {
+      localStorage.removeItem(HISTORY_KEY)
+    } catch {
+      /* localStorage non disponibile: si ignora */
+    }
+  }
+
   return (
     <div>
       <div className="grid gap-3">
@@ -175,6 +276,21 @@ export function PaceCalculatorTool() {
               {formatPace(pacePerMile!)}/mi · {kmh!.toFixed(1).replace('.', ',')} km/h
             </p>
           )}
+          {paceRoundings && (
+            <div className="flex items-center gap-1.5 mt-3">
+              <span className="text-xs text-gray-400 shrink-0">Arrotonda a</span>
+              {paceRoundings.map(sec => (
+                <button
+                  key={sec}
+                  type="button"
+                  onClick={() => applyRounding(sec)}
+                  className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 tabular-nums hover:bg-orange-50 hover:text-primary transition-colors"
+                >
+                  {formatPace(sec)}
+                </button>
+              ))}
+            </div>
+          )}
         </Card>
 
         {/* ── Tempo ── */}
@@ -205,14 +321,72 @@ export function PaceCalculatorTool() {
         </button>
       )}
 
+      {/* ── Split automatici ── */}
+      {splits && (
+        <div className="mt-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+            Passaggi a questo passo
+          </p>
+          <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden">
+            {splits.map((s, i) => (
+              <div
+                key={s.label}
+                className={[
+                  'flex items-center justify-between px-4 py-2.5 text-sm',
+                  i > 0 ? 'border-t border-gray-50' : '',
+                ].join(' ')}
+              >
+                <span className="text-gray-600">{s.label}</span>
+                <span className="font-bold text-gray-900 tabular-nums">{formatTime(s.timeSec)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── CTA verso il core del prodotto ── */}
       <Link
         href="/bacheca"
-        className="mt-3 flex items-center justify-center gap-2 bg-secondary text-on-secondary font-semibold px-6 py-3.5 rounded-full hover:opacity-90 transition-opacity"
+        className="mt-6 flex items-center justify-center gap-2 bg-secondary text-on-secondary font-semibold px-6 py-3.5 rounded-full hover:opacity-90 transition-opacity"
       >
         <span className="material-symbols-outlined text-xl">group</span>
         Trova qualcuno che corre a questo passo
       </Link>
+
+      {/* ── Cronologia ── */}
+      {history.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+              Calcoli recenti
+            </p>
+            <button
+              type="button"
+              onClick={clearHistory}
+              className="text-xs font-semibold text-gray-400 hover:text-error transition-colors"
+            >
+              Svuota
+            </button>
+          </div>
+          <div className="grid gap-2">
+            {history.map((e, i) => (
+              <button
+                key={`${e.d}-${e.p}-${i}`}
+                type="button"
+                onClick={() => restore(e)}
+                className="flex items-center justify-between gap-3 bg-white rounded-xl border border-gray-100 px-4 py-2.5 text-left hover:border-primary/30 transition-colors"
+              >
+                <span className="text-sm font-bold text-gray-900 tabular-nums">
+                  {formatDistance(e.d)}
+                </span>
+                <span className="text-sm text-gray-500 tabular-nums">
+                  {formatPace(e.p)}/km · {formatTime(e.t)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
