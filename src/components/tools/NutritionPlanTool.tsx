@@ -142,7 +142,7 @@ export function NutritionPlanTool() {
           <Field label="Orario di partenza" hint="facoltativo, es. 9:30">
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="text"
               placeholder="HH:MM"
               value={startTime}
               onChange={e => { setStartTime(e.target.value); reset() }}
@@ -153,7 +153,7 @@ export function NutritionPlanTool() {
           <Field label="Tempo previsto" hint="facoltativo, es. 1:45 oppure 50:00">
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="text"
               placeholder="h:mm"
               value={expectedTime}
               onChange={e => { setExpectedTime(e.target.value); reset() }}

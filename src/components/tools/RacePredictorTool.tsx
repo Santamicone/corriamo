@@ -80,7 +80,7 @@ export function RacePredictorTool() {
             <span className="text-sm font-semibold text-gray-700">Tempo ottenuto</span>
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="text"
               placeholder="mm:ss"
               value={time}
               onChange={e => { setTime(e.target.value); setSubmitted(false) }}

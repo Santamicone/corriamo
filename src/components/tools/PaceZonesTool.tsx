@@ -196,7 +196,7 @@ export function PaceZonesTool() {
           >
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="text"
               placeholder="mm:ss"
               value={time}
               onChange={e => { setTime(e.target.value); setSubmitted(false) }}
