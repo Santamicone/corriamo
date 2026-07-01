@@ -45,6 +45,35 @@ type HistoryEntry = { d: number; p: number; t: number }
 
 const HISTORY_KEY = 'vac:passo:history'
 
+/** Riga del braccialetto da gara: etichetta km + tempo cumulativo. */
+type BandRow = { label: string; timeSec: number; highlight: boolean }
+
+/**
+ * Costruisce le righe del braccialetto: un passaggio per ogni km intero, con i
+ * multipli di 5 km evidenziati, la mezza maratona intercalata e la riga di
+ * arrivo se la distanza non è un km intero. Tempi cumulativi a passo costante.
+ */
+function buildBand(distanceM: number, paceSec: number): BandRow[] {
+  const rows: { m: number; label: string; highlight: boolean }[] = []
+  const fullKm = Math.floor(distanceM / 1000)
+  for (let k = 1; k <= fullKm; k++) {
+    const isFive = k % 5 === 0
+    rows.push({ m: k * 1000, label: isFive ? `${k}K` : String(k), highlight: isFive })
+  }
+  // Mezza maratona, se rientra nella distanza e non coincide con un km intero.
+  const HALF = 21097.5
+  if (distanceM >= HALF && Math.abs(HALF - Math.round(HALF / 1000) * 1000) > 1) {
+    rows.push({ m: HALF, label: 'Mezza', highlight: true })
+  }
+  // Arrivo: se la distanza non è un km intero, aggiunge la riga finale.
+  if (Math.abs(distanceM - fullKm * 1000) > 1) {
+    rows.push({ m: distanceM, label: formatDistance(distanceM), highlight: true })
+  }
+  return rows
+    .sort((a, b) => a.m - b.m)
+    .map(r => ({ label: r.label, timeSec: paceSec * (r.m / 1000), highlight: r.highlight }))
+}
+
 /**
  * Calcolatore passo · tempo · distanza.
  * L'utente compila due campi qualsiasi; il terzo — l'ultimo NON toccato — è quello
@@ -178,6 +207,14 @@ export function PaceCalculatorTool() {
       rows.push({ label: formatDistance(effDistanceM), timeSec: effPaceSec * (effDistanceM / 1000) })
     }
     return rows.length ? rows : null
+  }, [effPaceSec, effDistanceM])
+
+  // ── v2 · Braccialetto da gara ──
+  // Strip stampabile con il passaggio cumulativo a ogni km, da ritagliare.
+  const [showBand, setShowBand] = useState(false)
+  const band = useMemo(() => {
+    if (effPaceSec == null || effDistanceM == null || effDistanceM < 2000) return null
+    return buildBand(effDistanceM, effPaceSec)
   }, [effPaceSec, effDistanceM])
 
   // ── v2 · Cronologia (localStorage) ──
@@ -343,6 +380,58 @@ export function PaceCalculatorTool() {
               </div>
             ))}
           </div>
+
+          {band && (
+            <button
+              type="button"
+              onClick={() => setShowBand(v => !v)}
+              className="mt-3 w-full inline-flex items-center justify-center gap-2 border border-gray-200 text-gray-600 text-sm font-semibold px-4 py-2.5 rounded-full hover:border-primary/40 hover:text-primary transition-colors"
+            >
+              <span className="material-symbols-outlined text-lg">
+                {showBand ? 'expand_less' : 'straighten'}
+              </span>
+              {showBand ? 'Nascondi braccialetto' : 'Crea braccialetto da gara'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Braccialetto da gara (stampabile e ritagliabile) ── */}
+      {showBand && band && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-gray-500">
+              Stampa, ritaglia lungo il bordo e arrotola al polso.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="shrink-0 inline-flex items-center gap-1.5 bg-primary text-on-primary text-sm font-semibold px-4 py-2 rounded-full hover:bg-primary-hover transition-colors"
+            >
+              <span className="material-symbols-outlined text-lg">print</span>
+              Stampa
+            </button>
+          </div>
+
+          <div id="pace-band" className="pace-band">
+            <div className="pace-band-head">
+              <span className="pace-band-title">Vieni a correre?</span>
+              <span className="pace-band-meta">
+                {effDistanceM != null && formatDistance(effDistanceM)}
+                {effTimeSec != null && ` · ${formatTime(effTimeSec)}`}
+                {effPaceSec != null && ` · ${formatPace(effPaceSec)}/km`}
+              </span>
+            </div>
+            {band.map((r, i) => (
+              <div
+                key={`${r.label}-${i}`}
+                className={['pace-band-row', r.highlight ? 'is-hl' : ''].join(' ')}
+              >
+                <span className="pace-band-km">{r.label}</span>
+                <span className="pace-band-time">{formatTime(r.timeSec)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -389,9 +478,62 @@ export function PaceCalculatorTool() {
           </div>
         </div>
       )}
+
+      <style>{BAND_STYLES}</style>
     </div>
   )
 }
+
+/**
+ * Stili del braccialetto. A schermo è una striscia stretta; in stampa nasconde
+ * il resto della pagina e lascia solo la striscia con bordo tratteggiato (guida
+ * di taglio), ottimizzata per essere ritagliata e arrotolata al polso.
+ */
+const BAND_STYLES = `
+.pace-band {
+  width: 62mm;
+  max-width: 100%;
+  margin: 0 auto;
+  border: 1.5px dashed #9ca3af;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.pace-band-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  background: #ea580c;
+  color: #fff;
+  text-align: center;
+}
+.pace-band-title { font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.pace-band-meta { font-size: 12px; font-weight: 700; }
+.pace-band-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 14px;
+  font-size: 15px;
+  border-top: 1px solid #f1f5f9;
+}
+.pace-band-row.is-hl { background: #dbeafe; }
+.pace-band-km { color: #6b7280; font-weight: 700; }
+.pace-band-row.is-hl .pace-band-km { color: #1e3a8a; }
+.pace-band-time { font-weight: 800; color: #111827; }
+@media print {
+  body * { visibility: hidden !important; }
+  #pace-band, #pace-band * { visibility: visible !important; }
+  #pace-band {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+  }
+}
+`
 
 function Card({
   active,
