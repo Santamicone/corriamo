@@ -23,6 +23,13 @@ const TOOLS = [
     ready: true,
   },
   {
+    href: '/tools/strategia-gara',
+    icon: 'route',
+    title: 'Strategia gara intelligente',
+    desc: 'Carica il GPX del percorso: passo reale, tempo finale, split per km e commento del coach.',
+    ready: true,
+  },
+  {
     href: '/tools/da-dove-inizio',
     icon: 'directions_walk',
     title: 'Test "da dove inizio?"',
