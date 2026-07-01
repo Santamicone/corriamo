@@ -16,6 +16,8 @@ import {
 type Field = 'distance' | 'pace' | 'time'
 
 const SHORTCUTS: { label: string; meters: number }[] = [
+  { label: '400m', meters: 400 },
+  { label: '3K', meters: 3000 },
   { label: '5K', meters: 5000 },
   { label: '10K', meters: 10000 },
   { label: '15K', meters: 15000 },
