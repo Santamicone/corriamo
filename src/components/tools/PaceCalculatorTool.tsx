@@ -48,12 +48,31 @@ const HISTORY_KEY = 'vac:passo:history'
 /** Riga del braccialetto da gara: etichetta km + tempo cumulativo. */
 type BandRow = { label: string; timeSec: number; highlight: boolean }
 
+/** Strategia di gara per il braccialetto. */
+type BandStrategy = 'even' | 'negative'
+type BandOpts = { strategy: BandStrategy; pct: number }
+
+/**
+ * Tempo cumulativo alla distanza `m`.
+ * - even: passo costante.
+ * - negative: prima metà a passo +pct%, seconda metà a −pct%. Con metà di uguale
+ *   distanza la media resta il passo target, quindi il tempo finale non cambia.
+ */
+function bandCumTime(m: number, distanceM: number, paceSec: number, opts: BandOpts): number {
+  if (opts.strategy === 'even' || opts.pct <= 0) return paceSec * (m / 1000)
+  const half = distanceM / 2
+  const p1 = paceSec * (1 + opts.pct / 100)
+  const p2 = paceSec * (1 - opts.pct / 100)
+  if (m <= half) return (p1 * m) / 1000
+  return (p1 * half + p2 * (m - half)) / 1000
+}
+
 /**
  * Costruisce le righe del braccialetto: un passaggio per ogni km intero, con i
  * multipli di 5 km evidenziati, la mezza maratona intercalata e la riga di
- * arrivo se la distanza non è un km intero. Tempi cumulativi a passo costante.
+ * arrivo se la distanza non è un km intero. Tempi cumulativi secondo la strategia.
  */
-function buildBand(distanceM: number, paceSec: number): BandRow[] {
+function buildBand(distanceM: number, paceSec: number, opts: BandOpts): BandRow[] {
   const HALF = 21097.5
   const MARATHON = 42195
   const rows: { m: number; label: string; highlight: boolean }[] = []
@@ -79,7 +98,11 @@ function buildBand(distanceM: number, paceSec: number): BandRow[] {
   }
   return rows
     .sort((a, b) => a.m - b.m)
-    .map(r => ({ label: r.label, timeSec: paceSec * (r.m / 1000), highlight: r.highlight }))
+    .map(r => ({
+      label: r.label,
+      timeSec: bandCumTime(r.m, distanceM, paceSec, opts),
+      highlight: r.highlight,
+    }))
 }
 
 /**
@@ -220,10 +243,18 @@ export function PaceCalculatorTool() {
   // ── v2 · Braccialetto da gara ──
   // Strip stampabile con il passaggio cumulativo a ogni km, da ritagliare.
   const [showBand, setShowBand] = useState(false)
+  const [bandStrategy, setBandStrategy] = useState<BandStrategy>('even')
+  const [negPct, setNegPct] = useState(2)
   const band = useMemo(() => {
     if (effPaceSec == null || effDistanceM == null || effDistanceM < 2000) return null
-    return buildBand(effDistanceM, effPaceSec)
-  }, [effPaceSec, effDistanceM])
+    return buildBand(effDistanceM, effPaceSec, { strategy: bandStrategy, pct: negPct })
+  }, [effPaceSec, effDistanceM, bandStrategy, negPct])
+
+  // Passi delle due metà per lo split negativo (mostrati come riferimento).
+  const negHalfPaces =
+    bandStrategy === 'negative' && effPaceSec != null
+      ? { p1: effPaceSec * (1 + negPct / 100), p2: effPaceSec * (1 - negPct / 100) }
+      : null
 
   // Riga informativa condivisa tra braccialetto a schermo e PNG.
   const bandMeta = [
@@ -508,6 +539,56 @@ export function PaceCalculatorTool() {
       {/* ── Braccialetto da gara (stampabile e ritagliabile) ── */}
       {showBand && band && (
         <div className="mt-4">
+          {/* Strategia di gara */}
+          <div className="mb-3">
+            <div className="grid grid-cols-2 gap-1 bg-gray-100 rounded-full p-1">
+              {([
+                { value: 'even', label: 'Passo costante' },
+                { value: 'negative', label: 'Split negativo' },
+              ] as const).map(s => (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => setBandStrategy(s.value)}
+                  className={[
+                    'text-sm font-semibold py-2 rounded-full transition-colors',
+                    bandStrategy === s.value
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700',
+                  ].join(' ')}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {bandStrategy === 'negative' && (
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-gray-400">Quanto più veloce la 2ª metà?</span>
+                {[1, 2, 3].map(p => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setNegPct(p)}
+                    className={[
+                      'text-xs font-semibold px-2.5 py-1 rounded-full transition-colors',
+                      negPct === p
+                        ? 'bg-primary text-on-primary'
+                        : 'bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-primary',
+                    ].join(' ')}
+                  >
+                    {p}%
+                  </button>
+                ))}
+                {negHalfPaces && (
+                  <span className="text-xs text-gray-500 tabular-nums w-full">
+                    1ª metà {formatPace(negHalfPaces.p1)}/km · 2ª metà {formatPace(negHalfPaces.p2)}/km
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-2 mb-3">
             <button
               type="button"
