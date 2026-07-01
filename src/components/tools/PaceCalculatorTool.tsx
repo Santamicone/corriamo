@@ -225,6 +225,107 @@ export function PaceCalculatorTool() {
     return buildBand(effDistanceM, effPaceSec)
   }, [effPaceSec, effDistanceM])
 
+  // Riga informativa condivisa tra braccialetto a schermo e PNG.
+  const bandMeta = [
+    effDistanceM != null ? formatDistance(effDistanceM) : null,
+    effTimeSec != null ? formatTime(effTimeSec) : null,
+    effPaceSec != null ? `${formatPace(effPaceSec)}/km` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  // Genera il braccialetto come PNG ad alta risoluzione disegnandolo su canvas
+  // (il logo è same-origin, quindi il canvas non viene marcato come "tainted").
+  const downloadPng = async () => {
+    if (!band) return
+    const scale = 3
+    const W = 240
+    const headerH = 56
+    const rowH = 30
+    const H = headerH + band.length * rowH
+    const canvas = document.createElement('canvas')
+    canvas.width = W * scale
+    canvas.height = H * scale
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.scale(scale, scale)
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, W, H)
+
+    // Header arancione con logo + titolo, e riga info.
+    ctx.fillStyle = '#ea580c'
+    ctx.fillRect(0, 0, W, headerH)
+    const title = 'Vieni a correre?'
+    const logoSize = 22
+    ctx.font = '800 11px sans-serif'
+    const titleW = ctx.measureText(title).width
+    const groupW = logoSize + 6 + titleW
+    const gx = (W - groupW) / 2
+    try {
+      const logo = new Image()
+      logo.src = '/logo_small.png'
+      await logo.decode()
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.roundRect(gx, 8, logoSize, logoSize, 5)
+      ctx.fill()
+      ctx.drawImage(logo, gx + 1, 9, logoSize - 2, logoSize - 2)
+    } catch {
+      /* logo non disponibile: si prosegue senza */
+    }
+    ctx.fillStyle = '#ffffff'
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'left'
+    ctx.font = '800 11px sans-serif'
+    ctx.fillText(title, gx + logoSize + 6, 8 + logoSize / 2)
+    ctx.textAlign = 'center'
+    ctx.font = '700 12px sans-serif'
+    ctx.fillText(bandMeta, W / 2, 44)
+
+    // Righe dei passaggi.
+    band.forEach((r, i) => {
+      const y = headerH + i * rowH
+      if (r.highlight) {
+        ctx.fillStyle = '#dbeafe'
+        ctx.fillRect(0, y, W, rowH)
+      }
+      ctx.strokeStyle = '#f1f5f9'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(W, y)
+      ctx.stroke()
+      ctx.textBaseline = 'middle'
+      ctx.textAlign = 'left'
+      ctx.font = '700 15px sans-serif'
+      ctx.fillStyle = r.highlight ? '#1e3a8a' : '#6b7280'
+      ctx.fillText(r.label, 14, y + rowH / 2)
+      ctx.textAlign = 'right'
+      ctx.font = '800 15px sans-serif'
+      ctx.fillStyle = '#111827'
+      ctx.fillText(formatTime(r.timeSec), W - 14, y + rowH / 2)
+    })
+
+    // Bordo tratteggiato: guida di taglio.
+    ctx.setLineDash([4, 3])
+    ctx.strokeStyle = '#9ca3af'
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.roundRect(0.75, 0.75, W - 1.5, H - 1.5, 6)
+    ctx.stroke()
+
+    canvas.toBlob(blob => {
+      if (!blob) return
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `braccialetto-${formatDistance(effDistanceM!).replace(/[\s,]/g, '')}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    }, 'image/png')
+  }
+
   // ── v2 · Cronologia (localStorage) ──
   const [history, setHistory] = useState<HistoryEntry[]>([])
 
@@ -407,19 +508,32 @@ export function PaceCalculatorTool() {
       {/* ── Braccialetto da gara (stampabile e ritagliabile) ── */}
       {showBand && band && (
         <div className="mt-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-gray-500">
-              Stampa, ritaglia lungo il bordo e arrotola al polso.
-            </p>
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={downloadPng}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 bg-primary text-on-primary text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-primary-hover transition-colors"
+            >
+              <span className="material-symbols-outlined text-lg">download</span>
+              Scarica PNG
+            </button>
             <button
               type="button"
               onClick={() => window.print()}
-              className="shrink-0 inline-flex items-center gap-1.5 bg-primary text-on-primary text-sm font-semibold px-4 py-2 rounded-full hover:bg-primary-hover transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 border border-gray-200 text-gray-600 text-sm font-semibold px-4 py-2.5 rounded-full hover:border-primary/40 hover:text-primary transition-colors"
             >
               <span className="material-symbols-outlined text-lg">print</span>
               Stampa
             </button>
           </div>
+
+          {/* Istruzioni per scaricare e ritagliare */}
+          <ol className="mb-4 rounded-2xl bg-orange-50/60 border border-orange-100 p-4 text-sm text-gray-600 leading-relaxed list-decimal list-inside space-y-1">
+            <li>Tocca <strong>Scarica PNG</strong> (o <strong>Stampa</strong>) per salvare il braccialetto.</li>
+            <li>Stampalo a <strong>dimensione reale</strong> (100%, senza &ldquo;adatta alla pagina&rdquo;).</li>
+            <li>Ritaglia lungo il <strong>bordo tratteggiato</strong>.</li>
+            <li>Arrotola al polso e fissa con un pezzo di <strong>nastro adesivo trasparente</strong>.</li>
+          </ol>
 
           <div id="pace-band" className="pace-band">
             <div className="pace-band-head">
@@ -428,11 +542,7 @@ export function PaceCalculatorTool() {
                 <img src="/logo_small.png" alt="" className="pace-band-logo" />
                 <span className="pace-band-title">Vieni a correre?</span>
               </div>
-              <span className="pace-band-meta">
-                {effDistanceM != null && formatDistance(effDistanceM)}
-                {effTimeSec != null && ` · ${formatTime(effTimeSec)}`}
-                {effPaceSec != null && ` · ${formatPace(effPaceSec)}/km`}
-              </span>
+              <span className="pace-band-meta">{bandMeta}</span>
             </div>
             {band.map((r, i) => (
               <div
