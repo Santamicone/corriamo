@@ -2,6 +2,13 @@ import Link from 'next/link'
 
 const TOOLS = [
   {
+    href: '/tools/passo',
+    icon: 'pace',
+    title: 'Calcolatore passo',
+    desc: 'Passo, tempo o distanza: inseriscine due e calcoliamo il terzo al volo. Con scorciatoie e conversioni.',
+    ready: true,
+  },
+  {
     href: '/tools/zone-di-passo',
     icon: 'speed',
     title: 'Calcolatore zone di passo',
