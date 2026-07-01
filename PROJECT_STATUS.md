@@ -1,6 +1,8 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
+> Aggiornato al: **luglio 2026** — esteso il tool **"Da dove inizio?"** (`/tools/da-dove-inizio`): scheda iniziale profilo (età, peso, storia sportiva), scheda multi-selezione sui blocchi che frenano la corsa, esito ampliato (nota profilo, piccoli obiettivi, come superare i blocchi, trucchi per non mollare). Nuovi tipi di step dichiarativi `form` e `multi`. Mergiata su `main` (PR #88).
+>
 > Aggiornato al: **giugno 2026** — aggiunta sezione **Strumenti per runner** (`/tools`): calcolatore zone di passo, predittore tempi gara, test "da dove inizio?" + backend email scheda ritmi. Mergiata su `main`. Allineamento stato reale produzione: tutti gli SQL #18–#24 ed Edge Functions email risultano applicati e attivi (crew, reliability ed email funzionanti in prod)
 
 ---
@@ -299,7 +301,7 @@ src/
 │   │   ├── time.ts                   Parse/format tempi e ritmi (mm:ss, m:ss/km)
 │   │   ├── riegel.ts                 Predizione tempi gara — formula pubblica di Riegel
 │   │   ├── paceZones.ts              Zone di passo: ancora al ritmo soglia + modulazione esperienza/giorni
-│   │   ├── quiz.ts                   Grafo dichiarativo del quiz + computeOutcome()
+│   │   ├── quiz.ts                   Grafo dichiarativo del quiz (step form/single/multi) + computeOutcome() (profilo, blocchi, obiettivi, anti-mollare)
 │   │   └── nutrition.ts              Campi form + computeNutritionPlan() (piano alimentazione gara, calcolo puro)
 │   └── supabase/
 │       ├── client.ts
@@ -434,6 +436,7 @@ src/
 - [x] **Calcolatore zone di passo** — da gara recente deriva facile/lungo/medio/soglia/ripetute + ritmi gara 5K/10K/mezza/maratona. Modello proprietario: ritmo soglia derivato da Riegel (distanza coperta in 60'), zone come range % sul soglia, ampiezza modulata da esperienza e giorni/settimana
 - [x] **Predittore tempi gara** — formula di Riegel; realistico (esp. 1.10) e ottimistico (esp. 1.06)
 - [x] **Test "da dove inizio?"** — quiz a step con grafo dichiarativo (`quiz.ts`), esito personalizzato (cammina-corri, prima 5K, dimagrire, compagnia, benessere), avviso medico se dolori frequenti, invito "Da zero a 5K" (CTA placeholder)
+- [x] **Test "da dove inizio?" esteso** (PR #88) — scheda iniziale profilo (età, peso facoltativo, sport passato/attuale), scheda multi-selezione sui blocchi (non mi piace, goffo, fiato, tempo, sveglia, giudizio, noia, mai pensato); esito ampliato con nota profilo personalizzata, primi piccoli obiettivi, consigli per superare ogni blocco dichiarato, trucchi per non mollare. Nuovi tipi di step dichiarativi `form` e `multi` in `quiz.ts` (`Answers` ora `string | string[]`)
 - [x] Link editoriali del quiz verso il sito WordPress (`www.vieniacorrere.it/...`), aperti in nuova scheda
 - [x] CTA "Trova compagni" → `/bacheca` su ogni tool; disclaimer legale (solo modelli pubblici, no VDOT)
 - [x] **Backend email scheda ritmi**: `POST /api/tools/scheda-ritmi` con auth + validazione + **ricalcolo server-side** → invio via Resend (template `emailSchedaRitmi` branded). Utente non loggato → CTA `/registrati`
