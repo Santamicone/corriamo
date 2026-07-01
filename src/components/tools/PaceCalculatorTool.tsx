@@ -54,20 +54,28 @@ type BandRow = { label: string; timeSec: number; highlight: boolean }
  * arrivo se la distanza non è un km intero. Tempi cumulativi a passo costante.
  */
 function buildBand(distanceM: number, paceSec: number): BandRow[] {
+  const HALF = 21097.5
+  const MARATHON = 42195
   const rows: { m: number; label: string; highlight: boolean }[] = []
   const fullKm = Math.floor(distanceM / 1000)
   for (let k = 1; k <= fullKm; k++) {
     const isFive = k % 5 === 0
     rows.push({ m: k * 1000, label: isFive ? `${k}K` : String(k), highlight: isFive })
   }
-  // Mezza maratona, se rientra nella distanza e non coincide con un km intero.
-  const HALF = 21097.5
-  if (distanceM >= HALF && Math.abs(HALF - Math.round(HALF / 1000) * 1000) > 1) {
+  // Mezza maratona come marker intermedio, solo se la gara è più lunga della mezza.
+  if (distanceM > HALF + 5) {
     rows.push({ m: HALF, label: 'Mezza', highlight: true })
   }
-  // Arrivo: se la distanza non è un km intero, aggiunge la riga finale.
+  // Arrivo: se la distanza non è un km intero, aggiunge la riga finale con
+  // un'etichetta col nome della gara quando coincide con una distanza classica.
   if (Math.abs(distanceM - fullKm * 1000) > 1) {
-    rows.push({ m: distanceM, label: formatDistance(distanceM), highlight: true })
+    const label =
+      Math.abs(distanceM - HALF) < 5
+        ? 'Mezza'
+        : Math.abs(distanceM - MARATHON) < 5
+          ? 'Maratona'
+          : formatDistance(distanceM)
+    rows.push({ m: distanceM, label, highlight: true })
   }
   return rows
     .sort((a, b) => a.m - b.m)
@@ -415,7 +423,11 @@ export function PaceCalculatorTool() {
 
           <div id="pace-band" className="pace-band">
             <div className="pace-band-head">
-              <span className="pace-band-title">Vieni a correre?</span>
+              <div className="pace-band-brand">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo_small.png" alt="" className="pace-band-logo" />
+                <span className="pace-band-title">Vieni a correre?</span>
+              </div>
               <span className="pace-band-meta">
                 {effDistanceM != null && formatDistance(effDistanceM)}
                 {effTimeSec != null && ` · ${formatTime(effTimeSec)}`}
@@ -499,6 +511,8 @@ const BAND_STYLES = `
   overflow: hidden;
   background: #fff;
   font-variant-numeric: tabular-nums;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 .pace-band-head {
   display: flex;
@@ -508,6 +522,20 @@ const BAND_STYLES = `
   background: #ea580c;
   color: #fff;
   text-align: center;
+}
+.pace-band-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.pace-band-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 5px;
+  padding: 1px;
 }
 .pace-band-title { font-size: 11px; font-weight: 800; letter-spacing: .04em; }
 .pace-band-meta { font-size: 12px; font-weight: 700; }
