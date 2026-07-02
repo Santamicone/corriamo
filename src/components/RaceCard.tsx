@@ -55,12 +55,15 @@ export function RaceCard({ race }: { race: Race }) {
                 </span>
               ))}
             </div>
-            {circuit && (
-              <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${circuit.className}`}>
-                <span className="material-symbols-outlined text-sm">star</span>
-                {circuit.label}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {circuit && (
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${circuit.className}`}>
+                  <span className="material-symbols-outlined text-sm">star</span>
+                  {circuit.label}
+                </span>
+              )}
+              <span className="text-xl leading-none" title={country.name} aria-label={country.name}>{country.flag}</span>
+            </div>
           </div>
 
           {/* Nome */}

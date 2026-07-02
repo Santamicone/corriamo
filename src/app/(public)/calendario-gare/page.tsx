@@ -54,11 +54,18 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
   const supabase = await createClient()
   const today = todayItaly()
 
+  // Orizzonte massimo: 15 mesi. Nasconde le poche edizioni molto lontane
+  // (alcune gare AIMS pubblicano date anni avanti).
+  const horizon = new Date()
+  horizon.setMonth(horizon.getMonth() + 15)
+  const horizonMax = horizon.toISOString().slice(0, 10)
+
   let query = supabase
     .from('races')
     .select('*')
     .eq('status', 'published')
     .gte('event_date', today)
+    .lte('event_date', horizonMax)
     .order('event_date', { ascending: true })
 
   if (params.q)        query = query.or(`name.ilike.%${params.q}%,city.ilike.%${params.q}%`)
