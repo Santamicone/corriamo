@@ -4,6 +4,7 @@ import { useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { parsePace, formatPace, formatTime, formatDistance } from '@/lib/running/time'
 import { parseGpx, type ParsedCourse } from '@/lib/running/gpx'
+import { RACE_COURSES, type RaceCourse } from '@/lib/running/raceCourses.generated'
 import {
   computeRaceStrategy,
   buildRaceComment,
@@ -54,6 +55,8 @@ export function RaceStrategyTool() {
 
   const [submitted, setSubmitted] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
+  const [courseQuery, setCourseQuery] = useState('')
 
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -61,6 +64,7 @@ export function RaceStrategyTool() {
     if (!file) return
     setGpxError(null)
     setSubmitted(false)
+    setSelectedCourseId(null)
     try {
       const text = await file.text()
       const parsed = parseGpx(text)
@@ -74,6 +78,29 @@ export function RaceStrategyTool() {
       setGpxError(err instanceof Error ? err.message : 'File GPX non valido.')
     }
   }
+
+  const handleSelectCourse = (race: RaceCourse) => {
+    setGpxError(null)
+    setSubmitted(false)
+    if (fileRef.current) fileRef.current.value = ''
+    if (selectedCourseId === race.id) {
+      // Deseleziona il percorso.
+      setSelectedCourseId(null)
+      setCourse(null)
+      return
+    }
+    setSelectedCourseId(race.id)
+    setCourse(race)
+    setRaceName(race.name)
+  }
+
+  const filteredCourses = useMemo(() => {
+    const q = courseQuery.trim().toLowerCase()
+    if (!q) return RACE_COURSES
+    return RACE_COURSES.filter(
+      c => c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q),
+    )
+  }, [courseQuery])
 
   const idealPaceSec = useMemo(() => parsePace(paceInput), [paceInput])
 
@@ -101,7 +128,7 @@ export function RaceStrategyTool() {
     e.preventDefault()
     setFormError(null)
     if (!course) {
-      setFormError('Carica prima un file GPX del percorso.')
+      setFormError('Seleziona un percorso demo o carica un file GPX.')
       return
     }
     if (!idealPaceSec) {
@@ -115,8 +142,55 @@ export function RaceStrategyTool() {
     <div>
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 grid gap-5">
         {/* ── Percorso ── */}
-        <div className="grid gap-2">
-          <span className="text-sm font-semibold text-gray-700">1. Percorso di gara (file GPX)</span>
+        <div className="grid gap-3">
+          <span className="text-sm font-semibold text-gray-700">1. Percorso di gara</span>
+
+          {/* Percorsi precaricati (gare reali) */}
+          <div className="grid gap-2">
+            <span className="text-xs text-gray-400">Scegli una gara dal catalogo…</span>
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl pointer-events-none">search</span>
+              <input
+                type="text"
+                value={courseQuery}
+                onChange={e => setCourseQuery(e.target.value)}
+                placeholder="Cerca per gara o città (es. Roma, Berlino…)"
+                className="tool-input pl-10"
+              />
+            </div>
+            <div className="grid gap-1.5 max-h-72 overflow-y-auto pr-1">
+              {filteredCourses.length === 0 && (
+                <p className="text-xs text-gray-400 px-1 py-2">Nessuna gara trovata per «{courseQuery}».</p>
+              )}
+              {filteredCourses.map(race => {
+                const selected = selectedCourseId === race.id
+                return (
+                  <button
+                    key={race.id}
+                    type="button"
+                    onClick={() => handleSelectCourse(race)}
+                    className={[
+                      'flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-all',
+                      selected ? 'border-primary bg-orange-50' : 'border-gray-100 hover:border-primary/30',
+                    ].join(' ')}
+                  >
+                    <span className="min-w-0">
+                      <span className={['block text-sm font-bold truncate', selected ? 'text-primary' : 'text-gray-700'].join(' ')}>{race.name}</span>
+                      <span className="block text-[11px] text-gray-400 truncate">{race.city}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-3 text-[11px] text-gray-500">
+                      <span><strong className="text-gray-700">{formatDistance(race.distanceM)}</strong></span>
+                      <span className="hidden sm:inline">D+ <strong className="text-gray-700">{race.ascentM}</strong></span>
+                      {selected && <span className="material-symbols-outlined text-primary text-lg">check_circle</span>}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Upload GPX personale */}
+          <span className="text-xs text-gray-400">…oppure carica il tuo file GPX</span>
           <input
             ref={fileRef}
             type="file"
@@ -130,7 +204,7 @@ export function RaceStrategyTool() {
             className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-4 py-5 text-gray-500 hover:border-primary/40 hover:text-primary transition-colors"
           >
             <span className="material-symbols-outlined">upload_file</span>
-            {course ? 'Cambia file GPX' : 'Carica il file GPX del percorso'}
+            {course && !selectedCourseId ? 'Cambia file GPX' : 'Carica il file GPX del percorso'}
           </button>
           {gpxError && <p className="text-xs text-error font-medium">{gpxError}</p>}
           {course && (
