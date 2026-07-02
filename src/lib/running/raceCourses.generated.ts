@@ -962,228 +962,158 @@ export const RACE_COURSES: RaceCourse[] = [
   {
     "id": "firenze",
     "city": "Firenze",
-    "name": "Estra Firenze Marathon",
+    "name": "Half Marathon Firenze",
     "country": "",
-    "distanceM": 31152,
-    "ascentM": 57,
-    "descentM": 63,
+    "distanceM": 21098,
+    "ascentM": 96,
+    "descentM": 92,
     "segments": [
       {
         "km": 1,
         "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 5,
-        "gradePct": -0.3
+        "ascentM": 5,
+        "descentM": 2,
+        "gradePct": 0.3
       },
       {
         "km": 2,
         "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 2,
-        "gradePct": 0
+        "ascentM": 8,
+        "descentM": 6,
+        "gradePct": 0.2
       },
       {
         "km": 3,
+        "distanceM": 1000,
+        "ascentM": 9,
+        "descentM": 2,
+        "gradePct": 0.7
+      },
+      {
+        "km": 4,
+        "distanceM": 1000,
+        "ascentM": 6,
+        "descentM": 14,
+        "gradePct": -0.8
+      },
+      {
+        "km": 5,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 5,
+        "gradePct": -0.5
+      },
+      {
+        "km": 6,
+        "distanceM": 1000,
+        "ascentM": 4,
+        "descentM": 0,
+        "gradePct": 0.4
+      },
+      {
+        "km": 7,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 9,
+        "gradePct": -0.8
+      },
+      {
+        "km": 8,
+        "distanceM": 1000,
+        "ascentM": 4,
+        "descentM": 2,
+        "gradePct": 0.2
+      },
+      {
+        "km": 9,
+        "distanceM": 1000,
+        "ascentM": 9,
+        "descentM": 2,
+        "gradePct": 0.7
+      },
+      {
+        "km": 10,
         "distanceM": 1000,
         "ascentM": 5,
         "descentM": 0,
         "gradePct": 0.5
       },
       {
-        "km": 4,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 9,
-        "gradePct": -0.9
-      },
-      {
-        "km": 5,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 6,
-        "gradePct": -0.5
-      },
-      {
-        "km": 6,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 3,
-        "gradePct": -0.3
-      },
-      {
-        "km": 7,
-        "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 2,
-        "gradePct": 0
-      },
-      {
-        "km": 8,
-        "distanceM": 1000,
-        "ascentM": 3,
-        "descentM": 0,
-        "gradePct": 0.3
-      },
-      {
-        "km": 9,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 0,
-        "gradePct": 0
-      },
-      {
-        "km": 10,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 0,
-        "gradePct": 0
-      },
-      {
         "km": 11,
         "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 0,
-        "gradePct": 0
+        "ascentM": 3,
+        "descentM": 11,
+        "gradePct": -0.8
       },
       {
         "km": 12,
         "distanceM": 1000,
-        "ascentM": 2,
+        "ascentM": 13,
         "descentM": 0,
-        "gradePct": 0.2
+        "gradePct": 1.3
       },
       {
         "km": 13,
         "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 2,
-        "gradePct": 0
+        "ascentM": 5,
+        "descentM": 8,
+        "gradePct": -0.4
       },
       {
         "km": 14,
         "distanceM": 1000,
         "ascentM": 0,
-        "descentM": 2,
-        "gradePct": -0.1
+        "descentM": 11,
+        "gradePct": -1
       },
       {
         "km": 15,
         "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 0,
-        "gradePct": 0
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0.1
       },
       {
         "km": 16,
         "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 2,
-        "gradePct": -0.2
+        "ascentM": 2,
+        "descentM": 8,
+        "gradePct": -0.6
       },
       {
         "km": 17,
         "distanceM": 1000,
         "ascentM": 0,
         "descentM": 2,
-        "gradePct": -0.2
+        "gradePct": -0.1
       },
       {
         "km": 18,
         "distanceM": 1000,
-        "ascentM": 9,
+        "ascentM": 11,
         "descentM": 0,
-        "gradePct": 0.9
+        "gradePct": 1.1
       },
       {
         "km": 19,
         "distanceM": 1000,
-        "ascentM": 9,
-        "descentM": 0,
-        "gradePct": 0.9
+        "ascentM": 0,
+        "descentM": 2,
+        "gradePct": -0.2
       },
       {
         "km": 20,
         "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 12,
-        "gradePct": -1.2
+        "ascentM": 5,
+        "descentM": 10,
+        "gradePct": -0.5
       },
       {
         "km": 21,
-        "distanceM": 1000,
-        "ascentM": 7,
-        "descentM": 3,
-        "gradePct": 0.4
-      },
-      {
-        "km": 22,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 2,
-        "gradePct": -0.2
-      },
-      {
-        "km": 23,
-        "distanceM": 1000,
-        "ascentM": 6,
+        "distanceM": 1098,
+        "ascentM": 5,
         "descentM": 0,
-        "gradePct": 0.6
-      },
-      {
-        "km": 24,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 4,
-        "gradePct": -0.4
-      },
-      {
-        "km": 25,
-        "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 0,
-        "gradePct": 0.2
-      },
-      {
-        "km": 26,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 2,
-        "gradePct": -0.1
-      },
-      {
-        "km": 27,
-        "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 2,
-        "gradePct": 0
-      },
-      {
-        "km": 28,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 0,
-        "gradePct": 0
-      },
-      {
-        "km": 29,
-        "distanceM": 1000,
-        "ascentM": 3,
-        "descentM": 0,
-        "gradePct": 0.3
-      },
-      {
-        "km": 30,
-        "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 3,
-        "gradePct": -0.2
-      },
-      {
-        "km": 31,
-        "distanceM": 1152,
-        "ascentM": 2,
-        "descentM": 3,
-        "gradePct": -0.1
+        "gradePct": 0.5
       }
     ],
     "hasElevation": true
