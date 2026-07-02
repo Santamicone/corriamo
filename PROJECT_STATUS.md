@@ -1,6 +1,8 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
+> Aggiornato al: **luglio 2026** — nuova funzionalità **Calendario gare** (`/calendario-gare`, PR #106–#109): catalogo di eventi reali (`races`) con import automatico (AIMS ICS + costanti Major/SuperHalfs), pagina lista/scheda con SEO (JSON-LD `SportsEvent`), tool **"Trova la tua gara ideale"** (`/tools/gara-ideale`), ponte community (`runs.race_id` + CTA precompilata + "Chi ci va?") e **segnalazioni utenti moderate**. Documentazione completa in **`docs/CALENDARIO-GARE.md`**. ⚠️ Applicare `supabase/races-moderation.sql` (SQL #27) per abilitare la moderazione.
+>
 > Aggiornato al: **luglio 2026** — nuovo tool **"Strategia gara intelligente"** (`/tools/strategia-gara`): l'utente carica il **GPX** del percorso e il passo ideale su piatto, indica le condizioni (meteo, vento, fondo, affollamento, approccio) e ottiene passo reale per km, tempo finale ±margine, split, tratti critici, profilo altimetrico e un **commento strategico generato dalle caratteristiche del percorso** (regole trasparenti, `buildRaceComment`). Tutto client-side: motore di calcolo puro in `src/lib/running/gpx.ts` + `raceStrategy.ts`, nessun DB e nessuna API esterna.
 >
 > Aggiornato al: **luglio 2026** — profilo fisico nel tool **"Da dove inizio?"** (PR #90): aggiunti alla scheda iniziale i campi **altezza** e **genere** (oltre a peso ed età). Il rapporto altezza/peso (BMI) genera note prudenziali nell'esito: sovrappeso evidente (≥30) / lieve (≥25) / sottopeso (<18.5, con frase dedicata alle donne) + nota gentile se obiettivo "dimagrire" con BMI già <25. Tutti i campi fisici sono facoltativi.
@@ -261,7 +263,14 @@ src/
 │   │   ├── zone-di-passo/page.tsx    Calcolatore zone di passo (SSR + <PaceZonesTool/>)
 │   │   ├── predittore/page.tsx       Predittore tempi gara (SSR + <RacePredictorTool/>)
 │   │   ├── da-dove-inizio/page.tsx   Quiz "da dove inizio?" (SSR + <StartQuiz/>)
-│   │   └── alimentazione-gara/page.tsx Piano alimentazione pre-gara/gara (SSR + <NutritionPlanTool/>, disclaimer medico)
+│   │   ├── alimentazione-gara/page.tsx Piano alimentazione pre-gara/gara (SSR + <NutritionPlanTool/>, disclaimer medico)
+│   │   └── gara-ideale/page.tsx      Tool "Trova la tua gara ideale" (carica catalogo + <RaceMatcherTool/>)
+│   ├── (public)/calendario-gare/     Calendario gare — vedi docs/CALENDARIO-GARE.md
+│   │   ├── layout.tsx                Guscio Header/Footer + SEO
+│   │   ├── page.tsx                  Lista: filtri, "In evidenza", per mese, orizzonte 15 mesi
+│   │   ├── [slug]/page.tsx           Scheda gara + JSON-LD SportsEvent + "Chi ci va?"
+│   │   ├── proponi/                  Form segnalazione gara (auth → source='utente'/pending)
+│   │   └── modera/                   Moderazione admin (profiles.is_admin): Approva/Rifiuta
 │   ├── api/og/corse/[id]/route.tsx
 │   ├── api/unsubscribe/route.ts      Unsubscribe email notifiche via token
 │   └── api/tools/scheda-ritmi/route.ts  POST: invia scheda zone di passo via email (auth + ricalcolo server-side)
@@ -270,7 +279,8 @@ src/
 │   ├── Header.tsx                    Mobile overlay menu (mobileOpen/userOpen separati)
 │   ├── Footer.tsx                    Link reali: Privacy, Termini, Contatti
 │   ├── RunCard.tsx                   Badge interessi, luogo privato, compatibilità
-│   ├── GaraCard.tsx                  Card gara con accent indigo
+│   ├── GaraCard.tsx                  Card post community "cerca compagni" (accent indigo)
+│   ├── RaceCard.tsx                  Card evento catalogo (+ export countryLabel ISO→bandiera)
 │   ├── SeriesCard.tsx
 │   ├── SpotRunsStrip.tsx             parseRunDateTime per fuso orario corretto
 │   ├── ReviewCard.tsx
@@ -283,7 +293,8 @@ src/
 │   │   ├── PaceZonesTool.tsx         Form + risultati zone + CTA + invio scheda via email (se loggato)
 │   │   ├── RacePredictorTool.tsx     Form + previsione realistica/ottimistica (Riegel)
 │   │   ├── StartQuiz.tsx             Quiz a step + esito personalizzato + link editoriali (target _blank)
-│   │   └── NutritionPlanTool.tsx     Form + piano alimentazione a sezioni (48h, cena, colazione, gara, dopo)
+│   │   ├── NutritionPlanTool.tsx     Form + piano alimentazione a sezioni (48h, cena, colazione, gara, dopo)
+│   │   └── RaceMatcherTool.tsx       Form preferenze + shortlist gare (tool "gara ideale")
 │   └── ui/
 │       ├── Avatar.tsx                CHARACTER_PRESETS (9 img) + COLOR_PRESETS (6)
 │       ├── AvatarLightbox.tsx
@@ -297,7 +308,8 @@ src/
 │       └── Textarea.tsx
 │
 ├── lib/
-│   ├── types.ts                      Profile (nuovi campi + reliability_*), Run (gara, location_public...),
+│   ├── types.ts                      Profile (+ reliability_*, is_admin), Run (gara, location_public, race_id...),
+│   │                                 Race + CatalogDistance/RaceType/RaceCircuit/RaceSource/RaceStatus,
 │   │                                 Interest, CheckIn, RunChatMessage, RunConfirmation, ProfileLevel,
 │   │                                 Crew, CrewMember, CrewInvite
 │   ├── utils.ts                      + parseRunDateTime (fuso Europe/Rome)
@@ -316,7 +328,8 @@ src/
 │   │   ├── riegel.ts                 Predizione tempi gara — formula pubblica di Riegel
 │   │   ├── paceZones.ts              Zone di passo: ancora al ritmo soglia + modulazione esperienza/giorni
 │   │   ├── quiz.ts                   Grafo dichiarativo del quiz (step form/single/multi) + computeOutcome() (profilo, blocchi, obiettivi, anti-mollare)
-│   │   └── nutrition.ts              Campi form + computeNutritionPlan() (piano alimentazione gara, calcolo puro)
+│   │   ├── nutrition.ts              Campi form + computeNutritionPlan() (piano alimentazione gara, calcolo puro)
+│   │   └── raceMatcher.ts            matchRaces()/scoreRace() — motore "gara ideale" (calcolo puro)
 │   └── supabase/
 │       ├── client.ts
 │       └── server.ts
@@ -458,6 +471,18 @@ src/
 - [x] **Backend email scheda ritmi**: `POST /api/tools/scheda-ritmi` con auth + validazione + **ricalcolo server-side** → invio via Resend (template `emailSchedaRitmi` branded). Utente non loggato → CTA `/registrati`
 - ✅ **Mergiata su `main` (PR #81, #82). Env `RESEND_API_KEY` + `SUPABASE_SERVICE_ROLE_KEY` configurate su Vercel**
 
+### Calendario gare (`/calendario-gare`) — PR #106–#109
+> Doc completa: [`docs/CALENDARIO-GARE.md`](docs/CALENDARIO-GARE.md)
+- [x] Catalogo `races` (evento reale) distinto dai post community `type='gara'`; ponte `runs.race_id`
+- [x] Import **AIMS ICS** (`npm run import:aims`, ~80 gare europee) + **costanti Major/SuperHalfs** (`npm run seed:circuits`, 13 gare), idempotenti con dedup
+- [x] Pagina lista (hero, filtri q/distanza/area/circuito, "In evidenza", per mese, orizzonte 15 mesi) + scheda `[slug]` (dettagli, CTA sito ufficiale, "Chi ci va?", **JSON-LD SportsEvent**)
+- [x] Tool **"Trova la tua gara ideale"** (`/tools/gara-ideale`, motore puro `raceMatcher.ts`)
+- [x] Ponte community: CTA "Cerca compagni" → `/nuova-gara?race=<slug>` precompilato + sezione "Chi ci va?" da `runs.race_id`
+- [x] Segnalazioni utenti (`/calendario-gare/proponi`, `source='utente'`/`pending`) + moderazione admin (`/calendario-gare/modera`, `profiles.is_admin`)
+- [x] Voce "Calendario gare" nel menu Extra; card gara con bandiera nazione
+- [x] FIDAL scartato (querystring ignorata); long-tail IT via segnalazioni utenti
+- ⏳ **Da applicare in Supabase: `races-moderation.sql` (SQL #27)** per abilitare la moderazione
+
 ### UX
 - [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
 - [x] Homepage: hero video/img + "Perché Vieni a correre?" con foto fondatori
@@ -497,6 +522,12 @@ src/
 | Tools — calcolo | `lib/running/*` puro client-side per i calcolatori; ricalcolo server-side per l'email | Istantaneo e a costo zero; l'email non si fida dell'input del client |
 | Tools — quiz | Grafo dichiarativo (`QUIZ_STEPS` + `computeOutcome`) | Aggiungere domande/esiti senza toccare la UI |
 | Tools — email | API route Next + Resend (non Edge Function) | Azione utente autenticata; pattern coerente con `/api/*` esistenti |
+| Calendario — catalogo | Nuova tabella `races` (non `runs`) | Anagrafica evento ≠ post community; ponte via `runs.race_id` |
+| Calendario — import | AIMS ICS + costanti circuiti + segnalazioni utenti; dedup `(source, external_ref)` | Copre IT+Europa+Major/SuperHalfs; FIDAL scartato (querystring ignorata, filtro JS-only) |
+| Calendario — moderazione | `profiles.is_admin` + policy RLS admin | Nessun ruolo admin di sito preesistente |
+| Calendario — tool "gara ideale" | Calcolo puro `raceMatcher.ts` sul catalogo | Coerente con gli altri tool, zero API esterne |
+
+> Dettaglio completo della funzionalità Calendario gare: [`docs/CALENDARIO-GARE.md`](docs/CALENDARIO-GARE.md)
 
 ---
 
@@ -523,20 +554,16 @@ src/
 2. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
 3. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
 
-### Calendario gare (`/calendario-gare`) — in corso
-Nuova sezione Extra: catalogo di **eventi reali** (`races`), distinto dai post community `type='gara'`.
-Modello a 3 motori d'import: **AIMS ICS** (europee, `source='aims'`) · **FIDAL scoped** (maratone/mezze IT, 2×/anno, `source='fidal'`, deep-link) · **costanti** Major/SuperHalfs. Ponte community via `runs.race_id`. Tool "gara ideale" previsto in `/tools`.
-- ✅ Step 1 — SQL #25/#26 applicati (tabella `races` + `runs.race_id`)
-- ✅ Step 2 — tipi (`Race`, `CatalogDistance`, ecc. in `types.ts`) + `scripts/import-aims.mjs` (`npm run import:aims`, richiede `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`). Dry-run OK: 400 VEVENT → 66 europee maratona/mezza (7 IT). Città best-effort dal SUMMARY (LOCATION AIMS = solo paese).
-- ✅ Step 3a — `scripts/seed-circuits.mjs` (`npm run seed:circuits`): 7 Major + 6 SuperHalfs (dati statici, aggiorno date 1×/anno). Dedup verso AIMS per country+data+distanza (marca `circuit`/`featured` invece di duplicare). Date passate → prossima edizione; 2027 non ufficiali → `registration_status='da_verificare'`.
-- ❌ Step 3b — motore FIDAL **scartato**: `calendario.php` ignora del tutto i parametri querystring (GET/POST, cookie, UA/Referer, `livello` valorizzato, endpoint alternativi) e restituisce **sempre** solo il mese corrente (75462 byte identici, 50 gare). Il filtro mese/regione è JS-only, replicabile solo con browser headless (Playwright) → troppo fragile e più esposto legalmente. **Decisione: le maratone/mezze IT principali arrivano già da AIMS; il long-tail cresce con le segnalazioni utenti (Fase 2). Eventuale copertura totale solo con permesso/feed FIDAL.**
-- ✅ Step 4 — pagina `/calendario-gare` (route group `(public)`): `layout.tsx` (SEO), `page.tsx` (hero + filtri q/distanza/area/circuito + "In evidenza" featured + lista raggruppata per mese), scheda `[slug]/page.tsx` (dettagli + CTA sito ufficiale + "Studia il percorso" se gpx + placeholder community + **JSON-LD SportsEvent**), `components/RaceCard.tsx` (+ `countryLabel` ISO→bandiera). Verificato in preview: 91 gare, dettaglio OK, 0 errori console, tsc pulito.
-- ✅ Step 6 — voce "Calendario gare" nel menu Extra (`Header.tsx`, `extraLinks`)
-- ✅ Step 5 — tool "Trova la tua gara ideale" (`/tools/gara-ideale`): motore puro `src/lib/running/raceMatcher.ts` (`matchRaces`/`scoreRace`: vincoli netti distanza/area/orizzonte + score pesato su obiettivo e preferenze, indulgente sui dati parziali), `components/tools/RaceMatcherTool.tsx` (client, riceve il catalogo dalla pagina server), card aggiunta in hub `/tools`. Verificato in preview: shortlist top 5 con motivazioni, 0 errori, tsc pulito.
-- ✅ Fase 2 (parziale) — **ponte community**: CTA "Cerca compagni per questa gara" nella scheda → `/nuova-gara?race=<slug>` con form **precompilato** (nome/distanza/città/data + `race_id`); sezione **"Chi ci va?"** reale che legge i post `runs` con `race_id` (avatar + cosa cercano). **Filtro orizzonte 15 mesi** nella lista (nasconde le edizioni AIMS lontane). **Città AIMS rifinite** (rimozione sponsor/ordinali/numeri romani in `import-aims.mjs`).
-  - ⚠️ Per applicare le città rifinite: rilanciare `npm run import:aims` poi `npm run seed:circuits`.
-- ✅ Fase 2 — **segnalazioni utenti + moderazione**: form `/calendario-gare/proponi` (auth) inserisce gare `source='utente'`/`status='pending'` (RLS); pagina admin `/calendario-gare/modera` (visibile solo a `profiles.is_admin`) con Approva/Rifiuta; CTA "Proponi una gara" nella lista. Richiede SQL #27 `races-moderation.sql`.
-  - ⚠️ Applicare `supabase/races-moderation.sql` (aggiunge `is_admin`, policy admin, nomina admin l'owner).
+### Calendario gare (`/calendario-gare`) — ✅ completata (in produzione)
+Sezione Extra: catalogo di **eventi reali** (`races`), distinto dai post community `type='gara'`.
+Import automatico (**AIMS ICS** + **costanti Major/SuperHalfs**) + **segnalazioni utenti** moderate;
+pagina lista/scheda con SEO, tool "gara ideale", ponte community via `runs.race_id`.
+
+📖 **Documentazione completa: [`docs/CALENDARIO-GARE.md`](docs/CALENDARIO-GARE.md)** (schema, motori d'import, pagine, moderazione, manutenzione, decisioni).
+
+- SQL: #25 `races.sql` ✅ · #26 `add-race-id.sql` ✅ · **#27 `races-moderation.sql` ⏳ da applicare** (abilita la moderazione).
+- Comandi import: `npm run import:aims` (poi `npm run seed:circuits`) — richiedono `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`.
+- FIDAL **scartato** (querystring ignorata, filtro JS-only): il long-tail IT cresce con le segnalazioni utenti.
 
 ### Follow-up sezione Tools
 6. **Programma "Da zero a 5K"** — oggi è una CTA placeholder nel quiz; va creato il contenuto/percorso reale
