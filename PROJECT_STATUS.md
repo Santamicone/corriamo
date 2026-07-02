@@ -99,6 +99,7 @@ SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token 
 | 25 | `supabase/races.sql` | ✅ | Catalogo gare `races` (calendario gare) + RLS + indici + unique `(source, external_ref)` |
 | 26 | `supabase/add-race-id.sql` | ✅ | Colonna `race_id` su `runs` → ponte post community ↔ catalogo `races` |
 | 27 | `supabase/races-moderation.sql` | ⏳ | `profiles.is_admin` + policy admin su `races` (modera pending) + nomina admin owner |
+| 28 | `supabase/admin.sql` | ⏳ | Sezione backend admin: `user_moderation` (ban graduale) + colonne moderazione su `profiles`, `admin_actions` (audit), soft-delete `hidden_by_admin` su runs/series/momenti/reviews/run_chat, `reports`, `admin_recovery_codes`, funzioni `is_admin_aal2()`/`is_active_user()`, RLS (admin AAL2 + blocco scrittura sospesi/bannati). Verifica: `supabase/admin-verify.sql`. **Richiede MFA TOTP abilitato in Dashboard.** |
 
 ### Schema tabelle aggiornato
 
@@ -169,6 +170,7 @@ runs             + crew_id → crews.id (nullable)
 
 ### Configurazione Dashboard Supabase (manuale)
 - **Authentication → URL Configuration:** Site URL = `https://vieniacorrere.it`
+- **Authentication → MFA:** abilitare **TOTP** (necessario per la sezione admin — gate AAL2 su `/admin`)
 - **Database → Replication (via SQL):** Abilitare Realtime con:
   ```sql
   ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
