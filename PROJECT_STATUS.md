@@ -517,10 +517,13 @@ src/
 6. **Programma "Da zero a 5K"** — oggi è una CTA placeholder nel quiz; va creato il contenuto/percorso reale
 7. **Voce "Strumenti" nella nav** — i tool sono raggiungibili solo via URL; manca il link in Header (desktop + mobile)
 8. **Allineamento dominio template email** — su `main` i template usano `www.vieniacorrere.it`; valutare allineamento a `app.` quando la migrazione domini arriva su `main`
+9. **Strategia gara — gare precaricate** — dal brief: 3-5 percorsi demo (una maratona, una mezza, una 10K) selezionabili senza caricare GPX; poi DB `race_courses` + segmenti
+10. **Strategia gara — salvataggio strategie** — tabelle `race_strategy_plans`/`race_strategy_splits`, salvataggio nel profilo utente e collegamento alla sezione Gare
+11. **Strategia gara — evoluzioni** — API meteo per condizioni previste, import passo da Strava/Garmin, confronto previsione vs risultato reale, export PDF "Race Plan"
 
 ### Bassa priorità / idee future
-9. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
-10. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
+12. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
+13. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
 
 ---
 
