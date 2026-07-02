@@ -30,6 +30,13 @@ const TOOLS = [
     ready: true,
   },
   {
+    href: '/tools/gara-ideale',
+    icon: 'emoji_events',
+    title: 'Trova la tua gara ideale',
+    desc: 'Distanza, periodo, obiettivo e preferenze: ti proponiamo le gare più adatte a te dal calendario.',
+    ready: true,
+  },
+  {
     href: '/tools/da-dove-inizio',
     icon: 'directions_walk',
     title: 'Test "da dove inizio?"',
