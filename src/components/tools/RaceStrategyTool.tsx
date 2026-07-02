@@ -155,7 +155,8 @@ export function RaceStrategyTool() {
                 value={courseQuery}
                 onChange={e => setCourseQuery(e.target.value)}
                 placeholder="Cerca per gara o città (es. Roma, Berlino…)"
-                className="tool-input pl-10"
+                className="tool-input"
+                style={{ paddingLeft: '2.5rem' }}
               />
             </div>
             <div className="grid gap-1.5 max-h-72 overflow-y-auto pr-1">
