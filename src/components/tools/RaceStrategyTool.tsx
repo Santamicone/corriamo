@@ -399,35 +399,92 @@ export function RaceStrategyTool() {
   )
 }
 
-/** Profilo altimetrico compatto in SVG. */
+/** Pendenza (%) oltre la quale un km è considerato "lento" (salita) o "veloce" (discesa). */
+const PACE_GRADE_THRESHOLD = 1
+
+/** Colore della fascia veloce/lento in base alla pendenza del km. */
+function paceBandColor(gradePct: number): string | null {
+  if (gradePct >= PACE_GRADE_THRESHOLD) return '#ea580c' // salita → lento
+  if (gradePct <= -PACE_GRADE_THRESHOLD) return '#16a34a' // discesa → veloce
+  return null // pianeggiante → neutro
+}
+
+/** Profilo del percorso: barre di pendenza per km + curva altimetrica con tratti veloci/lenti. */
 function ElevationProfile({ course }: { course: ParsedCourse }) {
   if (!course.hasElevation || course.segments.length < 2) return null
   const W = 600
-  const H = 90
-  const grades = course.segments.map(s => s.gradePct)
-  const maxAbs = Math.max(3, ...grades.map(g => Math.abs(g)))
   const n = course.segments.length
   const barW = W / n
 
+  // ── Barre di pendenza per km ──
+  const Hbars = 90
+  const grades = course.segments.map(s => s.gradePct)
+  const maxAbs = Math.max(3, ...grades.map(g => Math.abs(g)))
+
+  // ── Curva altimetrica: quota cumulata ricostruita dal dislivello netto per km ──
+  const Hcurve = 120
+  const padY = 10
+  // Punti quota agli estremi di ogni km: elev[0] = 0, poi somma del netto.
+  const elev = [0]
+  for (const s of course.segments) elev.push(elev[elev.length - 1] + (s.ascentM - s.descentM))
+  const minE = Math.min(...elev)
+  const maxE = Math.max(...elev)
+  const spanE = Math.max(1, maxE - minE)
+  const xAt = (i: number) => (i / n) * W
+  const yAt = (e: number) => padY + (1 - (e - minE) / spanE) * (Hcurve - 2 * padY)
+
+  const linePts = elev.map((e, i) => `${xAt(i).toFixed(1)},${yAt(e).toFixed(1)}`).join(' ')
+  const areaPath = `M ${xAt(0).toFixed(1)},${Hcurve} L ${elev
+    .map((e, i) => `${xAt(i).toFixed(1)},${yAt(e).toFixed(1)}`)
+    .join(' L ')} L ${xAt(n).toFixed(1)},${Hcurve} Z`
+
   return (
-    <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
-      <p className="text-xs font-semibold text-gray-500 mb-2">Profilo per km (pendenza)</p>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" role="img"
-        aria-label="Profilo altimetrico del percorso">
-        <line x1="0" y1={H / 2} x2={W} y2={H / 2} stroke="#e5e7eb" strokeWidth="1" />
-        {course.segments.map((s, i) => {
-          const h = (Math.abs(s.gradePct) / maxAbs) * (H / 2 - 4)
-          const up = s.gradePct >= 0
-          const y = up ? H / 2 - h : H / 2
-          const color = up ? '#ea580c' : '#16a34a'
-          return <rect key={i} x={i * barW + 0.5} y={y} width={Math.max(0.5, barW - 1)} height={Math.max(1, h)} fill={color} opacity={0.85} />
-        })}
-      </svg>
-      <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-        <span>km 1</span>
-        <span className="text-primary">salita</span>
-        <span className="text-tertiary">discesa</span>
-        <span>km {n}</span>
+    <div className="grid gap-3">
+      {/* Curva altimetrica con tratti veloci/lenti */}
+      <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+        <p className="text-xs font-semibold text-gray-500 mb-2">Profilo altimetrico e tratti veloci / lenti</p>
+        <svg viewBox={`0 0 ${W} ${Hcurve}`} className="w-full" preserveAspectRatio="none" role="img"
+          aria-label="Profilo altimetrico del percorso con evidenziati i tratti in salita e discesa">
+          {/* Fasce di velocità per km (salita = lento, discesa = veloce) */}
+          {course.segments.map((s, i) => {
+            const color = paceBandColor(s.gradePct)
+            if (!color) return null
+            return <rect key={i} x={xAt(i)} y={0} width={barW + 0.5} height={Hcurve} fill={color} opacity={0.1} />
+          })}
+          {/* Area + linea della quota */}
+          <path d={areaPath} fill="#9ca3af" opacity={0.18} />
+          <polyline points={linePts} fill="none" stroke="#374151" strokeWidth={1.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        </svg>
+        <div className="flex justify-between items-center text-[10px] text-gray-400 mt-1">
+          <span>km 1</span>
+          <span className="flex gap-3">
+            <span className="text-tertiary">■ veloce (discesa)</span>
+            <span className="text-primary">■ lento (salita)</span>
+          </span>
+          <span>km {n}</span>
+        </div>
+      </div>
+
+      {/* Barre di pendenza per km */}
+      <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+        <p className="text-xs font-semibold text-gray-500 mb-2">Profilo per km (pendenza)</p>
+        <svg viewBox={`0 0 ${W} ${Hbars}`} className="w-full" preserveAspectRatio="none" role="img"
+          aria-label="Pendenza chilometro per chilometro">
+          <line x1="0" y1={Hbars / 2} x2={W} y2={Hbars / 2} stroke="#e5e7eb" strokeWidth="1" />
+          {course.segments.map((s, i) => {
+            const h = (Math.abs(s.gradePct) / maxAbs) * (Hbars / 2 - 4)
+            const up = s.gradePct >= 0
+            const y = up ? Hbars / 2 - h : Hbars / 2
+            const color = up ? '#ea580c' : '#16a34a'
+            return <rect key={i} x={i * barW + 0.5} y={y} width={Math.max(0.5, barW - 1)} height={Math.max(1, h)} fill={color} opacity={0.85} />
+          })}
+        </svg>
+        <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+          <span>km 1</span>
+          <span className="text-primary">salita</span>
+          <span className="text-tertiary">discesa</span>
+          <span>km {n}</span>
+        </div>
       </div>
     </div>
   )
