@@ -94,6 +94,8 @@ SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token 
 | 22 | `supabase/edit-run.sql` | ✅ | Permessi e trigger per modifica corsa (blocco <2h dalla partenza) |
 | 23 | `supabase/email-notifications.sql` | ✅ | Tabella `email_notifications` + preferenze utente + unsubscribe token |
 | 24 | `supabase/email-triggers.sql` | ✅ | Trigger DB che accodano email (partecipazione, approvazione, ecc.) |
+| 25 | `supabase/races.sql` | ✅ | Catalogo gare `races` (calendario gare) + RLS + indici + unique `(source, external_ref)` |
+| 26 | `supabase/add-race-id.sql` | ✅ | Colonna `race_id` su `runs` → ponte post community ↔ catalogo `races` |
 
 ### Schema tabelle aggiornato
 
@@ -110,7 +112,14 @@ runs             id, organizer_id, series_id, title, description, date, time,
                  max_participants, status, is_no_drop, is_spot, tags text[],
                  type (allenamento|gara), race_name, race_distance (5k|10k|21k|42k),
                  race_target_time, race_registered, looking_for text[],
-                 location_public boolean
+                 location_public boolean, race_id (→ races.id, nullable)
+
+races            id, slug, name, city, region, country, event_date, end_date,
+                 distances text[], race_type, level_hint, elevation_m,
+                 course_profile text[], participants_est, official_url,
+                 registration_status, circuit, tags text[], gpx_path, featured,
+                 source (editoriale|utente|aims|fidal), external_ref, status,
+                 created_by, created_at, updated_at
 
 series           id, organizer_id, title, description, location, city,
                  recurrence_type, recurrence_day, recurrence_time, start_date,
@@ -512,6 +521,17 @@ src/
 ### Media priorità
 2. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
 3. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
+
+### Calendario gare (`/calendario-gare`) — in corso
+Nuova sezione Extra: catalogo di **eventi reali** (`races`), distinto dai post community `type='gara'`.
+Modello a 3 motori d'import: **AIMS ICS** (europee, `source='aims'`) · **FIDAL scoped** (maratone/mezze IT, 2×/anno, `source='fidal'`, deep-link) · **costanti** Major/SuperHalfs. Ponte community via `runs.race_id`. Tool "gara ideale" previsto in `/tools`.
+- ✅ Step 1 — SQL #25/#26 applicati (tabella `races` + `runs.race_id`)
+- ✅ Step 2 — tipi (`Race`, `CatalogDistance`, ecc. in `types.ts`) + `scripts/import-aims.mjs` (`npm run import:aims`, richiede `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`). Dry-run OK: 400 VEVENT → 66 europee maratona/mezza (7 IT). Città best-effort dal SUMMARY (LOCATION AIMS = solo paese).
+- ✅ Step 3a — `scripts/seed-circuits.mjs` (`npm run seed:circuits`): 7 Major + 6 SuperHalfs (dati statici, aggiorno date 1×/anno). Dedup verso AIMS per country+data+distanza (marca `circuit`/`featured` invece di duplicare). Date passate → prossima edizione; 2027 non ufficiali → `registration_status='da_verificare'`.
+- ❌ Step 3b — motore FIDAL **scartato**: `calendario.php` ignora del tutto i parametri querystring (GET/POST, cookie, UA/Referer, `livello` valorizzato, endpoint alternativi) e restituisce **sempre** solo il mese corrente (75462 byte identici, 50 gare). Il filtro mese/regione è JS-only, replicabile solo con browser headless (Playwright) → troppo fragile e più esposto legalmente. **Decisione: le maratone/mezze IT principali arrivano già da AIMS; il long-tail cresce con le segnalazioni utenti (Fase 2). Eventuale copertura totale solo con permesso/feed FIDAL.**
+- ✅ Step 4 — pagina `/calendario-gare` (route group `(public)`): `layout.tsx` (SEO), `page.tsx` (hero + filtri q/distanza/area/circuito + "In evidenza" featured + lista raggruppata per mese), scheda `[slug]/page.tsx` (dettagli + CTA sito ufficiale + "Studia il percorso" se gpx + placeholder community + **JSON-LD SportsEvent**), `components/RaceCard.tsx` (+ `countryLabel` ISO→bandiera). Verificato in preview: 91 gare, dettaglio OK, 0 errori console, tsc pulito.
+- ✅ Step 6 — voce "Calendario gare" nel menu Extra (`Header.tsx`, `extraLinks`)
+- ⏳ Prossimi: tool `gara-ideale` (`/tools/gara-ideale`) · (Fase 2) segnalazioni gare da utenti + sezione community "Chi ci va?" reale via `runs.race_id`
 
 ### Follow-up sezione Tools
 6. **Programma "Da zero a 5K"** — oggi è una CTA placeholder nel quiz; va creato il contenuto/percorso reale

@@ -71,6 +71,7 @@ const navLinks = [
 /* Voci del menu "Extra" — Strumenti (interno) + Magazine (sito editoriale, esterno) */
 const extraLinks = [
   { href: '/tools',                       label: 'Strumenti per chi corre', icon: 'calculate', external: false },
+  { href: '/calendario-gare',             label: 'Calendario gare',         icon: 'event',     external: false },
   { href: 'https://www.vieniacorrere.it', label: 'Vieni a Correre - La Crew', icon: 'open_in_new', external: true  },
 ]
 
