@@ -312,12 +312,26 @@ export function buildRaceComment(
   return [p1.join(' '), p2.join(' '), p3.join(' ')]
 }
 
-/** Nota testuale sul tratto, in base al fattore dominante. */
+/**
+ * Nota testuale sul tratto, in base alla pendenza del km.
+ *
+ * Le soglie sono sulla pendenza (%) e non sui secondi relativi al passo: così
+ * anche pendenze modeste ma reali (es. +0.9% o −1.6%) vengono riconosciute,
+ * cosa che con le soglie in secondi si perdeva sui passi veloci (maratone).
+ */
 function buildNote(seg: CourseSegment, altimetry: number, crowd: number, idealPace: number): string {
-  if (altimetry > idealPace * 0.1) return 'Salita impegnativa: non forzare, tieni il fiato'
-  if (altimetry > idealPace * 0.05) return 'In salita: accorcia il passo e resta regolare'
-  if (seg.gradePct < STEEP_DESCENT_PCT) return 'Discesa tecnica: controlla, non frenare bruscamente'
-  if (altimetry < -idealPace * 0.05) return 'Discesa favorevole: lascia scorrere senza strappi'
+  const g = seg.gradePct
+  // Salite
+  if (g >= 4) return 'Salita dura: non forzare, tieni il fiato e accorcia'
+  if (g >= 2) return 'Salita impegnativa: accorcia il passo, resta regolare'
+  if (g >= 1) return 'In salita: controlla lo sforzo, non spingere'
+  if (g >= 0.4) return 'Leggera salita: tieni il ritmo senza aumentare lo sforzo'
+  // Discese
+  if (g <= STEEP_DESCENT_PCT) return 'Discesa tecnica: controlla, non frenare bruscamente'
+  if (g <= -2) return 'Discesa marcata: lascia scorrere ma proteggi le gambe'
+  if (g <= -1) return 'Discesa: sfrutta la spinta senza strappi'
+  if (g <= -0.4) return 'Leggera discesa: recupera passo con poca spesa'
+  // Pianeggiante
   if (crowd >= 12) return 'Partenza affollata: pazienza, recupererai dopo'
-  return 'Tratto regolare: mantieni il ritmo'
+  return 'Tratto pianeggiante: mantieni il ritmo'
 }
