@@ -181,6 +181,12 @@ create policy "Admins manage user_moderation" on public.user_moderation
   for all to authenticated
   using (public.is_admin_aal2()) with check (public.is_admin_aal2());
 
+-- L'utente può leggere i provvedimenti a proprio carico (per /account-sospeso)
+drop policy if exists "Users read own moderation" on public.user_moderation;
+create policy "Users read own moderation" on public.user_moderation
+  for select to authenticated
+  using (user_id = auth.uid());
+
 drop policy if exists "Admins read admin_actions" on public.admin_actions;
 create policy "Admins read admin_actions" on public.admin_actions
   for select to authenticated

@@ -184,6 +184,42 @@ export function emailPromemoria(opts: {
   return { subject, html }
 }
 
+// ── Template admin: messaggio/moderazione (transazionale, no unsubscribe) ─────
+export function emailAdminMessage(opts: {
+  recipientName: string
+  heading: string
+  message: string        // testo semplice, i newline vengono convertiti in <br>
+  tone?: 'neutral' | 'warning' | 'danger'
+}): { subject: string; html: string } {
+  const accent = opts.tone === 'danger' ? '#DC2626' : opts.tone === 'warning' ? '#D97706' : PRIMARY
+  const body = opts.message.replace(/\n/g, '<br>')
+  const html = `<!DOCTYPE html>
+<html lang="it"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:${BG};font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #e5e7eb;">
+        <tr><td style="background:${accent};padding:20px 32px;">
+          <span style="color:#ffffff;font-size:18px;font-weight:800;">🏃 Vieni a correre?</span>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <h2 style="margin:0 0 12px;font-size:20px;font-weight:800;color:#111827;">${opts.heading}</h2>
+          <p style="margin:0;font-size:15px;color:#374151;line-height:1.7;">
+            Ciao <strong>${opts.recipientName}</strong>,<br><br>${body}
+          </p>
+        </td></tr>
+        <tr><td style="padding:16px 32px 24px;border-top:1px solid #f3f4f6;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.6;">
+            Messaggio inviato dallo staff di Vieni a correre?. Per chiarimenti rispondi a questa email.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`
+  return { subject: opts.heading, html }
+}
+
 // ── Template 6: scheda zone di passo (tool) ───────────────────────────────────
 export interface SchedaZona {
   label: string
