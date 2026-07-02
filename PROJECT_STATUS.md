@@ -517,7 +517,7 @@ src/
 6. **Programma "Da zero a 5K"** — oggi è una CTA placeholder nel quiz; va creato il contenuto/percorso reale
 7. **Voce "Strumenti" nella nav** — i tool sono raggiungibili solo via URL; manca il link in Header (desktop + mobile)
 8. **Allineamento dominio template email** — su `main` i template usano `www.vieniacorrere.it`; valutare allineamento a `app.` quando la migrazione domini arriva su `main`
-9. **Strategia gara — gare precaricate** — dal brief: 3-5 percorsi demo (una maratona, una mezza, una 10K) selezionabili senza caricare GPX; poi DB `race_courses` + segmenti
+9. **Strategia gara — gare precaricate** — ✅ FATTO (catalogo statico): 8 grandi maratone reali (Berlino, Boston, Firenze, NewYork, Parigi, Roma, Valencia, Venezia) selezionabili con ricerca per gara/città, oltre all'upload GPX. Pipeline ripetibile: droppare i .gpx in `scripts/race-courses-gpx/` e lanciare `npm run gen:courses` (genera `src/lib/running/raceCourses.generated.ts`). Nota: il GPX di Firenze risulta parziale (~31 km), da sostituire. Follow-up: migrazione a DB `race_courses` + segmenti quando il catalogo cresce; compilare campo `country`
 10. **Strategia gara — salvataggio strategie** — tabelle `race_strategy_plans`/`race_strategy_splits`, salvataggio nel profilo utente e collegamento alla sezione Gare
 11. **Strategia gara — evoluzioni** — API meteo per condizioni previste, import passo da Strava/Garmin, confronto previsione vs risultato reale, export PDF "Race Plan"
 

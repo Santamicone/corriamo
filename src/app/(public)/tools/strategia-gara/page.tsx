@@ -22,14 +22,14 @@ export default function StrategiaGaraPage() {
   return (
     <ToolShell
       title="Strategia gara intelligente"
-      subtitle="Dal tuo GPX al piano di gara: passo, tempo, split e come affrontare il percorso."
+      subtitle="Dal percorso al piano di gara: passo, tempo, split e come affrontare la gara."
       icon="route"
       howTo={
         <>
-          Carica il file <strong>GPX</strong> del percorso (lo trovi sul sito della gara o su
-          Strava/Garmin), inserisci il <strong>passo</strong> che reggeresti su piatto e le
-          <strong> condizioni</strong> previste il giorno gara. Ti restituiamo il passo reale
-          chilometro per chilometro, il tempo finale stimato, i tratti dove non forzare e un
+          Scegli una <strong>gara dal catalogo</strong> (le grandi maratone) oppure carica il file
+          <strong> GPX</strong> del tuo percorso, inserisci il <strong>passo</strong> che reggeresti
+          su piatto e le <strong>condizioni</strong> previste il giorno gara. Ti restituiamo il passo
+          reale chilometro per chilometro, il tempo finale stimato, i tratti dove non forzare e un
           commento strategico su come affrontare la gara.
         </>
       }
