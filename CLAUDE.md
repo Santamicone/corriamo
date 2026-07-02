@@ -10,6 +10,7 @@
 - **Sito editoriale (magazine):** https://www.vieniacorrere.it
 - **Branch attivo:** `feat/ui-ux-redesign` (tutto lo sviluppo avviene qui)
 - **Stack:** Next.js 16.2.7 App Router · TypeScript · Tailwind v4 · Supabase · Vercel
+- **Calendario gare:** doc completa in `docs/CALENDARIO-GARE.md` (catalogo `races`, import `npm run import:aims` + `npm run seed:circuits`, moderazione).
 
 ## Convenzioni obbligatorie
 
