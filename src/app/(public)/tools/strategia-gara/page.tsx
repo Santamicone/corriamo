@@ -22,7 +22,7 @@ export default function StrategiaGaraPage() {
   return (
     <ToolShell
       title="Strategia gara intelligente"
-      subtitle="Dal tuo GPX al piano di gara: passo, tempo, split e commento del coach."
+      subtitle="Dal tuo GPX al piano di gara: passo, tempo, split e come affrontare il percorso."
       icon="route"
       howTo={
         <>
