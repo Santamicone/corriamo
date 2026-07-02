@@ -26,11 +26,11 @@ export default function StrategiaGaraPage() {
       icon="route"
       howTo={
         <>
-          Scegli una <strong>gara dal catalogo</strong> (le grandi maratone) oppure carica il file
-          <strong> GPX</strong> del tuo percorso, inserisci il <strong>passo</strong> che reggeresti
-          su piatto e le <strong>condizioni</strong> previste il giorno gara. Ti restituiamo il passo
-          reale chilometro per chilometro, il tempo finale stimato, i tratti dove non forzare e un
-          commento strategico su come affrontare la gara.
+          Scegli una <strong>gara dal catalogo</strong> (grandi maratone e mezze maratone) oppure
+          carica il file <strong>GPX</strong> del tuo percorso, inserisci il <strong>passo</strong>
+          che reggeresti su percorso piatto e le <strong>condizioni</strong> previste il giorno gara.
+          Ti restituiamo il passo reale chilometro per chilometro, il tempo finale stimato, i tratti
+          dove non forzare e un commento strategico su come affrontare la gara.
         </>
       }
       disclaimer={STRATEGY_DISCLAIMER}
