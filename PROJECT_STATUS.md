@@ -493,7 +493,8 @@ src/
 - [x] Enforcement: RLS `is_active_user()` (blocco scrittura DB) + `proxy.ts` redirect a `/account-sospeso` + policy `is_admin_aal2()` con claim `aal2`
 - [x] Audit log `admin_actions` su ogni azione sensibile; email staff via template `emailAdminMessage`
 - [x] Moderazione gare migrata in `/admin/gare` (riuso `ModeraActions`)
-- [x] **Contenuti** (`/admin/contenuti`): nascondi/ripristina corse, momenti, recensioni (soft-delete `hidden_by_admin`). Occultamento a livello **RLS restrictive SELECT** → il contenuto sparisce da ogni query pubblica senza toccare i file di lettura; resta visibile solo agli admin AAL2. Stub `segnalazioni`/`broadcast` (PR D–E)
+- [x] **Contenuti** (`/admin/contenuti`): nascondi/ripristina corse, momenti, recensioni (soft-delete `hidden_by_admin`). Occultamento a livello **RLS restrictive SELECT** → il contenuto sparisce da ogni query pubblica senza toccare i file di lettura; resta visibile solo agli admin AAL2. Stub `broadcast` (PR-E)
+- [x] **Segnalazioni** (`/admin/segnalazioni`): coda report con filtri stato (aperte/in lavorazione/risolte/ignorate), azioni admin (API `/api/admin/reports`), link a entità e utente segnalato. Pulsante utente `<ReportButton>` (inserisce in `reports` via RLS) su dettaglio corsa e profilo
 - ⏳ **Da applicare in Supabase: `admin.sql` (#28)** + abilitare **MFA TOTP** in Dashboard
 
 ### UX

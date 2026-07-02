@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { LEVEL_LABELS, todayItaly } from '@/lib/utils'
 import type { Profile, Run, Review, Momento } from '@/lib/types'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityBadge'
+import { ReportButton } from '@/components/ReportButton'
 import type { Metadata } from 'next'
 
 const SITE_URL = 'https://www.vieniacorrere.it'
@@ -357,6 +358,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
               </div>
             )}
           </section>
+
+          {user && !isOwn && (
+            <div className="mt-8 flex justify-center">
+              <ReportButton entityTable="profiles" entityId={id} reportedUserId={id} label="Segnala questo profilo" />
+            </div>
+          )}
         </div>
       </main>
       <Footer />

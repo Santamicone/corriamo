@@ -18,6 +18,7 @@ import { MomentoSection } from './MomentoSection'
 import { MomentoCard } from '@/components/MomentoCard'
 import { ShareButton } from './ShareButton'
 import { ShareLanding } from './ShareLanding'
+import { ReportButton } from '@/components/ReportButton'
 import type { Metadata } from 'next'
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -576,6 +577,13 @@ export default async function CorsaDetailPage({
               )}
             </div>
           </div>
+
+          {user && !isOrganizer && (
+            <div className="mt-6 flex justify-center">
+              <ReportButton entityTable="runs" entityId={typedRun.id} reportedUserId={typedRun.organizer_id}
+                label="Segnala questa corsa" />
+            </div>
+          )}
         </div>
       </main>
       <Footer />
