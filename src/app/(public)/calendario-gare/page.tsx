@@ -162,10 +162,17 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
           </section>
         )}
 
-        {/* Contatore */}
-        <p className="text-sm text-gray-400">
-          {races.length} gar{races.length === 1 ? 'a' : 'e'} in programma
-        </p>
+        {/* Contatore + proponi */}
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-gray-400">
+            {races.length} gar{races.length === 1 ? 'a' : 'e'} in programma
+          </p>
+          <Link href="/calendario-gare/proponi"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors whitespace-nowrap">
+            <span className="material-symbols-outlined text-base">add_location_alt</span>
+            Proponi una gara
+          </Link>
+        </div>
 
         {/* Lista per mese */}
         {grouped.length > 0 ? (

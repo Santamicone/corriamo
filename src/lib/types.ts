@@ -41,6 +41,8 @@ export interface Profile {
   reliability_score:     number | null
   reliability_eligible:  number
   reliability_confirmed: number
+  // Moderazione (calendario gare)
+  is_admin?: boolean
 }
 
 export interface Run {

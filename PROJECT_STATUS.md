@@ -96,6 +96,7 @@ SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token 
 | 24 | `supabase/email-triggers.sql` | ✅ | Trigger DB che accodano email (partecipazione, approvazione, ecc.) |
 | 25 | `supabase/races.sql` | ✅ | Catalogo gare `races` (calendario gare) + RLS + indici + unique `(source, external_ref)` |
 | 26 | `supabase/add-race-id.sql` | ✅ | Colonna `race_id` su `runs` → ponte post community ↔ catalogo `races` |
+| 27 | `supabase/races-moderation.sql` | ⏳ | `profiles.is_admin` + policy admin su `races` (modera pending) + nomina admin owner |
 
 ### Schema tabelle aggiornato
 
@@ -534,7 +535,8 @@ Modello a 3 motori d'import: **AIMS ICS** (europee, `source='aims'`) · **FIDAL 
 - ✅ Step 5 — tool "Trova la tua gara ideale" (`/tools/gara-ideale`): motore puro `src/lib/running/raceMatcher.ts` (`matchRaces`/`scoreRace`: vincoli netti distanza/area/orizzonte + score pesato su obiettivo e preferenze, indulgente sui dati parziali), `components/tools/RaceMatcherTool.tsx` (client, riceve il catalogo dalla pagina server), card aggiunta in hub `/tools`. Verificato in preview: shortlist top 5 con motivazioni, 0 errori, tsc pulito.
 - ✅ Fase 2 (parziale) — **ponte community**: CTA "Cerca compagni per questa gara" nella scheda → `/nuova-gara?race=<slug>` con form **precompilato** (nome/distanza/città/data + `race_id`); sezione **"Chi ci va?"** reale che legge i post `runs` con `race_id` (avatar + cosa cercano). **Filtro orizzonte 15 mesi** nella lista (nasconde le edizioni AIMS lontane). **Città AIMS rifinite** (rimozione sponsor/ordinali/numeri romani in `import-aims.mjs`).
   - ⚠️ Per applicare le città rifinite: rilanciare `npm run import:aims` poi `npm run seed:circuits`.
-- ⏳ Prossimi (Fase 2): segnalazioni gare da utenti (`source='utente'`, moderazione)
+- ✅ Fase 2 — **segnalazioni utenti + moderazione**: form `/calendario-gare/proponi` (auth) inserisce gare `source='utente'`/`status='pending'` (RLS); pagina admin `/calendario-gare/modera` (visibile solo a `profiles.is_admin`) con Approva/Rifiuta; CTA "Proponi una gara" nella lista. Richiede SQL #27 `races-moderation.sql`.
+  - ⚠️ Applicare `supabase/races-moderation.sql` (aggiunge `is_admin`, policy admin, nomina admin l'owner).
 
 ### Follow-up sezione Tools
 6. **Programma "Da zero a 5K"** — oggi è una CTA placeholder nel quiz; va creato il contenuto/percorso reale
