@@ -10,7 +10,8 @@ import {
   buildRaceComment,
   type RaceConditions,
   type Terrain,
-  type WindType,
+  type Wind,
+  type Curves,
   type Crowd,
   type Approach,
 } from '@/lib/running/raceStrategy'
@@ -22,11 +23,17 @@ const TERRAINS: { value: Terrain; label: string }[] = [
   { value: 'sampietrini', label: 'Sampietrini' },
   { value: 'trail', label: 'Trail leggero' },
 ]
-const WINDS: { value: WindType; label: string }[] = [
-  { value: 'nullo', label: 'Assente / debole' },
-  { value: 'contro', label: 'Contrario' },
-  { value: 'favore', label: 'A favore' },
-  { value: 'laterale', label: 'Laterale' },
+const WINDS: { value: Wind; label: string }[] = [
+  { value: 'assente', label: 'Assente' },
+  { value: 'debole-favore', label: 'Debole a favore' },
+  { value: 'forte-favore', label: 'Forte a favore' },
+  { value: 'debole-contro', label: 'Debole contrario' },
+  { value: 'forte-contro', label: 'Forte contrario' },
+]
+const CURVES: { value: Curves; label: string }[] = [
+  { value: 'scorrevole', label: 'Scorrevole (rettilinei)' },
+  { value: 'misto', label: 'Misto' },
+  { value: 'tecnico', label: 'Tecnico (curve strette)' },
 ]
 const CROWDS: { value: Crowd; label: string }[] = [
   { value: 'basso', label: 'Poco affollata' },
@@ -47,8 +54,8 @@ export function RaceStrategyTool() {
 
   const [temperature, setTemperature] = useState('')
   const [humidity, setHumidity] = useState('')
-  const [windKmh, setWindKmh] = useState('')
-  const [windType, setWindType] = useState<WindType>('nullo')
+  const [wind, setWind] = useState<Wind>('assente')
+  const [curves, setCurves] = useState<Curves>('scorrevole')
   const [terrain, setTerrain] = useState<Terrain>('asfalto')
   const [crowd, setCrowd] = useState<Crowd>('medio')
   const [approach, setApproach] = useState<Approach>('regolare')
@@ -107,12 +114,12 @@ export function RaceStrategyTool() {
   const conditions = useMemo<RaceConditions>(() => ({
     temperatureC: temperature.trim() ? Number(temperature) : undefined,
     humidityPct: humidity.trim() ? Number(humidity) : undefined,
-    windKmh: windKmh.trim() ? Number(windKmh) : undefined,
-    windType,
+    wind,
+    curves,
     terrain,
     crowd,
     approach,
-  }), [temperature, humidity, windKmh, windType, terrain, crowd, approach])
+  }), [temperature, humidity, wind, curves, terrain, crowd, approach])
 
   const result = useMemo(() => {
     if (!submitted || !course || !idealPaceSec) return null
@@ -263,14 +270,14 @@ export function RaceStrategyTool() {
                 onChange={e => { setHumidity(e.target.value); setSubmitted(false) }}
                 placeholder="es. 60" className="tool-input" />
             </Field>
-            <Field label="Vento" hint="km/h, facoltativo">
-              <input type="number" inputMode="numeric" value={windKmh}
-                onChange={e => { setWindKmh(e.target.value); setSubmitted(false) }}
-                placeholder="es. 15" className="tool-input" />
-            </Field>
-            <Field label="Direzione vento">
-              <select value={windType} onChange={e => { setWindType(e.target.value as WindType); setSubmitted(false) }} className="tool-input">
+            <Field label="Vento" hint="facoltativo">
+              <select value={wind} onChange={e => { setWind(e.target.value as Wind); setSubmitted(false) }} className="tool-input">
                 {WINDS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Curve" hint="tortuosità del percorso">
+              <select value={curves} onChange={e => { setCurves(e.target.value as Curves); setSubmitted(false) }} className="tool-input">
+                {CURVES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Field>
             <Field label="Fondo">

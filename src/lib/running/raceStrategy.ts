@@ -30,18 +30,35 @@ const TERRAIN_FACTOR: Record<Terrain, number> = {
   sampietrini: 1.05,
 }
 
+/** Moltiplicatori di passo per la tortuosità del percorso (curve). */
+const CURVES_FACTOR: Record<Curves, number> = {
+  scorrevole: 1.0, // rettilinei, poche curve
+  misto: 1.006, // qualche curva, rotatorie, cambi di direzione
+  tecnico: 1.018, // curve strette a gomito, tornanti che spezzano il ritmo
+}
+
+/** Secondi/km aggiunti (+) o tolti (−) dal vento, per intensità e direzione. */
+const WIND_SEC_PER_KM: Record<Wind, number> = {
+  assente: 0,
+  'debole-favore': -4,
+  'forte-favore': -9,
+  'debole-contro': 8,
+  'forte-contro': 18,
+}
+
 // ── Tipi ─────────────────────────────────────────────────────────────────────
 
 export type Terrain = 'asfalto' | 'sterrato' | 'sampietrini' | 'trail' | 'misto'
-export type WindType = 'nullo' | 'contro' | 'favore' | 'laterale'
+export type Wind = 'assente' | 'debole-favore' | 'forte-favore' | 'debole-contro' | 'forte-contro'
+export type Curves = 'scorrevole' | 'misto' | 'tecnico'
 export type Crowd = 'basso' | 'medio' | 'alto'
 export type Approach = 'prudente' | 'regolare' | 'aggressivo'
 
 export interface RaceConditions {
   temperatureC?: number
   humidityPct?: number
-  windKmh?: number
-  windType: WindType
+  wind: Wind
+  curves: Curves
   terrain: Terrain
   crowd: Crowd
   approach: Approach
@@ -89,6 +106,7 @@ export interface StrategyResult {
 /** Moltiplicatore ambientale sul passo base (fondo + meteo + approccio). */
 function environmentMultiplier(c: RaceConditions): number {
   let mult = TERRAIN_FACTOR[c.terrain] ?? 1.0
+  mult *= CURVES_FACTOR[c.curves] ?? 1.0
 
   // Caldo: sopra i 15°C ~0.3% per °C; l'umidità alta amplifica se fa caldo.
   if (typeof c.temperatureC === 'number') {
@@ -112,17 +130,7 @@ function environmentMultiplier(c: RaceConditions): number {
 
 /** Secondi/km aggiunti (o tolti) dal vento. */
 function windSecPerKm(c: RaceConditions): number {
-  if (!c.windKmh || c.windKmh <= 0 || c.windType === 'nullo') return 0
-  switch (c.windType) {
-    case 'contro':
-      return c.windKmh * 0.6
-    case 'favore':
-      return -Math.min(c.windKmh * 0.3, 12)
-    case 'laterale':
-      return c.windKmh * 0.15
-    default:
-      return 0
-  }
+  return WIND_SEC_PER_KM[c.wind] ?? 0
 }
 
 /** Penalità affollamento (secondi/km) sui primi km, decrescente. */
@@ -274,8 +282,13 @@ export function buildRaceComment(
   } else if (typeof conditions.temperatureC === 'number' && conditions.temperatureC < 5) {
     p2.push('Fa freddo: copriti alla partenza e concediti qualche minuto in più per entrare in temperatura.')
   }
-  if (conditions.windType === 'contro' && conditions.windKmh) {
+  if (conditions.wind === 'debole-contro' || conditions.wind === 'forte-contro') {
     p2.push('Il vento contrario ti frena: mettiti in scia ad altri runner quando puoi e non spendere troppo per contrastarlo.')
+  } else if (conditions.wind === 'forte-favore') {
+    p2.push('Hai il vento a favore: approfittane per far scorrere il passo senza aumentare lo sforzo.')
+  }
+  if (conditions.curves === 'tecnico') {
+    p2.push('Il percorso è tortuoso, con curve strette: rallenta in ingresso e riparti pulito in uscita, evita frenate brusche che spezzano il ritmo.')
   }
   if (conditions.terrain === 'trail' || conditions.terrain === 'sterrato' || conditions.terrain === 'sampietrini') {
     p2.push(`Sul fondo ${conditions.terrain} il passo è naturalmente più lento: valuta lo sforzo, non solo il cronometro.`)
