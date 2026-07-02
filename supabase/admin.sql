@@ -239,7 +239,22 @@ begin
   end loop;
 end $$;
 
+-- --- 7d. Occultamento contenuti a livello RLS (policy RESTRICTIVE di SELECT) --
+-- Un contenuto con hidden_by_admin = true sparisce da OGNI query (incluse quelle
+-- del proprietario), tranne per gli admin AAL2 (pannello di moderazione). Così
+-- non serve aggiungere il filtro nelle decine di query pubbliche esistenti.
+do $$
+declare t text;
+begin
+  foreach t in array array['runs', 'series', 'momenti', 'reviews', 'run_chat'] loop
+    execute format('drop policy if exists "Hide admin-hidden %1$s" on public.%1$s', t);
+    execute format(
+      'create policy "Hide admin-hidden %1$s" on public.%1$s '
+      'as restrictive for select to authenticated, anon '
+      'using (not hidden_by_admin or public.is_admin_aal2())', t);
+  end loop;
+end $$;
+
 -- =============================================================================
--- FINE. Ricorda: le query pubbliche dei contenuti devono filtrare
--- `hidden_by_admin = false` (gestito lato applicazione).
+-- FINE.
 -- =============================================================================
