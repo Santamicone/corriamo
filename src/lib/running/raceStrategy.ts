@@ -216,6 +216,89 @@ export function computeRaceStrategy(input: StrategyInput): StrategyResult {
   }
 }
 
+// ── Commento narrativo (basato sulle caratteristiche del percorso) ────────────
+
+/**
+ * Genera un commento strategico della gara a partire dai dati calcolati.
+ * Nessun modello esterno: sole regole trasparenti su altimetria, condizioni e
+ * distribuzione dei tratti critici. Ritorna 3 paragrafi (partenza, centrale,
+ * finale).
+ */
+export function buildRaceComment(
+  result: StrategyResult,
+  conditions: RaceConditions,
+  idealPaceSec: number,
+): string[] {
+  const s = result.splits
+  const n = s.length
+  if (n === 0) return []
+
+  const third = n / 3
+  const firstThird = s.filter(x => x.km <= Math.ceil(third))
+  const lastThird = s.filter(x => x.km > Math.floor(2 * third))
+  const avgGrade = (arr: SplitRow[]) =>
+    arr.length ? arr.reduce((a, b) => a + b.gradePct, 0) / arr.length : 0
+  const gStart = avgGrade(firstThird)
+  const gEnd = avgGrade(lastThird)
+  const hardest = s.reduce((a, b) => (b.deltaSec > a.deltaSec ? b : a), s[0])
+  const netDownhill = result.descentM - result.ascentM
+
+  // ── Paragrafo 1: lettura del percorso e partenza ──
+  const p1: string[] = []
+  if (conditions.crowd === 'alto') {
+    p1.push('Partenza molto affollata: nei primi km lascia sfogare la ressa, non sprecare energie a zigzagare per guadagnare due posizioni.')
+  }
+  if (gStart > 1.5) {
+    p1.push('Si parte in salita, quindi parti morbido: il tempo perso qui lo recuperi più avanti, bruciarti subito no.')
+  } else if (gStart < -1.5) {
+    p1.push('I primi chilometri sono in discesa ed è la trappola classica: tieni il freno tirato, partire troppo forte qui si paga carissimo dopo.')
+  } else {
+    p1.push('I primi chilometri sono abbastanza regolari: imposta subito il tuo passo ideale, senza inseguire chi scatta.')
+  }
+  if (conditions.approach === 'prudente') {
+    p1.push('Con un approccio prudente punta a chiudere più forte di come sei partito.')
+  } else if (conditions.approach === 'aggressivo') {
+    p1.push('Hai scelto un approccio aggressivo: può pagare, ma solo se le sensazioni restano buone nel tratto centrale.')
+  }
+
+  // ── Paragrafo 2: gestione centrale e tratti critici ──
+  const p2: string[] = []
+  if (result.criticalKms.length > 0) {
+    const list = result.criticalKms.join(', ')
+    p2.push(`Il cuore della gara sono i tratti critici (km ${list}): è lì che il percorso morde di più. Il punto più impegnativo è il km ${hardest.km}, dove conviene accorciare il passo e tenere il fiato sotto controllo.`)
+  } else {
+    p2.push('Il percorso non ha strappi cattivi: la sfida è la regolarità, non lasciare che il passo si sfaldi nel tratto centrale.')
+  }
+  if (typeof conditions.temperatureC === 'number' && conditions.temperatureC > 20) {
+    p2.push(`Con circa ${conditions.temperatureC}°C il caldo pesa: bevi a ogni ristoro e non inseguire il passo ideale al secondo.`)
+  } else if (typeof conditions.temperatureC === 'number' && conditions.temperatureC < 5) {
+    p2.push('Fa freddo: copriti alla partenza e concediti qualche minuto in più per entrare in temperatura.')
+  }
+  if (conditions.windType === 'contro' && conditions.windKmh) {
+    p2.push('Il vento contrario ti frena: mettiti in scia ad altri runner quando puoi e non spendere troppo per contrastarlo.')
+  }
+  if (conditions.terrain === 'trail' || conditions.terrain === 'sterrato' || conditions.terrain === 'sampietrini') {
+    p2.push(`Sul fondo ${conditions.terrain} il passo è naturalmente più lento: valuta lo sforzo, non solo il cronometro.`)
+  }
+
+  // ── Paragrafo 3: come chiudere ──
+  const p3: string[] = []
+  if (gEnd > 1.5) {
+    p3.push('Attenzione al finale in salita: conserva qualcosa per gli ultimi chilometri, sono i più duri e faranno la differenza sul tempo.')
+  } else if (gEnd < -1.5) {
+    p3.push('Il finale è in discesa: se arrivi lucido puoi chiudere in progressione, ma occhio a quadricipiti e articolazioni, non buttarti a rotta di collo.')
+  } else {
+    p3.push('Finale regolare: se hai gestito bene le energie, gli ultimi chilometri sono il momento giusto per spingere.')
+  }
+  if (netDownhill > 50) {
+    p3.push('Nel complesso il percorso scende più di quanto salga: un piccolo aiuto sul tempo finale, se sai sfruttare le discese senza strappi.')
+  } else if (netDownhill < -50) {
+    p3.push('Il bilancio altimetrico è in salita: aspettati un tempo un po’ più alto del tuo passo su piatto, ed è del tutto normale.')
+  }
+
+  return [p1.join(' '), p2.join(' '), p3.join(' ')]
+}
+
 /** Nota testuale sul tratto, in base al fattore dominante. */
 function buildNote(seg: CourseSegment, altimetry: number, crowd: number, idealPace: number): string {
   if (altimetry > idealPace * 0.1) return 'Salita impegnativa: non forzare, tieni il fiato'

@@ -6,6 +6,7 @@ import { parsePace, formatPace, formatTime, formatDistance } from '@/lib/running
 import { parseGpx, type ParsedCourse } from '@/lib/running/gpx'
 import {
   computeRaceStrategy,
+  buildRaceComment,
   type RaceConditions,
   type Terrain,
   type WindType,
@@ -54,17 +55,12 @@ export function RaceStrategyTool() {
   const [submitted, setSubmitted] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  const [comment, setComment] = useState<string | null>(null)
-  const [commentState, setCommentState] = useState<'idle' | 'loading' | 'error'>('idle')
-  const [commentError, setCommentError] = useState<string | null>(null)
-
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return
     setGpxError(null)
     setSubmitted(false)
-    setComment(null)
     try {
       const text = await file.text()
       const parsed = parseGpx(text)
@@ -96,11 +92,14 @@ export function RaceStrategyTool() {
     return computeRaceStrategy({ idealPaceSec, segments: course.segments, conditions })
   }, [submitted, course, idealPaceSec, conditions])
 
+  const commentParagraphs = useMemo(() => {
+    if (!result || !idealPaceSec) return null
+    return buildRaceComment(result, conditions, idealPaceSec)
+  }, [result, conditions, idealPaceSec])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
-    setComment(null)
-    setCommentState('idle')
     if (!course) {
       setFormError('Carica prima un file GPX del percorso.')
       return
@@ -110,43 +109,6 @@ export function RaceStrategyTool() {
       return
     }
     setSubmitted(true)
-  }
-
-  const generateComment = async () => {
-    if (!result || !course || !idealPaceSec) return
-    setCommentState('loading')
-    setCommentError(null)
-    // Prendi i tratti più significativi (per |delta|).
-    const highlights = [...result.splits]
-      .sort((a, b) => Math.abs(b.deltaSec) - Math.abs(a.deltaSec))
-      .slice(0, 8)
-      .sort((a, b) => a.km - b.km)
-      .map(s => ({ km: s.km, deltaSec: s.deltaSec, gradePct: s.gradePct, note: s.note }))
-    try {
-      const res = await fetch('/api/tools/strategia-gara/commento', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          raceName,
-          distanceM: result.distanceM,
-          idealPaceSec,
-          totalTimeSec: result.totalTimeSec,
-          avgPaceSec: result.avgPaceSec,
-          ascentM: result.ascentM,
-          descentM: result.descentM,
-          criticalKms: result.criticalKms,
-          conditions,
-          highlights,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Generazione non riuscita.')
-      setComment(data.comment)
-      setCommentState('idle')
-    } catch (err) {
-      setCommentState('error')
-      setCommentError(err instanceof Error ? err.message : 'Generazione non riuscita.')
-    }
   }
 
   return (
@@ -292,30 +254,20 @@ export function RaceStrategyTool() {
               hint="fondo e meteo" />
           </div>
 
-          {/* Commento gara (Claude) */}
-          <div className="bg-gradient-to-br from-orange-50 to-white border border-primary/20 rounded-2xl p-5 sm:p-6 mb-5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="material-symbols-outlined text-primary">auto_awesome</span>
-              <h3 className="text-base font-extrabold text-gray-900">Commento gara del coach</h3>
+          {/* Commento gara (dalle caratteristiche del percorso) */}
+          {commentParagraphs && commentParagraphs.length > 0 && (
+            <div className="bg-gradient-to-br from-orange-50 to-white border border-primary/20 rounded-2xl p-5 sm:p-6 mb-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="material-symbols-outlined text-primary">tips_and_updates</span>
+                <h3 className="text-base font-extrabold text-gray-900">Come affrontare la gara</h3>
+              </div>
+              <div className="grid gap-3">
+                {commentParagraphs.map((para, i) => (
+                  <p key={i} className="text-sm text-gray-700 leading-relaxed">{para}</p>
+                ))}
+              </div>
             </div>
-            {comment ? (
-              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{comment}</div>
-            ) : (
-              <>
-                <p className="text-sm text-gray-500 mb-3">
-                  Genera un commento strategico su misura: come partire, i tratti da gestire e come chiudere.
-                </p>
-                <button type="button" onClick={generateComment} disabled={commentState === 'loading'}
-                  className="inline-flex items-center gap-2 bg-primary text-on-primary text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-primary-hover transition-colors disabled:opacity-60">
-                  <span className="material-symbols-outlined text-lg">
-                    {commentState === 'loading' ? 'progress_activity' : 'auto_awesome'}
-                  </span>
-                  {commentState === 'loading' ? 'Sto scrivendo…' : 'Genera il commento gara'}
-                </button>
-                {commentState === 'error' && <p className="text-xs text-error font-medium mt-2">{commentError}</p>}
-              </>
-            )}
-          </div>
+          )}
 
           {/* Tratti critici */}
           {result.criticalKms.length > 0 && (

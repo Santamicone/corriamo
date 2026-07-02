@@ -1,7 +1,7 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
-> Aggiornato al: **luglio 2026** — nuovo tool **"Strategia gara intelligente"** (`/tools/strategia-gara`): l'utente carica il **GPX** del percorso e il passo ideale su piatto, indica le condizioni (meteo, vento, fondo, affollamento, approccio) e ottiene passo reale per km, tempo finale ±margine, split, tratti critici, profilo altimetrico e un **commento gara narrativo generato con Claude** (`claude-opus-4-8`). Motore di calcolo puro e trasparente a coefficienti (`src/lib/running/gpx.ts` + `raceStrategy.ts`), commento via `POST /api/tools/strategia-gara/commento`. Richiede env `ANTHROPIC_API_KEY` (se assente il commento risponde 503, il resto del tool funziona).
+> Aggiornato al: **luglio 2026** — nuovo tool **"Strategia gara intelligente"** (`/tools/strategia-gara`): l'utente carica il **GPX** del percorso e il passo ideale su piatto, indica le condizioni (meteo, vento, fondo, affollamento, approccio) e ottiene passo reale per km, tempo finale ±margine, split, tratti critici, profilo altimetrico e un **commento strategico generato dalle caratteristiche del percorso** (regole trasparenti, `buildRaceComment`). Tutto client-side: motore di calcolo puro in `src/lib/running/gpx.ts` + `raceStrategy.ts`, nessun DB e nessuna API esterna.
 >
 > Aggiornato al: **luglio 2026** — profilo fisico nel tool **"Da dove inizio?"** (PR #90): aggiunti alla scheda iniziale i campi **altezza** e **genere** (oltre a peso ed età). Il rapporto altezza/peso (BMI) genera note prudenziali nell'esito: sovrappeso evidente (≥30) / lieve (≥25) / sottopeso (<18.5, con frase dedicata alle donne) + nota gentile se obiettivo "dimagrire" con BMI già <25. Tutti i campi fisici sono facoltativi.
 >
@@ -53,7 +53,6 @@ NEXT_PUBLIC_SUPABASE_URL  → https://wshjtgtmxbxhpdqtxpiq.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY → eyJhbGci... (JWT legacy)
 NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email redirect
 RESEND_API_KEY → re_...   ← invio email dalle API route Next (es. scheda ritmi tool)
-ANTHROPIC_API_KEY → sk-ant-...   ← commento gara del tool "Strategia gara intelligente" (Claude). Se assente il tool funziona ma il commento risponde 503
 SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token unsubscribe lato Next
 ```
 
@@ -445,7 +444,7 @@ src/
 - [x] **Test "da dove inizio?" — profilo fisico** (PR #90) — campi facoltativi **altezza** e **genere** nella scheda iniziale; calcolo BMI (altezza+peso) con note prudenziali nell'esito: sovrappeso ≥30 (cammino/gradualità/superfici morbide/check-up), ≥25 (uscite facili), sottopeso <18.5 (mangiare a sufficienza, no calo peso, medico/nutrizionista, frase dedicata alle donne), + nota se obiettivo "dimagrire" con BMI <25. Messaggi prudenziali (BMI = indicatore grezzo)
 - [x] Link editoriali del quiz verso il sito WordPress (`www.vieniacorrere.it/...`), aperti in nuova scheda
 - [x] CTA "Trova compagni" → `/bacheca` su ogni tool; disclaimer legale (solo modelli pubblici, no VDOT)
-- [x] **Strategia gara intelligente** (`/tools/strategia-gara`) — upload GPX → parsing percorso in segmenti da 1 km (`gpx.ts`, haversine + dislivello a isteresi anti-rumore); motore `raceStrategy.ts` (coefficienti trasparenti: dislivello, fondo, meteo, vento, affollamento, approccio) → passo reale per km, tempo finale ±margine, split, tratti critici, profilo altimetrico SVG; commento gara narrativo via `POST /api/tools/strategia-gara/commento` con Claude (`claude-opus-4-8`, `@anthropic-ai/sdk`). CTA verso `/gare`. MVP client-side: niente DB, niente gare precaricate (follow-up)
+- [x] **Strategia gara intelligente** (`/tools/strategia-gara`) — upload GPX → parsing percorso in segmenti da 1 km (`gpx.ts`, haversine + dislivello a isteresi anti-rumore); motore `raceStrategy.ts` (coefficienti trasparenti: dislivello, fondo, meteo, vento, affollamento, approccio) → passo reale per km, tempo finale ±margine, split, tratti critici, profilo altimetrico SVG; commento strategico `buildRaceComment` generato dalle caratteristiche del percorso (regole client-side, nessuna API esterna). CTA verso `/gare`. MVP client-side: niente DB, niente gare precaricate (follow-up)
 - [x] **Backend email scheda ritmi**: `POST /api/tools/scheda-ritmi` con auth + validazione + **ricalcolo server-side** → invio via Resend (template `emailSchedaRitmi` branded). Utente non loggato → CTA `/registrati`
 - ✅ **Mergiata su `main` (PR #81, #82). Env `RESEND_API_KEY` + `SUPABASE_SERVICE_ROLE_KEY` configurate su Vercel**
 
