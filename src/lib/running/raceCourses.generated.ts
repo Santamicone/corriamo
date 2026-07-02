@@ -21,6 +21,319 @@ export interface RaceCourse extends ParsedCourse {
 
 export const RACE_COURSES: RaceCourse[] = [
   {
+    "id": "atene",
+    "city": "Atene",
+    "name": "Athens Marathon",
+    "country": "",
+    "distanceM": 42265,
+    "ascentM": 296,
+    "descentM": 238,
+    "segments": [
+      {
+        "km": 1,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 9,
+        "gradePct": -0.9
+      },
+      {
+        "km": 2,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 10,
+        "gradePct": -1
+      },
+      {
+        "km": 3,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 2,
+        "gradePct": -0.2
+      },
+      {
+        "km": 4,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 5,
+        "gradePct": -0.5
+      },
+      {
+        "km": 5,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 3,
+        "gradePct": -0.3
+      },
+      {
+        "km": 6,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 0,
+        "gradePct": 0.2
+      },
+      {
+        "km": 7,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 3,
+        "gradePct": -0.3
+      },
+      {
+        "km": 8,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 0,
+        "gradePct": 0.2
+      },
+      {
+        "km": 9,
+        "distanceM": 1000,
+        "ascentM": 5,
+        "descentM": 0,
+        "gradePct": 0.5
+      },
+      {
+        "km": 10,
+        "distanceM": 1000,
+        "ascentM": 5,
+        "descentM": 0,
+        "gradePct": 0.5
+      },
+      {
+        "km": 11,
+        "distanceM": 1000,
+        "ascentM": 13,
+        "descentM": 0,
+        "gradePct": 1.3
+      },
+      {
+        "km": 12,
+        "distanceM": 1000,
+        "ascentM": 17,
+        "descentM": 0,
+        "gradePct": 1.7
+      },
+      {
+        "km": 13,
+        "distanceM": 1000,
+        "ascentM": 12,
+        "descentM": 0,
+        "gradePct": 1.2
+      },
+      {
+        "km": 14,
+        "distanceM": 1000,
+        "ascentM": 3,
+        "descentM": 0,
+        "gradePct": 0.3
+      },
+      {
+        "km": 15,
+        "distanceM": 1000,
+        "ascentM": 3,
+        "descentM": 0,
+        "gradePct": 0.3
+      },
+      {
+        "km": 16,
+        "distanceM": 1000,
+        "ascentM": 22,
+        "descentM": 0,
+        "gradePct": 2.2
+      },
+      {
+        "km": 17,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 33,
+        "gradePct": -3.3
+      },
+      {
+        "km": 18,
+        "distanceM": 1000,
+        "ascentM": 4,
+        "descentM": 18,
+        "gradePct": -1.4
+      },
+      {
+        "km": 19,
+        "distanceM": 1000,
+        "ascentM": 4,
+        "descentM": 3,
+        "gradePct": 0.1
+      },
+      {
+        "km": 20,
+        "distanceM": 1000,
+        "ascentM": 24,
+        "descentM": 0,
+        "gradePct": 2.4
+      },
+      {
+        "km": 21,
+        "distanceM": 1000,
+        "ascentM": 28,
+        "descentM": 0,
+        "gradePct": 2.8
+      },
+      {
+        "km": 22,
+        "distanceM": 1000,
+        "ascentM": 13,
+        "descentM": 0,
+        "gradePct": 1.3
+      },
+      {
+        "km": 23,
+        "distanceM": 1000,
+        "ascentM": 11,
+        "descentM": 0,
+        "gradePct": 1.1
+      },
+      {
+        "km": 24,
+        "distanceM": 1000,
+        "ascentM": 11,
+        "descentM": 0,
+        "gradePct": 1.1
+      },
+      {
+        "km": 25,
+        "distanceM": 1000,
+        "ascentM": 31,
+        "descentM": 0,
+        "gradePct": 3.1
+      },
+      {
+        "km": 26,
+        "distanceM": 1000,
+        "ascentM": 18,
+        "descentM": 0,
+        "gradePct": 1.8
+      },
+      {
+        "km": 27,
+        "distanceM": 1000,
+        "ascentM": 11,
+        "descentM": 0,
+        "gradePct": 1.1
+      },
+      {
+        "km": 28,
+        "distanceM": 1000,
+        "ascentM": 15,
+        "descentM": 0,
+        "gradePct": 1.5
+      },
+      {
+        "km": 29,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
+      },
+      {
+        "km": 30,
+        "distanceM": 1000,
+        "ascentM": 8,
+        "descentM": 0,
+        "gradePct": 0.8
+      },
+      {
+        "km": 31,
+        "distanceM": 1000,
+        "ascentM": 29,
+        "descentM": 0,
+        "gradePct": 2.9
+      },
+      {
+        "km": 32,
+        "distanceM": 1000,
+        "ascentM": 4,
+        "descentM": 18,
+        "gradePct": -1.4
+      },
+      {
+        "km": 33,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 19,
+        "gradePct": -1.9
+      },
+      {
+        "km": 34,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 7,
+        "gradePct": -0.7
+      },
+      {
+        "km": 35,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 7,
+        "gradePct": -0.7
+      },
+      {
+        "km": 36,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 5,
+        "gradePct": -0.5
+      },
+      {
+        "km": 37,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 19,
+        "gradePct": -1.9
+      },
+      {
+        "km": 38,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 11,
+        "gradePct": -1.1
+      },
+      {
+        "km": 39,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 14,
+        "gradePct": -1.4
+      },
+      {
+        "km": 40,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 22,
+        "gradePct": -2.2
+      },
+      {
+        "km": 41,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 10,
+        "gradePct": -1
+      },
+      {
+        "km": 42,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 17,
+        "gradePct": -1.7
+      },
+      {
+        "km": 43,
+        "distanceM": 265,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      }
+    ],
+    "hasElevation": true
+  },
+  {
     "id": "berlino",
     "city": "Berlino",
     "name": "BMW Berlin-Marathon",
@@ -1495,6 +1808,172 @@ export const RACE_COURSES: RaceCourse[] = [
     "hasElevation": true
   },
   {
+    "id": "roma-ostia",
+    "city": "Roma-Ostia",
+    "name": "48° Roma-Ostia",
+    "country": "",
+    "distanceM": 21693,
+    "ascentM": 131,
+    "descentM": 153,
+    "segments": [
+      {
+        "km": 1,
+        "distanceM": 1000,
+        "ascentM": 64,
+        "descentM": 47,
+        "gradePct": 1.7
+      },
+      {
+        "km": 2,
+        "distanceM": 1000,
+        "ascentM": 17,
+        "descentM": 41,
+        "gradePct": -2.5
+      },
+      {
+        "km": 3,
+        "distanceM": 1000,
+        "ascentM": 46,
+        "descentM": 56,
+        "gradePct": -1
+      },
+      {
+        "km": 4,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 6,
+        "gradePct": -0.6
+      },
+      {
+        "km": 5,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 6,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 7,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 8,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 9,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 10,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 11,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 12,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 13,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 0,
+        "gradePct": 0.2
+      },
+      {
+        "km": 14,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 15,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 16,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 17,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 18,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 19,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 0,
+        "gradePct": 0.2
+      },
+      {
+        "km": 20,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 21,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 22,
+        "distanceM": 693,
+        "ascentM": 0,
+        "descentM": 3,
+        "gradePct": -0.4
+      }
+    ],
+    "hasElevation": true
+  },
+  {
     "id": "roma",
     "city": "Roma",
     "name": "Run Rome The Marathon",
@@ -1796,6 +2275,172 @@ export const RACE_COURSES: RaceCourse[] = [
         "ascentM": 2,
         "descentM": 6,
         "gradePct": -0.4
+      }
+    ],
+    "hasElevation": true
+  },
+  {
+    "id": "stramilano",
+    "city": "Stramilano",
+    "name": "Stramilano",
+    "country": "",
+    "distanceM": 21465,
+    "ascentM": 42,
+    "descentM": 39,
+    "segments": [
+      {
+        "km": 1,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 2,
+        "distanceM": 1000,
+        "ascentM": 3,
+        "descentM": 0,
+        "gradePct": 0.3
+      },
+      {
+        "km": 3,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 4,
+        "gradePct": -0.2
+      },
+      {
+        "km": 4,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 5,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 5,
+        "gradePct": -0.4
+      },
+      {
+        "km": 6,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 3,
+        "gradePct": -0.2
+      },
+      {
+        "km": 7,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
+      },
+      {
+        "km": 8,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 2,
+        "gradePct": -0.1
+      },
+      {
+        "km": 9,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 0,
+        "gradePct": 0.2
+      },
+      {
+        "km": 10,
+        "distanceM": 1000,
+        "ascentM": 8,
+        "descentM": 4,
+        "gradePct": 0.5
+      },
+      {
+        "km": 11,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
+      },
+      {
+        "km": 12,
+        "distanceM": 1000,
+        "ascentM": 4,
+        "descentM": 5,
+        "gradePct": -0.1
+      },
+      {
+        "km": 13,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 4,
+        "gradePct": -0.4
+      },
+      {
+        "km": 14,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 3,
+        "gradePct": -0.3
+      },
+      {
+        "km": 15,
+        "distanceM": 1000,
+        "ascentM": 3,
+        "descentM": 0,
+        "gradePct": 0.3
+      },
+      {
+        "km": 16,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 3,
+        "gradePct": -0.1
+      },
+      {
+        "km": 17,
+        "distanceM": 1000,
+        "ascentM": 7,
+        "descentM": 0,
+        "gradePct": 0.7
+      },
+      {
+        "km": 18,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 19,
+        "distanceM": 1000,
+        "ascentM": 5,
+        "descentM": 2,
+        "gradePct": 0.4
+      },
+      {
+        "km": 20,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 3,
+        "gradePct": -0.3
+      },
+      {
+        "km": 21,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 22,
+        "distanceM": 465,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
       }
     ],
     "hasElevation": true
