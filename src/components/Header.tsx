@@ -68,12 +68,19 @@ const navLinks = [
   { href: '/come-funziona',  label: 'Come funziona',          icon: 'help_outline',   help: true  },
 ]
 
+/* Voci del menu "Extra" — Strumenti (interno) + Magazine (sito editoriale, esterno) */
+const extraLinks = [
+  { href: '/tools',                       label: 'Strumenti per chi corre', icon: 'calculate', external: false },
+  { href: 'https://www.vieniacorrere.it', label: 'Vieni a Correre - La Crew', icon: 'open_in_new', external: true  },
+]
+
 export function Header() {
   const pathname  = usePathname()
   const router    = useRouter()
   const [profile,    setProfile]    = useState<Profile | null>(profileCache)
   const [mobileOpen,  setMobileOpen]  = useState(false)  // hamburger mobile
   const [userOpen,    setUserOpen]    = useState(false)  // dropdown avatar desktop
+  const [extraOpen,   setExtraOpen]   = useState(false)  // dropdown "Extra" desktop
   const [loggingOut,  setLoggingOut]  = useState(false)  // feedback logout
 
   const unreadMessages      = useUnreadMessages(profile?.id ?? null)
@@ -96,7 +103,7 @@ export function Header() {
   }, [pathname])
 
   // Chiudi menu al cambio pagina
-  useEffect(() => { setMobileOpen(false); setUserOpen(false) }, [pathname])
+  useEffect(() => { setMobileOpen(false); setUserOpen(false); setExtraOpen(false) }, [pathname])
 
   const handleLogout = async () => {
     setMobileOpen(false)
@@ -155,6 +162,45 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+
+            {/* Dropdown "Extra" */}
+            <div className="relative">
+              <button
+                onClick={() => setExtraOpen(!extraOpen)}
+                className={cn(
+                  'inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors',
+                  extraOpen
+                    ? 'bg-gray-100 text-gray-900 font-semibold'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                )}
+              >
+                Extra
+                <span className="material-symbols-outlined text-lg text-gray-400">expand_more</span>
+              </button>
+              {extraOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setExtraOpen(false)} />
+                  <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden py-1">
+                    {extraLinks.map(item =>
+                      item.external ? (
+                        <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer"
+                          onClick={() => setExtraOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap">
+                          <span className="material-symbols-outlined text-base text-gray-400">{item.icon}</span>
+                          {item.label}
+                        </a>
+                      ) : (
+                        <Link key={item.href} href={item.href} onClick={() => setExtraOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap">
+                          <span className="material-symbols-outlined text-base text-gray-400">{item.icon}</span>
+                          {item.label}
+                        </Link>
+                      )
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </nav>
 
           {/* Destra */}
@@ -315,6 +361,32 @@ export function Header() {
                   {link.label}
                 </Link>
               ))}
+            </div>
+
+            <div className="border-t border-gray-100 mx-4" />
+
+            {/* Extra */}
+            <div className="px-4 pt-3 pb-2 flex flex-col gap-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3 mb-1">Extra</p>
+              {extraLinks.map(item =>
+                item.external ? (
+                  <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    <span className="material-symbols-outlined text-base text-gray-400">{item.icon}</span>
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-colors',
+                      isActive(item.href) ? 'bg-orange-50 text-primary' : 'text-gray-700 hover:bg-gray-50'
+                    )}>
+                    <span className="material-symbols-outlined text-base text-gray-400">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                )
+              )}
             </div>
 
             <div className="border-t border-gray-100 mx-4" />
