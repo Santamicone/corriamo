@@ -30,6 +30,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // Utenti sospesi/bannati: bloccati sui percorsi di scrittura, rediretti alla
+  // pagina di stato. L'enforcement forte è comunque a livello DB (RLS is_active_user).
+  if (user && isProtected && !request.nextUrl.pathname.startsWith('/admin')) {
+    const { data: profile } = await supabase
+      .from('profiles').select('moderation_status').eq('id', user.id).maybeSingle()
+    if (profile && ['suspended', 'banned'].includes(profile.moderation_status ?? '')) {
+      return NextResponse.redirect(new URL('/account-sospeso', request.url))
+    }
+  }
+
   if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/registrati') && user) {
     return NextResponse.redirect(new URL('/bacheca', request.url))
   }

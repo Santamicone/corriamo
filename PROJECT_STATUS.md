@@ -485,6 +485,16 @@ src/
 - [x] FIDAL scartato (querystring ignorata); long-tail IT via segnalazioni utenti
 - ⏳ **Da applicare in Supabase: `races-moderation.sql` (SQL #27)** per abilitare la moderazione
 
+### Sezione admin (`/admin`) — richiede `supabase/admin.sql` (#28) + MFA TOTP
+- [x] Gate `/admin` a due livelli: `is_admin` (layout) + **2FA AAL2** (`requireAal2` sulle pagine operative)
+- [x] Configurazione 2FA TOTP: `/admin/mfa/setup` (QR + **codici di recupero** monouso, hash sha256), `/admin/mfa/verifica` (challenge), `/admin/mfa/recupero` (consuma codice → `mfa.deleteFactor` via service-role)
+- [x] Dashboard KPI (gare pending, segnalazioni aperte, utenti sospesi/bannati, contenuti nascosti)
+- [x] **Utenti**: ricerca, scheda con **ban graduale** (ammonisci → sospendi N giorni → blocca) + revoca, storico provvedimenti, **messaggio diretto** (in-app + email)
+- [x] Enforcement: RLS `is_active_user()` (blocco scrittura DB) + `proxy.ts` redirect a `/account-sospeso` + policy `is_admin_aal2()` con claim `aal2`
+- [x] Audit log `admin_actions` su ogni azione sensibile; email staff via template `emailAdminMessage`
+- [x] Moderazione gare migrata in `/admin/gare` (riuso `ModeraActions`); stub `contenuti`/`segnalazioni`/`broadcast` (PR C–E)
+- ⏳ **Da applicare in Supabase: `admin.sql` (#28)** + abilitare **MFA TOTP** in Dashboard
+
 ### UX
 - [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
 - [x] Homepage: hero video/img + "Perché Vieni a correre?" con foto fondatori
