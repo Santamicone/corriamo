@@ -962,158 +962,312 @@ export const RACE_COURSES: RaceCourse[] = [
   {
     "id": "firenze",
     "city": "Firenze",
-    "name": "Half Marathon Firenze",
+    "name": "Estra Firenze Marathon",
     "country": "",
-    "distanceM": 21098,
-    "ascentM": 96,
-    "descentM": 92,
+    "distanceM": 42531,
+    "ascentM": 102,
+    "descentM": 99,
     "segments": [
       {
         "km": 1,
         "distanceM": 1000,
-        "ascentM": 5,
-        "descentM": 2,
-        "gradePct": 0.3
+        "ascentM": 2,
+        "descentM": 5,
+        "gradePct": -0.3
       },
       {
         "km": 2,
         "distanceM": 1000,
-        "ascentM": 8,
-        "descentM": 6,
-        "gradePct": 0.2
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
       },
       {
         "km": 3,
-        "distanceM": 1000,
-        "ascentM": 9,
-        "descentM": 2,
-        "gradePct": 0.7
-      },
-      {
-        "km": 4,
-        "distanceM": 1000,
-        "ascentM": 6,
-        "descentM": 14,
-        "gradePct": -0.8
-      },
-      {
-        "km": 5,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 5,
-        "gradePct": -0.5
-      },
-      {
-        "km": 6,
-        "distanceM": 1000,
-        "ascentM": 4,
-        "descentM": 0,
-        "gradePct": 0.4
-      },
-      {
-        "km": 7,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 9,
-        "gradePct": -0.8
-      },
-      {
-        "km": 8,
-        "distanceM": 1000,
-        "ascentM": 4,
-        "descentM": 2,
-        "gradePct": 0.2
-      },
-      {
-        "km": 9,
-        "distanceM": 1000,
-        "ascentM": 9,
-        "descentM": 2,
-        "gradePct": 0.7
-      },
-      {
-        "km": 10,
         "distanceM": 1000,
         "ascentM": 5,
         "descentM": 0,
         "gradePct": 0.5
       },
       {
-        "km": 11,
+        "km": 4,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 9,
+        "gradePct": -0.9
+      },
+      {
+        "km": 5,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 6,
+        "gradePct": -0.5
+      },
+      {
+        "km": 6,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 3,
+        "gradePct": -0.3
+      },
+      {
+        "km": 7,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
+      },
+      {
+        "km": 8,
         "distanceM": 1000,
         "ascentM": 3,
-        "descentM": 11,
-        "gradePct": -0.8
+        "descentM": 0,
+        "gradePct": 0.3
+      },
+      {
+        "km": 9,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 10,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 11,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
       },
       {
         "km": 12,
         "distanceM": 1000,
-        "ascentM": 13,
+        "ascentM": 2,
         "descentM": 0,
-        "gradePct": 1.3
+        "gradePct": 0.2
       },
       {
         "km": 13,
         "distanceM": 1000,
-        "ascentM": 5,
-        "descentM": 8,
-        "gradePct": -0.4
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
       },
       {
         "km": 14,
-        "distanceM": 1000,
-        "ascentM": 0,
-        "descentM": 11,
-        "gradePct": -1
-      },
-      {
-        "km": 15,
-        "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 2,
-        "gradePct": 0.1
-      },
-      {
-        "km": 16,
-        "distanceM": 1000,
-        "ascentM": 2,
-        "descentM": 8,
-        "gradePct": -0.6
-      },
-      {
-        "km": 17,
         "distanceM": 1000,
         "ascentM": 0,
         "descentM": 2,
         "gradePct": -0.1
       },
       {
-        "km": 18,
+        "km": 15,
         "distanceM": 1000,
-        "ascentM": 11,
+        "ascentM": 0,
         "descentM": 0,
-        "gradePct": 1.1
+        "gradePct": 0
       },
       {
-        "km": 19,
+        "km": 16,
         "distanceM": 1000,
         "ascentM": 0,
         "descentM": 2,
         "gradePct": -0.2
       },
       {
+        "km": 17,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 2,
+        "gradePct": -0.2
+      },
+      {
+        "km": 18,
+        "distanceM": 1000,
+        "ascentM": 9,
+        "descentM": 0,
+        "gradePct": 0.9
+      },
+      {
+        "km": 19,
+        "distanceM": 1000,
+        "ascentM": 9,
+        "descentM": 0,
+        "gradePct": 0.9
+      },
+      {
         "km": 20,
         "distanceM": 1000,
-        "ascentM": 5,
-        "descentM": 10,
-        "gradePct": -0.5
+        "ascentM": 0,
+        "descentM": 12,
+        "gradePct": -1.2
       },
       {
         "km": 21,
-        "distanceM": 1098,
+        "distanceM": 1000,
+        "ascentM": 7,
+        "descentM": 3,
+        "gradePct": 0.4
+      },
+      {
+        "km": 22,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 2,
+        "gradePct": -0.2
+      },
+      {
+        "km": 23,
+        "distanceM": 1000,
+        "ascentM": 6,
+        "descentM": 0,
+        "gradePct": 0.6
+      },
+      {
+        "km": 24,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 4,
+        "gradePct": -0.4
+      },
+      {
+        "km": 25,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 0,
+        "gradePct": 0.2
+      },
+      {
+        "km": 26,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 2,
+        "gradePct": -0.1
+      },
+      {
+        "km": 27,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
+      },
+      {
+        "km": 28,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
+      },
+      {
+        "km": 29,
+        "distanceM": 1000,
+        "ascentM": 3,
+        "descentM": 0,
+        "gradePct": 0.3
+      },
+      {
+        "km": 30,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 3,
+        "gradePct": -0.2
+      },
+      {
+        "km": 31,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 3,
+        "gradePct": -0.1
+      },
+      {
+        "km": 32,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
+      },
+      {
+        "km": 33,
+        "distanceM": 1000,
+        "ascentM": 4,
+        "descentM": 2,
+        "gradePct": 0.2
+      },
+      {
+        "km": 34,
+        "distanceM": 1000,
+        "ascentM": 3,
+        "descentM": 2,
+        "gradePct": 0.2
+      },
+      {
+        "km": 35,
+        "distanceM": 1000,
+        "ascentM": 0,
+        "descentM": 3,
+        "gradePct": -0.3
+      },
+      {
+        "km": 36,
+        "distanceM": 1000,
+        "ascentM": 2,
+        "descentM": 2,
+        "gradePct": 0
+      },
+      {
+        "km": 37,
+        "distanceM": 1000,
         "ascentM": 5,
         "descentM": 0,
         "gradePct": 0.5
+      },
+      {
+        "km": 38,
+        "distanceM": 1000,
+        "ascentM": 4,
+        "descentM": 5,
+        "gradePct": -0.1
+      },
+      {
+        "km": 39,
+        "distanceM": 1000,
+        "ascentM": 10,
+        "descentM": 2,
+        "gradePct": 0.8
+      },
+      {
+        "km": 40,
+        "distanceM": 1000,
+        "ascentM": 3,
+        "descentM": 17,
+        "gradePct": -1.4
+      },
+      {
+        "km": 41,
+        "distanceM": 1000,
+        "ascentM": 5,
+        "descentM": 3,
+        "gradePct": 0.2
+      },
+      {
+        "km": 42,
+        "distanceM": 1000,
+        "ascentM": 7,
+        "descentM": 0,
+        "gradePct": 0.7
+      },
+      {
+        "km": 43,
+        "distanceM": 531,
+        "ascentM": 0,
+        "descentM": 0,
+        "gradePct": 0
       }
     ],
     "hasElevation": true
