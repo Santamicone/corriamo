@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "gen:courses": "node scripts/generate-race-courses.mjs"
+    "gen:courses": "node scripts/generate-race-courses.mjs",
+    "import:aims": "node --env-file=.env.local scripts/import-aims.mjs",
+    "seed:circuits": "node --env-file=.env.local scripts/seed-circuits.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

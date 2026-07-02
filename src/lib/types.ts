@@ -3,6 +3,13 @@ export type ProfileLevel = RunLevel | 'amatore_gare' | 'atleta'
 export type RunStatus = 'aperta' | 'completa' | 'annullata'
 export type RunType = 'allenamento' | 'gara'
 export type RaceDistance = '5k' | '10k' | '21k' | '42k'
+// Distanze del catalogo gare (estende RaceDistance con trail/ultra/other)
+export type CatalogDistance = RaceDistance | 'trail' | 'ultra' | 'other'
+export type RaceType = 'competitiva' | 'non_competitiva' | 'federale' | 'internazionale' | 'charity'
+export type RaceRegistration = 'aperte' | 'chiuse' | 'da_verificare'
+export type RaceCircuit = 'major' | 'superhalfs' | 'wa_label' | 'aims'
+export type RaceSource = 'editoriale' | 'utente' | 'aims' | 'fidal'
+export type RaceStatus = 'published' | 'pending' | 'rejected'
 export type ParticipationStatus = 'in_attesa' | 'approvata' | 'rifiutata'
 export type RecurrenceType = 'settimanale' | 'bisettimanale' | 'mensile'
 
@@ -68,6 +75,38 @@ export interface Run {
   race_registered?: boolean
   looking_for?: string[]
   tags?: string[]
+  // Ponte al catalogo gare (public.races)
+  race_id?: string | null
+}
+
+// Catalogo gare (public.races) — evento reale, distinto dai post community type='gara'
+export interface Race {
+  id: string
+  slug: string
+  name: string
+  city: string
+  region: string | null
+  country: string
+  event_date: string
+  end_date: string | null
+  distances: CatalogDistance[]
+  race_type: RaceType
+  level_hint: ProfileLevel | null
+  elevation_m: number | null
+  course_profile: string[]
+  participants_est: number | null
+  official_url: string | null
+  registration_status: RaceRegistration
+  circuit: RaceCircuit | null
+  tags: string[]
+  gpx_path: string | null
+  featured: boolean
+  source: RaceSource
+  external_ref: string | null
+  status: RaceStatus
+  created_by: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Series {
