@@ -43,6 +43,51 @@ export interface Profile {
   reliability_confirmed: number
   // Moderazione (calendario gare)
   is_admin?: boolean
+  // Moderazione utenti (sezione admin, SQL #28)
+  moderation_status?: 'active' | 'warned' | 'suspended' | 'banned'
+  warned_count?: number
+  moderation_until?: string | null
+}
+
+// --- Sezione admin (SQL #28) -------------------------------------------------
+export type ModerationAction = 'warning' | 'suspension' | 'ban'
+export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed'
+
+export interface UserModeration {
+  id: string
+  user_id: string
+  admin_id: string | null
+  action: ModerationAction
+  reason: string
+  note: string | null
+  expires_at: string | null
+  created_at: string
+  revoked_at: string | null
+  revoked_by: string | null
+}
+
+export interface AdminAction {
+  id: string
+  admin_id: string | null
+  action_type: string
+  entity_table: string | null
+  entity_id: string | null
+  reason: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface Report {
+  id: string
+  reporter_id: string
+  entity_table: string
+  entity_id: string
+  reported_user_id: string | null
+  reason: string
+  status: ReportStatus
+  resolved_by: string | null
+  resolution_note: string | null
+  created_at: string
 }
 
 export interface Run {
