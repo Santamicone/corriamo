@@ -33,13 +33,22 @@ function buildTitle(lookingFor: string[], raceName: string): string {
   return `Cerco ${parts.join(' e ')} — ${raceName.trim()}`
 }
 
-export function NuovaGaraForm({ userId }: { userId: string }) {
+export interface GaraPrefill {
+  race_id: string
+  race_name: string
+  race_distance: string
+  city: string
+  date: string
+}
+
+export function NuovaGaraForm({ userId, prefill }: { userId: string; prefill?: GaraPrefill }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
   const [form, setForm] = useState({
-    race_name: '', race_distance: '', date: '', time: '09:00',
-    city: '', race_target_time: '', description: '', race_registered: false,
+    race_name: prefill?.race_name ?? '', race_distance: prefill?.race_distance ?? '',
+    date: prefill?.date ?? '', time: '09:00',
+    city: prefill?.city ?? '', race_target_time: '', description: '', race_registered: false,
   })
   const [lookingFor, setLookingFor] = useState<string[]>([])
 
@@ -77,6 +86,7 @@ export function NuovaGaraForm({ userId }: { userId: string }) {
       race_registered:  form.race_registered,
       looking_for:      lookingFor,
       tags:             [],
+      race_id:          prefill?.race_id ?? null,
     }).select('id').single()
 
     if (err) { setError(err.message); setLoading(false); return }
@@ -88,6 +98,15 @@ export function NuovaGaraForm({ userId }: { userId: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+
+      {prefill && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span className="material-symbols-outlined text-indigo-600">event_available</span>
+          <p className="text-sm text-indigo-800">
+            Stai cercando compagni per <strong>{prefill.race_name}</strong>. Abbiamo già compilato i dati della gara — completa cosa cerchi.
+          </p>
+        </div>
+      )}
 
       {/* La gara */}
       <FormSection title="La gara" desc="Di quale gara si tratta?">

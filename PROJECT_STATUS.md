@@ -532,7 +532,9 @@ Modello a 3 motori d'import: **AIMS ICS** (europee, `source='aims'`) · **FIDAL 
 - ✅ Step 4 — pagina `/calendario-gare` (route group `(public)`): `layout.tsx` (SEO), `page.tsx` (hero + filtri q/distanza/area/circuito + "In evidenza" featured + lista raggruppata per mese), scheda `[slug]/page.tsx` (dettagli + CTA sito ufficiale + "Studia il percorso" se gpx + placeholder community + **JSON-LD SportsEvent**), `components/RaceCard.tsx` (+ `countryLabel` ISO→bandiera). Verificato in preview: 91 gare, dettaglio OK, 0 errori console, tsc pulito.
 - ✅ Step 6 — voce "Calendario gare" nel menu Extra (`Header.tsx`, `extraLinks`)
 - ✅ Step 5 — tool "Trova la tua gara ideale" (`/tools/gara-ideale`): motore puro `src/lib/running/raceMatcher.ts` (`matchRaces`/`scoreRace`: vincoli netti distanza/area/orizzonte + score pesato su obiettivo e preferenze, indulgente sui dati parziali), `components/tools/RaceMatcherTool.tsx` (client, riceve il catalogo dalla pagina server), card aggiunta in hub `/tools`. Verificato in preview: shortlist top 5 con motivazioni, 0 errori, tsc pulito.
-- ⏳ Prossimi (Fase 2): segnalazioni gare da utenti (`source='utente'`, moderazione) + sezione community "Chi ci va?" reale via `runs.race_id` + CTA "Cerco compagno" precompilata
+- ✅ Fase 2 (parziale) — **ponte community**: CTA "Cerca compagni per questa gara" nella scheda → `/nuova-gara?race=<slug>` con form **precompilato** (nome/distanza/città/data + `race_id`); sezione **"Chi ci va?"** reale che legge i post `runs` con `race_id` (avatar + cosa cercano). **Filtro orizzonte 15 mesi** nella lista (nasconde le edizioni AIMS lontane). **Città AIMS rifinite** (rimozione sponsor/ordinali/numeri romani in `import-aims.mjs`).
+  - ⚠️ Per applicare le città rifinite: rilanciare `npm run import:aims` poi `npm run seed:circuits`.
+- ⏳ Prossimi (Fase 2): segnalazioni gare da utenti (`source='utente'`, moderazione)
 
 ### Follow-up sezione Tools
 6. **Programma "Da zero a 5K"** — oggi è una CTA placeholder nel quiz; va creato il contenuto/percorso reale

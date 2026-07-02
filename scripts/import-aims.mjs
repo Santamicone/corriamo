@@ -118,13 +118,32 @@ function distanceFromSummary(summary) {
   return null // 10K, ultra, altro → fuori scope
 }
 
-/** Città best-effort dal SUMMARY (rimuove i termini di distanza in coda). */
+// Sponsor ricorrenti nei nomi gara: rimossi per isolare la città.
+const SPONSORS = [
+  'adidas', 'bmw', 'tcs', 'bank of america', 'wizz air', 'hyundai', 'volksbank',
+  'abbott', 'edp', 'generali', 'zurich', 'asics', 'nike', 'saucony', 'mizuno',
+  'new balance', 'virgin money', 'aramco', 'standard chartered', 'tata', 'allianz',
+  'deutsche post', 'under armour',
+]
+
+/**
+ * Città best-effort dal SUMMARY. Taglia alla parola di distanza/tipo e rimuove
+ * i marcatori di edizione (numeri romani, ordinali, numeri) e gli sponsor noti.
+ * Resta approssimativa: AIMS non fornisce la città, solo il paese.
+ */
 function cityFromSummary(summary, countryName) {
-  const guess = summary
-    .replace(/\b(half\s+)?marathon\b/i, '')
-    .replace(/[-–\s]+$/g, '')
-    .trim()
-  return guess.length >= 2 && guess.length <= 40 ? guess : countryName
+  let s = summary
+    // tutto da "Marathon"/"Half"/"10K" in poi
+    .replace(/\b(half\s+marathon|marathon|half|\d+\s?k)\b[\s\S]*$/i, ' ')
+    // numeri romani iniziali (es. "XI^", "XVI")
+    .replace(/^\s*[IVXLCDM]+\^?\.?\s+/, '')
+    // ordinali/numeri iniziali (es. "41st", "3°")
+    .replace(/^\s*\d+\s*(st|nd|rd|th|°|º|\^)?\.?\s+/i, '')
+  for (const sp of SPONSORS) {
+    s = s.replace(new RegExp(`\\b${sp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'ig'), ' ')
+  }
+  s = s.replace(/[-–,]/g, ' ').replace(/\s+/g, ' ').trim()
+  return s.length >= 2 && s.length <= 40 ? s : countryName
 }
 
 async function main() {

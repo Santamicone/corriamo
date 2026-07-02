@@ -3,8 +3,32 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { countryLabel } from '@/components/RaceCard'
+import { Avatar } from '@/components/ui/Avatar'
 import type { Race } from '@/lib/types'
-import { formatDate } from '@/lib/utils'
+import { formatDate, todayItaly } from '@/lib/utils'
+
+const LOOKING_FOR_LABELS: Record<string, string> = {
+  pacer: 'pacer', compagno: 'compagno', supporter: 'supporter',
+}
+
+interface CommunityPost {
+  id: string
+  looking_for: string[] | null
+  organizer: { full_name: string; avatar_url: string | null } | null
+}
+
+async function getCommunityPosts(raceId: string): Promise<CommunityPost[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('runs')
+    .select('id, looking_for, organizer:profiles!runs_organizer_id_fkey(full_name, avatar_url)')
+    .eq('race_id', raceId)
+    .eq('type', 'gara')
+    .eq('status', 'aperta')
+    .gte('date', todayItaly())
+    .order('date', { ascending: true })
+  return (data ?? []) as unknown as CommunityPost[]
+}
 
 const DISTANCE_LABELS: Record<string, string> = {
   '5k': '5K', '10k': '10K', '21k': 'Mezza maratona', '42k': 'Maratona',
@@ -47,6 +71,7 @@ export default async function RaceDetailPage({ params }: { params: Promise<{ slu
   const race = await getRace(slug)
   if (!race) notFound()
 
+  const posts = await getCommunityPosts(race.id)
   const country = countryLabel(race.country)
   const reg = REGISTRATION_LABELS[race.registration_status] ?? REGISTRATION_LABELS.da_verificare
 
@@ -133,20 +158,43 @@ export default async function RaceDetailPage({ params }: { params: Promise<{ slu
         )}
       </div>
 
-      {/* Community — placeholder Fase 2 */}
-      <div className="mt-10 bg-indigo-50 border border-indigo-100 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined text-2xl">group</span>
-        </div>
-        <div className="flex-1">
-          <p className="font-bold text-gray-900">Ci vai anche tu?</p>
-          <p className="text-sm text-gray-600 mt-0.5">
-            Cerca un pacer, un compagno o un supporter per questa gara nella sezione Cerca compagni.
+      {/* Community — Chi ci va? */}
+      <div className="mt-10 bg-indigo-50 border border-indigo-100 rounded-2xl p-6 flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-indigo-600">group</span>
+          <p className="font-bold text-gray-900">
+            {posts.length > 0
+              ? `${posts.length} runner cerca${posts.length === 1 ? '' : 'no'} compagni per questa gara`
+              : 'Ci vai anche tu?'}
           </p>
         </div>
-        <Link href="/gare"
-          className="inline-flex items-center gap-2 bg-white border border-indigo-200 text-indigo-700 font-semibold px-5 py-2.5 rounded-full hover:bg-indigo-100 transition-colors whitespace-nowrap">
-          Cerca compagni
+
+        {posts.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {posts.map(p => {
+              const lf = (p.looking_for ?? []).map(k => LOOKING_FOR_LABELS[k] ?? k).join(', ')
+              return (
+                <Link key={p.id} href={`/gare/${p.id}`}
+                  className="group flex items-center gap-3 bg-white rounded-xl border border-indigo-100 px-3.5 py-2.5 hover:border-indigo-300 transition-colors">
+                  <Avatar name={p.organizer?.full_name ?? '—'} src={p.organizer?.avatar_url ?? null} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{p.organizer?.full_name ?? 'Runner'}</p>
+                    {lf && <p className="text-xs text-gray-500">Cerca {lf}</p>}
+                  </div>
+                  <span className="material-symbols-outlined text-gray-300 group-hover:text-indigo-500 transition-colors">arrow_forward</span>
+                </Link>
+              )
+            })}
+          </div>
+        )}
+
+        <p className="text-sm text-gray-600">
+          Cerchi un pacer, un compagno o un supporter? Pubblica il tuo annuncio con i dati già compilati.
+        </p>
+        <Link href={`/nuova-gara?race=${race.slug}`}
+          className="inline-flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold px-5 py-3 rounded-full hover:bg-indigo-700 transition-colors self-start">
+          <span className="material-symbols-outlined text-lg">group_add</span>
+          Cerca compagni per questa gara
         </Link>
       </div>
 

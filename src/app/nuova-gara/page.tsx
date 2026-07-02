@@ -4,12 +4,36 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
-import { NuovaGaraForm } from './NuovaGaraForm'
+import { NuovaGaraForm, type GaraPrefill } from './NuovaGaraForm'
 
-export default async function NuovaGaraPage() {
+// Distanze del form gara (singola scelta). Dal catalogo prende la prima compatibile.
+const FORM_DISTANCES = ['42k', '21k', '10k', '5k']
+
+export default async function NuovaGaraPage({ searchParams }: { searchParams: Promise<{ race?: string }> }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  // Precompilazione da una gara del calendario (?race=<slug>)
+  const { race: raceSlug } = await searchParams
+  let prefill: GaraPrefill | undefined
+  if (raceSlug) {
+    const { data: race } = await supabase
+      .from('races')
+      .select('id, name, city, event_date, distances')
+      .eq('slug', raceSlug)
+      .eq('status', 'published')
+      .maybeSingle()
+    if (race) {
+      prefill = {
+        race_id: race.id,
+        race_name: race.name,
+        race_distance: FORM_DISTANCES.find(d => (race.distances ?? []).includes(d)) ?? '',
+        city: race.city,
+        date: race.event_date,
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -29,7 +53,7 @@ export default async function NuovaGaraPage() {
       </div>
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NuovaGaraForm userId={user.id} />
+        <NuovaGaraForm userId={user.id} prefill={prefill} />
       </main>
       <Footer />
     </div>
