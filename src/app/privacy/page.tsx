@@ -5,7 +5,7 @@ import { Footer } from '@/components/Footer'
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description: 'Informativa sul trattamento dei dati personali di Vieni a correre? — come raccogliamo, usiamo e proteggiamo i tuoi dati.',
-  alternates: { canonical: 'https://www.vieniacorrere.it/privacy' },
+  alternates: { canonical: 'https://app.vieniacorrere.it/privacy' },
 }
 
 export default function PrivacyPage() {

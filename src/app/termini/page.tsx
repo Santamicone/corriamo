@@ -5,7 +5,7 @@ import { Footer } from '@/components/Footer'
 export const metadata: Metadata = {
   title: 'Termini di Servizio',
   description: 'Condizioni d\'uso della piattaforma Vieni a correre? — regole, responsabilità e linee guida per la community di runner.',
-  alternates: { canonical: 'https://www.vieniacorrere.it/termini' },
+  alternates: { canonical: 'https://app.vieniacorrere.it/termini' },
 }
 
 export default function TerminiPage() {

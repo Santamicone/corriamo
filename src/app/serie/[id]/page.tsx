@@ -11,7 +11,7 @@ import { TagBadge } from '@/components/ui/TagBadge'
 import type { Series, Run } from '@/lib/types'
 import type { Metadata } from 'next'
 
-const SITE_URL = 'https://www.vieniacorrere.it'
+const SITE_URL = 'https://app.vieniacorrere.it'
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }

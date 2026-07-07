@@ -10,11 +10,11 @@ import { todayItaly } from '@/lib/utils'
 export const metadata: Metadata = {
   title: 'Cerca compagni di gara',
   description: 'Trova pacer, compagni o supporter per la tua prossima maratona, mezza o 10K. Pubblica un post e connettiti con runner che partecipano alla stessa gara.',
-  alternates: { canonical: 'https://www.vieniacorrere.it/gare' },
+  alternates: { canonical: 'https://app.vieniacorrere.it/gare' },
   openGraph: {
     title: 'Cerca compagni di gara — Vieni a correre?',
     description: 'Trova pacer, compagni o supporter per la tua prossima gara.',
-    url: 'https://www.vieniacorrere.it/gare',
+    url: 'https://app.vieniacorrere.it/gare',
   },
 }
 
