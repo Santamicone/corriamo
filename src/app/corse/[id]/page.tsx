@@ -42,7 +42,7 @@ export async function generateMetadata(
 
   if (!run) return { title: 'Corsa — Vieni a correre?' }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://vieniacorrere.it'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.vieniacorrere.it'
   const desc = [
     LEVEL_LABELS[run.level],
     run.distance_km ? `${run.distance_km} km` : null,

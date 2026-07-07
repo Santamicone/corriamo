@@ -6,7 +6,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Come funziona',
   description: 'Scopri come trovare corse, proporre allenamenti, cercare compagni di gara e usare tutte le funzionalità di Vieni a correre?',
-  alternates: { canonical: 'https://www.vieniacorrere.it/come-funziona' },
+  alternates: { canonical: 'https://app.vieniacorrere.it/come-funziona' },
 }
 
 export default function ComeFunzionaPage() {
