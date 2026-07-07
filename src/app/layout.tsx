@@ -2,13 +2,14 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { InstallPrompt } from '@/components/InstallPrompt'
 
-const SITE_URL = 'https://www.vieniacorrere.it'
+const SITE_URL = 'https://www.vieniacorrere.it' // sito editoriale (magazine)
+const APP_URL = 'https://app.vieniacorrere.it' // questa web-app / PWA
 const SITE_NAME = 'Vieni a correre?'
 const DEFAULT_TITLE = 'Vieni a correre? — Trova e organizza corse con altri runner'
 const DEFAULT_DESCRIPTION = 'La piattaforma italiana per runner che vogliono correre insieme. Trova corse nella tua città, unisciti a un allenamento o proponi il tuo. Gratuito.'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL(APP_URL),
   verification: { google: 'MmVdU2aMH5qcpNa5Or-7xxfXetmFXFSKJtPmEcwezm4' },
   title: {
     default: DEFAULT_TITLE,
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    url: SITE_URL,
+    url: APP_URL,
     images: [
       {
         url: '/orizzontale.png',
@@ -42,7 +43,7 @@ export const metadata: Metadata = {
     images: ['/orizzontale.png'],
   },
   alternates: {
-    canonical: SITE_URL,
+    canonical: APP_URL,
   },
   appleWebApp: {
     capable: true,

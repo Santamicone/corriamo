@@ -6,7 +6,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Vieni a correre',
     description:
       'Trova corse nella tua città, unisciti a un allenamento o proponi il tuo. La piattaforma italiana per runner che vogliono correre insieme.',
+    id: '/',
     start_url: '/',
+    scope: '/',
     display: 'standalone',
     orientation: 'portrait',
     background_color: '#FAFAF9',
