@@ -69,7 +69,7 @@ Realtime: **non** usato (il catalogo non è live).
 
 | Motore | Copre | Comando | Frequenza | `source` |
 |---|---|---|---|---|
-| **AIMS ICS** | Maratone/mezze europee + principali internazionali | `npm run import:aims` | settimanale | `aims` |
+| **AIMS ICS** | Maratone/mezze europee + principali internazionali | `npm run import:aims` (o GitHub Action) | **settimanale automatico** | `aims` |
 | **Costanti circuiti** | 7 Major + 6 SuperHalfs | `npm run seed:circuits` | 1×/anno (aggiornare date) | `editoriale` |
 | **Segnalazioni utenti** | Long-tail (italiane e non) | form `/proponi` + moderazione | continuo | `utente` |
 
@@ -196,8 +196,12 @@ anche prima; solo la pagina `modera` richiede la migrazione.
 
 ## 9. Manutenzione ricorrente
 
-- **Aggiornare il catalogo AIMS**: `npm run import:aims` (poi `npm run seed:circuits`).
-  Idempotente; aggiorna anche le città rifinite sulle righe esistenti.
+- **Catalogo AIMS**: aggiornato **in automatico ogni lunedì** dalla GitHub Action
+  `.github/workflows/import-aims.yml` (o a mano con `npm run import:aims`; trigger
+  manuale anche da Actions → "Run workflow"). Idempotente; aggiorna anche le città
+  rifinite. **Prerequisito**: i secret repo `NEXT_PUBLIC_SUPABASE_URL` e
+  `SUPABASE_SERVICE_ROLE_KEY` (Settings → Secrets and variables → Actions). Lo script
+  CI è `npm run import:aims:ci` (legge le env dai secret, senza `--env-file`).
 - **Aggiornare le date dei circuiti** (1×/anno): modificare l'array `CIRCUITS` in
   `scripts/seed-circuits.mjs` e rilanciare `npm run seed:circuits`.
 - **Moderare le segnalazioni**: `/calendario-gare/modera`.

@@ -1,0 +1,36 @@
+name: Import gare AIMS
+
+# Aggiorna il catalogo gare dal feed AIMS (calendario gare).
+# - Automatico: ogni lunedì alle 05:00 UTC
+# - Manuale: da Actions → "Run workflow"
+#
+# Richiede due secret del repository (Settings → Secrets and variables → Actions):
+#   NEXT_PUBLIC_SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY   (bypassa la RLS per scrivere le righe source='aims')
+#
+# Nota: aggiorna solo le gare AIMS. Le costanti Major/SuperHalfs
+# (npm run seed:circuits) restano manuali (date da verificare 1×/anno).
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Import AIMS
+        run: npm run import:aims:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
