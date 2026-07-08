@@ -203,7 +203,9 @@ anche prima; solo la pagina `modera` richiede la migrazione.
   `SUPABASE_SERVICE_ROLE_KEY` (Settings → Secrets and variables → Actions). Lo script
   CI è `npm run import:aims:ci` (legge le env dai secret, senza `--env-file`).
 - **Aggiornare le date dei circuiti** (1×/anno): modificare l'array `CIRCUITS` in
-  `scripts/seed-circuits.mjs` e rilanciare `npm run seed:circuits`.
+  `scripts/seed-circuits.mjs`, poi rilanciare con `npm run seed:circuits` **oppure**
+  dalla GitHub Action manuale `.github/workflows/seed-circuits.yml` (Actions → "Seed
+  circuiti" → Run workflow; usa `npm run seed:circuits:ci`).
 - **Moderare le segnalazioni**: `/calendario-gare/modera`.
 - **Rifinire una città AIMS sbagliata**: modificarla a mano in Supabase (verrà
   sovrascritta solo se cambia il `name` a monte nel feed).
