@@ -1,0 +1,33 @@
+name: Seed circuiti (Major/SuperHalfs)
+
+# Aggiorna le gare dei circuiti iconici (World Marathon Majors + SuperHalfs)
+# nel catalogo gare. Solo trigger MANUALE: le date cambiano ~1 volta l'anno e
+# vanno verificate a mano in scripts/seed-circuits.mjs prima di lanciare.
+#
+# Uso: Actions → "Seed circuiti (Major/SuperHalfs)" → Run workflow
+#
+# Richiede i secret del repository:
+#   NEXT_PUBLIC_SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Seed circuiti
+        run: npm run seed:circuits:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

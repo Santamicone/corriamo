@@ -10,7 +10,8 @@
     "gen:courses": "node scripts/generate-race-courses.mjs",
     "import:aims": "node --env-file=.env.local scripts/import-aims.mjs",
     "import:aims:ci": "node scripts/import-aims.mjs",
-    "seed:circuits": "node --env-file=.env.local scripts/seed-circuits.mjs"
+    "seed:circuits": "node --env-file=.env.local scripts/seed-circuits.mjs",
+    "seed:circuits:ci": "node scripts/seed-circuits.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
