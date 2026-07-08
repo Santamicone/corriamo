@@ -1,7 +1,8 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
-> Aggiornato al: **luglio 2026** — nuova funzionalità **Calendario gare** (`/calendario-gare`, PR #106–#109): catalogo di eventi reali (`races`) con import automatico (AIMS ICS + costanti Major/SuperHalfs), pagina lista/scheda con SEO (JSON-LD `SportsEvent`), tool **"Trova la tua gara ideale"** (`/tools/gara-ideale`), ponte community (`runs.race_id` + CTA precompilata + "Chi ci va?") e **segnalazioni utenti moderate**. Documentazione completa in **`docs/CALENDARIO-GARE.md`**. ⚠️ Applicare `supabase/races-moderation.sql` (SQL #27) per abilitare la moderazione.
+> Aggiornato al: **luglio 2026** — allineamento stato reale: il ramo di sviluppo è stato **mergiato su `main`** (che ora è il branch attivo e gira in produzione) e le migrazioni **#27 `races-moderation.sql` e #28 `admin.sql` risultano APPLICATE in produzione** (verificate via query read-only sul DB: `profiles.is_admin`, `races.status`, `user_moderation`, `admin_actions`, `reports`, `admin_recovery_codes`, `runs.hidden_by_admin`, `profiles.moderation_status` tutte presenti). Completati anche: voce **Strumenti** nel menu Extra dell'Header e ripristino GPX Firenze (maratona completa).
+> Aggiornato al: **luglio 2026** — nuova funzionalità **Calendario gare** (`/calendario-gare`, PR #106–#109): catalogo di eventi reali (`races`) con import automatico (AIMS ICS + costanti Major/SuperHalfs), pagina lista/scheda con SEO (JSON-LD `SportsEvent`), tool **"Trova la tua gara ideale"** (`/tools/gara-ideale`), ponte community (`runs.race_id` + CTA precompilata + "Chi ci va?") e **segnalazioni utenti moderate**. Documentazione completa in **`docs/CALENDARIO-GARE.md`**.
 >
 > Aggiornato al: **luglio 2026** — nuovo tool **"Strategia gara intelligente"** (`/tools/strategia-gara`): l'utente carica il **GPX** del percorso e il passo ideale su piatto, indica le condizioni (meteo, vento, fondo, affollamento, approccio) e ottiene passo reale per km, tempo finale ±margine, split, tratti critici, profilo altimetrico e un **commento strategico generato dalle caratteristiche del percorso** (regole trasparenti, `buildRaceComment`). Tutto client-side: motore di calcolo puro in `src/lib/running/gpx.ts` + `raceStrategy.ts`, nessun DB e nessuna API esterna.
 >
@@ -18,7 +19,7 @@
 **App:** Vieni a correre? — web app per runner che vogliono proporre corse, trovare compagni e gestire appuntamenti singoli o ricorrenti.  
 **URL produzione:** https://www.vieniacorrere.it  
 **Repository:** https://github.com/Santamicone/corriamo  
-**Branch attivo:** `feat/ui-ux-redesign` (tutto lo sviluppo avviene qui, non ancora mergiato su `main`)
+**Branch attivo:** `main` (il ramo `feat/ui-ux-redesign` è stato mergiato; lo sviluppo procede via feature branch → PR su `main`)
 
 ---
 
@@ -98,8 +99,8 @@ SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token 
 | 24 | `supabase/email-triggers.sql` | ✅ | Trigger DB che accodano email (partecipazione, approvazione, ecc.) |
 | 25 | `supabase/races.sql` | ✅ | Catalogo gare `races` (calendario gare) + RLS + indici + unique `(source, external_ref)` |
 | 26 | `supabase/add-race-id.sql` | ✅ | Colonna `race_id` su `runs` → ponte post community ↔ catalogo `races` |
-| 27 | `supabase/races-moderation.sql` | ⏳ | `profiles.is_admin` + policy admin su `races` (modera pending) + nomina admin owner |
-| 28 | `supabase/admin.sql` | ⏳ | Sezione backend admin: `user_moderation` (ban graduale) + colonne moderazione su `profiles`, `admin_actions` (audit), soft-delete `hidden_by_admin` su runs/series/momenti/reviews/run_chat, `reports`, `admin_recovery_codes`, funzioni `is_admin_aal2()`/`is_active_user()`, RLS (admin AAL2 + blocco scrittura sospesi/bannati). Verifica: `supabase/admin-verify.sql`. **Richiede MFA TOTP abilitato in Dashboard.** |
+| 27 | `supabase/races-moderation.sql` | ✅ | `profiles.is_admin` + policy admin su `races` (modera pending) + nomina admin owner |
+| 28 | `supabase/admin.sql` | ✅ | Sezione backend admin: `user_moderation` (ban graduale) + colonne moderazione su `profiles`, `admin_actions` (audit), soft-delete `hidden_by_admin` su runs/series/momenti/reviews/run_chat, `reports`, `admin_recovery_codes`, funzioni `is_admin_aal2()`/`is_active_user()`, RLS (admin AAL2 + blocco scrittura sospesi/bannati). Verifica: `supabase/admin-verify.sql`. **Richiede MFA TOTP abilitato in Dashboard.** |
 
 ### Schema tabelle aggiornato
 
@@ -483,7 +484,7 @@ src/
 - [x] Segnalazioni utenti (`/calendario-gare/proponi`, `source='utente'`/`pending`) + moderazione admin (`/calendario-gare/modera`, `profiles.is_admin`)
 - [x] Voce "Calendario gare" nel menu Extra; card gara con bandiera nazione
 - [x] FIDAL scartato (querystring ignorata); long-tail IT via segnalazioni utenti
-- ⏳ **Da applicare in Supabase: `races-moderation.sql` (SQL #27)** per abilitare la moderazione
+- ✅ **`races-moderation.sql` (SQL #27) applicato in produzione** — moderazione attiva
 
 ### Sezione admin (`/admin`) — richiede `supabase/admin.sql` (#28) + MFA TOTP
 - [x] Gate `/admin` a due livelli: `is_admin` (layout) + **2FA AAL2** (`requireAal2` sulle pagine operative)
@@ -496,7 +497,7 @@ src/
 - [x] **Broadcast** (`/admin/broadcast`): annuncio in-app a tutti gli utenti o per città (esclude bannati, insert a blocchi da 500, audit). Solo in-app: niente email di massa (follow-up per deliverability/costi)
 - [x] **Contenuti** (`/admin/contenuti`): nascondi/ripristina corse, momenti, recensioni (soft-delete `hidden_by_admin`). Occultamento a livello **RLS restrictive SELECT** → il contenuto sparisce da ogni query pubblica senza toccare i file di lettura; resta visibile solo agli admin AAL2. Stub `broadcast` (PR-E)
 - [x] **Segnalazioni** (`/admin/segnalazioni`): coda report con filtri stato (aperte/in lavorazione/risolte/ignorate), azioni admin (API `/api/admin/reports`), link a entità e utente segnalato. Pulsante utente `<ReportButton>` (inserisce in `reports` via RLS) su dettaglio corsa e profilo
-- ⏳ **Da applicare in Supabase: `admin.sql` (#28)** + abilitare **MFA TOTP** in Dashboard
+- ✅ **`admin.sql` (#28) applicato in produzione** (tabelle/colonne moderazione verificate) — resta da confermare **MFA TOTP** abilitato in Dashboard per il gate AAL2
 
 ### UX
 - [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
@@ -557,17 +558,19 @@ src/
 
 ## 9. Prossimi task (in ordine di priorità)
 
-### Alta priorità
-1. **Merge `feat/ui-ux-redesign` → `main`** — il branch è stabile e gira in produzione
+### ✅ Completati (ex alta priorità)
+- **Merge `feat/ui-ux-redesign` → `main`** — FATTO: `main` è il branch attivo e gira in produzione
+- **Migrazioni #27 `races-moderation.sql` e #28 `admin.sql`** — FATTO: applicate in produzione (verificate via query sul DB)
+- **Voce "Strumenti" nella nav** — FATTO: menu Extra nell'Header (desktop + mobile)
+- **Strategia gara — GPX Firenze** — FATTO: sostituito con la maratona completa
 
-> Nota: SQL #18–#24 ed Edge Functions email risultano **già applicati e attivi in produzione**
-> (crew, reliability ed email verificati funzionanti). Per riconferma a colpo d'occhio è
-> disponibile lo script read-only `supabase/verify-pending.sql`. La migrazione idempotente
-> `supabase/apply-all-pending.sql` resta come riferimento ri-applicabile in sicurezza.
+> Nota: SQL #18–#28 ed Edge Functions email risultano **applicati e attivi in produzione**.
+> Per riconferma a colpo d'occhio è disponibile lo script read-only `supabase/verify-pending.sql`.
+> La migrazione idempotente `supabase/apply-all-pending.sql` resta come riferimento ri-applicabile in sicurezza.
 
 ### Media priorità
-2. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage
-3. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
+1. **SEO Sprint 2** — Schema.org JSON-LD: Event su corse, Person su profili, WebSite su homepage (oggi presente solo `SportsEvent` sul calendario gare)
+2. **SEO Sprint 3** — Migrazione a `next/font`, ottimizzazione keyword, OG image per bacheca
 
 ### Calendario gare (`/calendario-gare`) — ✅ completata (in produzione)
 Sezione Extra: catalogo di **eventi reali** (`races`), distinto dai post community `type='gara'`.
@@ -582,7 +585,7 @@ pagina lista/scheda con SEO, tool "gara ideale", ponte community via `runs.race_
 
 ### Follow-up sezione Tools
 6. **Programma "Da zero a 5K"** — oggi è una CTA placeholder nel quiz; va creato il contenuto/percorso reale
-7. **Voce "Strumenti" nella nav** — i tool sono raggiungibili solo via URL; manca il link in Header (desktop + mobile)
+7. **Voce "Strumenti" nella nav** — ✅ FATTO: menu **Extra** nell'Header (desktop + mobile) con link a Strumenti e al sito editoriale
 8. **Allineamento dominio template email** — su `main` i template usano `www.vieniacorrere.it`; valutare allineamento a `app.` quando la migrazione domini arriva su `main`
 9. **Strategia gara — gare precaricate** — ✅ FATTO (catalogo statico): 8 grandi maratone reali (Berlino, Boston, Firenze, NewYork, Parigi, Roma, Valencia, Venezia) selezionabili con ricerca per gara/città, oltre all'upload GPX. Pipeline ripetibile: droppare i .gpx in `scripts/race-courses-gpx/` e lanciare `npm run gen:courses` (genera `src/lib/running/raceCourses.generated.ts`). Nota: il GPX di Firenze risulta parziale (~31 km), da sostituire. Follow-up: migrazione a DB `race_courses` + segmenti quando il catalogo cresce; compilare campo `country`
 10. **Strategia gara — salvataggio strategie** — tabelle `race_strategy_plans`/`race_strategy_splits`, salvataggio nel profilo utente e collegamento alla sezione Gare
