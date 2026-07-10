@@ -8,20 +8,34 @@ import { CREW_TYPE_LABELS } from '@/lib/types'
 import type { Crew, CrewMember, Run } from '@/lib/types'
 import { RunCard } from '@/components/RunCard'
 import { CrewActivityFeed } from '@/components/CrewActivityFeed'
+import { CrewBoard } from '@/components/CrewBoard'
 import { JoinCrewButton } from './JoinCrewButton'
 import type { Metadata } from 'next'
 import { todayItaly } from '@/lib/utils'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Il segmento [id] accetta sia lo slug personalizzato sia l'uuid legacy. */
+function lookupColumn(param: string): 'id' | 'slug' {
+  return UUID_RE.test(param) ? 'id' : 'slug'
+}
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('crews').select('name, description').eq('id', id).single()
+  const { data } = await supabase
+    .from('crews')
+    .select('name, description, slug, cover_url')
+    .eq(lookupColumn(id), id)
+    .single()
   if (!data) return { title: 'Crew — Vieni a correre?' }
   return {
     title: `${data.name} — Vieni a correre?`,
     description: data.description ?? undefined,
+    alternates: data.slug ? { canonical: `/crew/${data.slug}` } : undefined,
+    openGraph: data.cover_url ? { images: [data.cover_url] } : undefined,
   }
 }
 
@@ -34,7 +48,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   const { data: crew } = await supabase
     .from('crews')
     .select('*, owner:profiles!owner_id(id, full_name, avatar_url, city)')
-    .eq('id', id)
+    .eq(lookupColumn(id), id)
     .single() as { data: (Crew & { owner: { id: string; full_name: string; avatar_url: string | null; city: string | null } }) | null }
 
   if (!crew) notFound()
@@ -42,18 +56,19 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   const { data: members } = await supabase
     .from('crew_members')
     .select('*, user:profiles!user_id(id, full_name, avatar_url, city)')
-    .eq('crew_id', id)
+    .eq('crew_id', crew.id)
     .eq('status', 'active')
     .order('joined_at', { ascending: true }) as { data: (CrewMember & { user: { id: string; full_name: string; avatar_url: string | null; city: string | null } })[] | null }
 
-  // Corse crew-only (visibili solo ai membri)
-  let crewRuns = null
   const isMember = user && members?.some((m) => m.user_id === user.id)
+
+  // Corse crew-only future (visibili solo ai membri)
+  let crewRuns = null
   if (isMember) {
     const { data } = await supabase
       .from('runs')
       .select('id, title, date, time, city, distance_km')
-      .eq('crew_id', id)
+      .eq('crew_id', crew.id)
       .eq('run_visibility', 'crew_only')
       .eq('status', 'aperta')
       .order('date', { ascending: true })
@@ -75,26 +90,45 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
     activities = data
   }
 
-  // Corse pubbliche della crew (visibili a tutti) + statistiche aggregate
+  // Corse pubbliche future (a tutti) + corse effettuate + bacheca + statistiche
   const today = todayItaly()
-  const [{ data: publicRuns }, { data: statsRows }] = await Promise.all([
+  const [{ data: publicRuns }, { data: pastRuns }, { data: posts }, { data: statsRows }] = await Promise.all([
     supabase
       .from('runs')
       .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
-      .eq('crew_id', id)
+      .eq('crew_id', crew.id)
       .eq('run_visibility', 'public')
       .eq('status', 'aperta')
       .gte('date', today)
       .order('date', { ascending: true })
       .limit(6),
-    supabase.rpc('crew_stats', { p_crew_id: id }),
+    // Corse effettuate. NB: la SELECT policy su runs è `using (true)` → le
+    // corse crew_only NON sono nascoste dalla RLS, quindi filtriamo qui:
+    // le riservate compaiono solo ai membri.
+    supabase
+      .from('runs')
+      .select('id, title, date, time, city, distance_km, run_visibility')
+      .eq('crew_id', crew.id)
+      .neq('status', 'annullata')
+      .lt('date', today)
+      .in('run_visibility', isMember ? ['public', 'crew_only', 'invite_only'] : ['public'])
+      .order('date', { ascending: false })
+      .limit(6),
+    // Bacheca del coach: RLS filtra per visibilità (pubblica a tutti / privata ai membri)
+    supabase
+      .from('crew_posts')
+      .select('*, author:profiles!author_id(id, full_name, avatar_url)')
+      .eq('crew_id', crew.id)
+      .order('pinned', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase.rpc('crew_stats', { p_crew_id: crew.id }),
   ])
   const stats = (Array.isArray(statsRows) ? statsRows[0] : statsRows) as
     { total_runs: number; total_km: number; member_count: number } | null
 
   const typeInfo = CREW_TYPE_LABELS[crew.crew_type]
   const currentMember = members?.find((m) => m.user_id === user?.id)
-  const isOwner = user?.id === crew.owner_id
   const canManage = currentMember?.role === 'owner' || currentMember?.role === 'admin'
 
   return (
@@ -102,6 +136,14 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
       <Header />
       <main className="min-h-screen bg-gray-50 py-10 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
+
+          {/* Immagine di testata (se presente) */}
+          {crew.cover_url && (
+            <div className="rounded-2xl overflow-hidden shadow-sm aspect-[16/6] bg-gray-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={crew.cover_url} alt={crew.name} className="w-full h-full object-cover" />
+            </div>
+          )}
 
           {/* Header crew */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -120,12 +162,12 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900">{crew.name}</h1>
                 {crew.description && (
-                  <p className="text-gray-600 mt-2 text-sm leading-relaxed">{crew.description}</p>
+                  <p className="text-gray-600 mt-2 text-sm leading-relaxed whitespace-pre-wrap">{crew.description}</p>
                 )}
               </div>
               {canManage && (
                 <Link
-                  href={`/crew/${id}/gestisci`}
+                  href={`/crew/${crew.id}/gestisci`}
                   className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-xl px-3 py-1.5 shrink-0"
                 >
                   <span className="material-symbols-outlined text-base">settings</span>
@@ -163,7 +205,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
 
           {/* Azione: entra / stato */}
           {user && !isMember && (
-            <JoinCrewButton crewId={id} />
+            <JoinCrewButton crewId={crew.id} />
           )}
           {!user && (
             <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
@@ -178,6 +220,14 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
               Richiesta di ingresso inviata — in attesa di approvazione.
             </div>
           )}
+
+          {/* Bacheca del coach */}
+          <CrewBoard
+            crewId={crew.id}
+            posts={(posts ?? []) as never}
+            canManage={!!canManage}
+            coachLabel={typeInfo.ownerLabel}
+          />
 
           {/* Membri */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -206,15 +256,76 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
 
-          {/* Corse pubbliche della crew (bacheca aperta a tutti) */}
-          {publicRuns && publicRuns.length > 0 && (
+          {/* Corse programmate */}
+          {((publicRuns && publicRuns.length > 0) || (crewRuns && crewRuns.length > 0)) && (
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[var(--color-brand)] text-base">calendar_month</span>
-                Prossime corse della crew
+                Corse programmate
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {(publicRuns as unknown as Run[]).map(run => <RunCard key={run.id} run={run} />)}
+
+              {publicRuns && publicRuns.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(publicRuns as unknown as Run[]).map(run => <RunCard key={run.id} run={run} />)}
+                </div>
+              )}
+
+              {isMember && crewRuns && crewRuns.length > 0 && (
+                <div className={publicRuns && publicRuns.length > 0 ? 'mt-5 pt-5 border-t border-gray-100' : ''}>
+                  <h3 className="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-gray-400 text-base">lock</span>
+                    Riservate ai membri
+                  </h3>
+                  <div className="space-y-2">
+                    {crewRuns.map((run) => (
+                      <Link
+                        key={run.id}
+                        href={`/corse/${run.id}`}
+                        className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                      >
+                        <div>
+                          <div className="font-medium text-sm text-gray-900">{run.title}</div>
+                          <div className="text-xs text-gray-400">
+                            {new Date(run.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            {' · '}
+                            {run.time?.slice(0, 5)}
+                            {run.distance_km ? ` · ${run.distance_km} km` : ''}
+                          </div>
+                        </div>
+                        <span className="material-symbols-outlined text-gray-400 text-base">chevron_right</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Corse effettuate */}
+          {pastRuns && pastRuns.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--color-brand)] text-base">history</span>
+                Corse effettuate
+              </h2>
+              <div className="space-y-2">
+                {pastRuns.map((run) => (
+                  <Link
+                    key={run.id}
+                    href={`/corse/${run.id}`}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm text-gray-900 truncate">{run.title}</div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(run.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                        {run.city ? ` · ${run.city}` : ''}
+                        {run.distance_km ? ` · ${run.distance_km} km` : ''}
+                      </div>
+                    </div>
+                    <span className="material-symbols-outlined text-gray-300 text-base shrink-0">chevron_right</span>
+                  </Link>
+                ))}
               </div>
             </div>
           )}
@@ -222,36 +333,6 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           {/* Feed attività Strava (solo crew private, solo membri) */}
           {isMember && crew.visibility === 'private' && (
             <CrewActivityFeed activities={(activities ?? []) as never} />
-          )}
-
-          {/* Corse riservate (solo per membri) */}
-          {isMember && crewRuns && crewRuns.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[var(--color-brand)] text-base">lock</span>
-                Corse riservate
-              </h2>
-              <div className="space-y-3">
-                {crewRuns.map((run) => (
-                  <Link
-                    key={run.id}
-                    href={`/corse/${run.id}`}
-                    className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
-                  >
-                    <div>
-                      <div className="font-medium text-sm text-gray-900">{run.title}</div>
-                      <div className="text-xs text-gray-400">
-                        {new Date(run.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        {' · '}
-                        {run.time?.slice(0, 5)}
-                        {run.distance_km ? ` · ${run.distance_km} km` : ''}
-                      </div>
-                    </div>
-                    <span className="material-symbols-outlined text-gray-400 text-base">chevron_right</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
           )}
 
         </div>

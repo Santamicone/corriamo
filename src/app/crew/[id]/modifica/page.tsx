@@ -7,6 +7,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import Link from 'next/link'
 import type { Crew } from '@/lib/types'
+import { slugify } from '@/lib/utils'
 
 export default function ModificaCrewPage() {
   const { id } = useParams<{ id: string }>()
@@ -15,12 +16,15 @@ export default function ModificaCrewPage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '',
+    slug: '',
     description: '',
     visibility: 'public' as 'public' | 'private',
     whatsapp_group_link: '',
+    cover_url: '' as string | null,
   })
 
   useEffect(() => {
@@ -39,32 +43,65 @@ export default function ModificaCrewPage() {
 
       setForm({
         name: crew.name,
+        slug: crew.slug ?? '',
         description: crew.description ?? '',
         visibility: crew.visibility,
         whatsapp_group_link: crew.whatsapp_group_link ?? '',
+        cover_url: crew.cover_url ?? null,
       })
       setLoading(false)
     }
     load()
   }, [id])
 
+  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError(null)
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const path = `${id}/cover-${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage
+      .from('crew-covers')
+      .upload(path, file, { upsert: true, cacheControl: '3600' })
+
+    if (upErr) { setError(upErr.message); setUploading(false); return }
+
+    const { data: pub } = supabase.storage.from('crew-covers').getPublicUrl(path)
+    setForm((f) => ({ ...f, cover_url: pub.publicUrl }))
+    setUploading(false)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     setError(null)
 
+    const cleanSlug = slugify(form.slug || form.name)
+    if (!cleanSlug) { setError('URL non valido'); setSaving(false); return }
+
     const { error: err } = await supabase
       .from('crews')
       .update({
         name: form.name,
+        slug: cleanSlug,
         description: form.description || null,
         visibility: form.visibility,
         whatsapp_group_link: form.whatsapp_group_link || null,
+        cover_url: form.cover_url || null,
       })
       .eq('id', id)
 
     setSaving(false)
-    if (err) { setError(err.message); return }
+    if (err) {
+      setError(
+        err.code === '23505'
+          ? 'Questo URL è già usato da un\'altra crew. Scegline un altro.'
+          : err.message
+      )
+      return
+    }
     router.push(`/crew/${id}/gestisci`)
   }
 
@@ -113,6 +150,27 @@ export default function ModificaCrewPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                URL personalizzato
+              </label>
+              <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[var(--color-brand)]">
+                <span className="text-sm text-gray-400 pl-4 pr-1 py-2.5 select-none whitespace-nowrap">/crew/</span>
+                <input
+                  type="text"
+                  maxLength={60}
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  onBlur={() => setForm((f) => ({ ...f, slug: slugify(f.slug || f.name) }))}
+                  placeholder="milano-trail-crew"
+                  className="flex-1 min-w-0 px-1 py-2.5 text-sm focus:outline-none"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Solo lettere minuscole, numeri e trattini. Il vecchio indirizzo continuerà a funzionare.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Descrizione
               </label>
               <textarea
@@ -123,6 +181,44 @@ export default function ModificaCrewPage() {
                 placeholder="Chi siete, dove correte, che ritmo tenete..."
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none resize-none"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Immagine di testata
+                <span className="text-gray-400 font-normal ml-1">(opzionale)</span>
+              </label>
+              {form.cover_url && (
+                <div className="rounded-xl overflow-hidden aspect-[16/6] bg-gray-100 mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={form.cover_url} alt="Anteprima testata" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-1.5 text-sm text-gray-600 border border-gray-300 rounded-xl px-3 py-2 cursor-pointer hover:bg-gray-50">
+                  <span className="material-symbols-outlined text-base">upload</span>
+                  {uploading ? 'Caricamento…' : form.cover_url ? 'Cambia immagine' : 'Carica immagine'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleCoverUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                </label>
+                {form.cover_url && (
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, cover_url: null })}
+                    className="text-sm text-gray-400 hover:text-red-500"
+                  >
+                    Rimuovi
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Formato consigliato panoramico (16:6). JPG, PNG o WebP, max 5 MB.
+              </p>
             </div>
 
             <div>

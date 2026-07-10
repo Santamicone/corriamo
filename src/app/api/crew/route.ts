@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { slugify } from '@/lib/utils'
 
 // POST /api/crew — crea una nuova crew
 export async function POST(request: NextRequest) {
@@ -14,9 +15,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Nome e tipo sono obbligatori' }, { status: 400 })
   }
 
+  // Slug auto-suggerito dal nome, univoco: se occupato appende un suffisso casuale
+  const base = slugify(name) || 'crew'
+  let slug = base
+  const { data: taken } = await supabase.from('crews').select('slug').eq('slug', slug).maybeSingle()
+  if (taken) slug = `${base}-${Math.random().toString(36).slice(2, 6)}`
+
   const { data, error } = await supabase
     .from('crews')
-    .insert({ name, description, crew_type, visibility: visibility ?? 'public', whatsapp_group_link, owner_id: user.id })
+    .insert({ name, slug, description, crew_type, visibility: visibility ?? 'public', whatsapp_group_link, owner_id: user.id })
     .select('id')
     .single()
 

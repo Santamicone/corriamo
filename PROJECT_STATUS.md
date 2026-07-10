@@ -112,6 +112,7 @@ STRAVA_WEBHOOK_VERIFY_TOKEN → ... ← stringa scelta da noi; deve combaciare t
 | 30 | `supabase/strava-public-profile.sql` | ✅ | Strava: `profiles.strava_public_profile` (opt-in, default false) + RLS feed aggiornata → attività visibili anche sul profilo pubblico se l'utente lo abilita. |
 | 31 | `supabase/strava-heartrate.sql` | ✅ | Strava: `strava_activities.avg_heartrate_bpm`. Si popola dalle attività sincronizzate/ri-sincronizzate dopo l'applicazione. |
 | 32 | `supabase/strava-attendance.sql` | ⏳ da applicare | Auto-conferma presenze: `run_confirmations.source`, `strava_activities.start_lat/lng`, colonne `profiles.attendance_*` + `update_attendance_score()` + trigger. Un match Strava↔corsa inserisce `run_confirmations(confirmed=true, source='strava')` → alimenta reliability organizzatore **e** attendance partecipante. |
+| 33 | `supabase/crew-enhancements.sql` | ⏳ da applicare | Potenziamento crew: `crews.slug` (UNIQUE, URL personalizzato) + `crews.cover_url` (immagine di testata) + funzione `crew_slugify()` + backfill slug; tabella `crew_posts` (bacheca del coach) + RLS (lettura pubblica per crew pubbliche / membri per private via `crew_is_public()`, scrittura solo owner/admin) + trigger notifica `crew_new_post`; bucket Storage `crew-covers` (scrittura ristretta agli admin della crew). |
 
 ### Schema tabelle aggiornato
 
@@ -165,9 +166,14 @@ check_ins        id, run_id, user_id, checked_in_at, UNIQUE(run_id, user_id)
 run_confirmations id, run_id, user_id, confirmed boolean, created_at,
                   UNIQUE(run_id, user_id)
 
-crews            id, name, description, avatar_url, owner_id,
+crews            id, slug (UNIQUE, URL personalizzato), name, description,
+                 avatar_url, cover_url (immagine di testata), owner_id,
                  crew_type (training_group|running_club|friends),
                  visibility (public|private), whatsapp_group_link, created_at
+
+crew_posts       id, crew_id, author_id, body, pinned boolean, created_at
+                 — bacheca del coach; scrivono solo owner/admin, leggono tutti
+                   (crew pubbliche) o i soli membri (crew private)
 
 crew_members     id, crew_id, user_id, role (owner|admin|member),
                  status (active|pending|rejected), joined_at,
@@ -193,6 +199,7 @@ strava_activities   id, user_id, strava_activity_id (UNIQUE), name, distance_m,
 ### Storage bucket
 - `avatars` — foto profilo utente
 - `momenti` — foto post-run
+- `crew-covers` — immagine di testata delle crew (scrittura ristretta agli owner/admin della crew)
 
 ### Configurazione Dashboard Supabase (manuale)
 - **Authentication → URL Configuration:** Site URL = `https://vieniacorrere.it`
@@ -257,8 +264,8 @@ src/
 │   ├── nuova-serie/page.tsx          → redirect a /nuova-corsa
 │   ├── crew/
 │   │   ├── nuova/page.tsx            Crea nuova crew
-│   │   ├── [id]/page.tsx             Pagina pubblica crew
-│   │   ├── [id]/modifica/page.tsx    Modifica nome/descrizione/visibilità/WhatsApp
+│   │   ├── [id]/page.tsx             Pagina pubblica crew (risolve slug o uuid): testata, bacheca, corse programmate/effettuate, feed Strava
+│   │   ├── [id]/modifica/page.tsx    Modifica nome/URL slug/descrizione/testata/visibilità/WhatsApp
 │   │   ├── [id]/gestisci/page.tsx    Gestione membri (solo owner/admin)
 │   │   │   ├── AddMemberSearch.tsx   Ricerca e aggiunta membro per nome
 │   │   │   ├── MemberActions.tsx     Approva/rimuovi membro
@@ -316,6 +323,7 @@ src/
 │   ├── GaraCard.tsx                  Card post community "cerca compagni" (accent indigo)
 │   ├── RaceCard.tsx                  Card evento catalogo (+ export countryLabel ISO→bandiera)
 │   ├── CrewActivityFeed.tsx          Feed corse Strava (crew private) — distanza/passo/HR/dislivello/link
+│   ├── CrewBoard.tsx                 Bacheca del coach: lista messaggi + composer (owner/admin) + elimina
 │   ├── SeriesCard.tsx
 │   ├── SpotRunsStrip.tsx             parseRunDateTime per fuso orario corretto
 │   ├── ReviewCard.tsx
@@ -478,6 +486,14 @@ src/
 - [x] Fix RLS ricorsione crews/crew_members con funzioni SECURITY DEFINER
 - [x] Sezione Crew in /come-funziona
 - ✅ **SQL crews.sql / crew-invites.sql / crews-fix-rls.sql applicati in produzione**
+
+#### Potenziamento pagina crew (SQL #33 `crew-enhancements.sql` ⏳ da applicare)
+- [x] **URL personalizzato** (`crews.slug`): la route `/crew/[id]` risolve slug **o** uuid legacy; slug auto-suggerito dal nome alla creazione (`/api/crew`), modificabile dall'owner in `/crew/[id]/modifica` (unique → errore "URL già in uso")
+- [x] **Immagine di testata** (`crews.cover_url`): banner 16:6 in cima alla pagina; upload nel bucket `crew-covers` dalla pagina modifica (solo owner/admin via RLS storage)
+- [x] **Bacheca del coach** (`crew_posts`, componente `CrewBoard`): scrivono solo owner/admin, con opzione "in evidenza" (pinned); leggono tutti sulle crew pubbliche, i soli membri sulle private; trigger notifica `crew_new_post` ai membri
+- [x] **Corse programmate**: sezione consolidata (pubbliche a tutti + riservate `crew_only` ai soli membri)
+- [x] **Corse effettuate**: nuova sezione storico (le riservate visibili solo ai membri — filtro in query perché la SELECT policy su `runs` è `using(true)`)
+- [x] **Feed attività Strava dei membri**: invariato (`CrewActivityFeed`, solo crew private, solo membri)
 
 ### Email notifiche
 - [x] Supabase Edge Functions: `send-immediate` e `send-digest` via Resend API
