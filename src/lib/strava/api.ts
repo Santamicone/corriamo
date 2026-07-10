@@ -108,6 +108,8 @@ export interface StravaActivityDetail {
   total_elevation_gain: number    // metri
   start_date: string              // ISO UTC
   private: boolean
+  has_heartrate?: boolean
+  average_heartrate?: number      // bpm, presente solo se has_heartrate
 }
 
 // Giorni di storico importati al primo collegamento
@@ -187,5 +189,6 @@ export function toActivityRow(userId: string, a: StravaActivityDetail) {
     activity_type: a.sport_type || a.type || null,
     start_date: a.start_date,
     avg_pace_s_per_km: avgPace,
+    avg_heartrate_bpm: a.average_heartrate ?? null,
   }
 }

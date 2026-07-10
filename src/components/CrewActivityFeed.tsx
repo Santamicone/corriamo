@@ -76,6 +76,12 @@ export function CrewActivityFeed({ activities }: { activities: FeedActivity[] })
                       {formatPace(a.avg_pace_s_per_km)}/km
                     </span>
                   )}
+                  {a.avg_heartrate_bpm && (
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px] text-red-400">cardiology</span>
+                      {Math.round(a.avg_heartrate_bpm)} bpm
+                    </span>
+                  )}
                   {elev > 0 && (
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-[13px] text-gray-400">altitude</span>

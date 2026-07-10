@@ -375,6 +375,7 @@ export interface StravaActivity {
   activity_type: string | null   // 'Run' | 'TrailRun'
   start_date: string
   avg_pace_s_per_km: number | null
+  avg_heartrate_bpm: number | null
   created_at: string
 }
 

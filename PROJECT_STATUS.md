@@ -102,7 +102,8 @@ SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token 
 | 27 | `supabase/races-moderation.sql` | ✅ | `profiles.is_admin` + policy admin su `races` (modera pending) + nomina admin owner |
 | 28 | `supabase/admin.sql` | ✅ | Sezione backend admin: `user_moderation` (ban graduale) + colonne moderazione su `profiles`, `admin_actions` (audit), soft-delete `hidden_by_admin` su runs/series/momenti/reviews/run_chat, `reports`, `admin_recovery_codes`, funzioni `is_admin_aal2()`/`is_active_user()`, RLS (admin AAL2 + blocco scrittura sospesi/bannati). Verifica: `supabase/admin-verify.sql`. **Richiede MFA TOTP abilitato in Dashboard.** |
 | 29 | `supabase/strava.sql` | ✅ | Integrazione Strava: `strava_connections` (token OAuth, **nessuna policy** → solo service-role), `strava_activities` (corse importate), `profiles.strava_share_activities`, helper `shares_private_crew_with()` + RLS feed (attività visibili a chi condivide una crew **privata** con l'autore che condivide). Vedi `docs/STRAVA.md`. |
-| 30 | `supabase/strava-public-profile.sql` | ⏳ da applicare | Strava: `profiles.strava_public_profile` (opt-in, default false) + RLS feed aggiornata → attività visibili anche sul profilo pubblico se l'utente lo abilita. |
+| 30 | `supabase/strava-public-profile.sql` | ✅ | Strava: `profiles.strava_public_profile` (opt-in, default false) + RLS feed aggiornata → attività visibili anche sul profilo pubblico se l'utente lo abilita. |
+| 31 | `supabase/strava-heartrate.sql` | ⏳ da applicare | Strava: `strava_activities.avg_heartrate_bpm`. Si popola solo dalle attività sincronizzate/ri-sincronizzate dopo l'applicazione. |
 
 ### Schema tabelle aggiornato
 

@@ -355,6 +355,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                       <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-600 shrink-0">
                         {km > 0 && <span className="font-semibold text-gray-800">{formatDistance(a.distance_m ?? 0)}</span>}
                         {a.avg_pace_s_per_km && <span>{formatPace(a.avg_pace_s_per_km)}/km</span>}
+                        {a.avg_heartrate_bpm && (
+                          <span className="hidden sm:flex items-center gap-0.5">
+                            <span className="material-symbols-outlined text-[13px] text-red-400">cardiology</span>
+                            {Math.round(a.avg_heartrate_bpm)} bpm
+                          </span>
+                        )}
                         {elev > 0 && (
                           <span className="hidden sm:flex items-center gap-0.5">
                             <span className="material-symbols-outlined text-[13px] text-gray-400">altitude</span>
