@@ -1,6 +1,8 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
+> Aggiornato al: **luglio 2026** — nuova **Integrazione Strava** (SQL #29–#31, in produzione): connessione OAuth per utente + **sincronizzazione automatica delle corse** via webhook, con **feed attività per le crew private** e opzione di visibilità **sul profilo pubblico** (opt-in). Backfill degli ultimi 30 giorni al primo collegamento. Card di collegamento in `/profilo/modifica` con due toggle indipendenti (crew / profilo pubblico). Dati mostrati: distanza, passo, tempo, dislivello, **frequenza cardiaca media**, link all'attività su Strava. Documentazione completa in **`docs/STRAVA.md`**.
+>
 > Aggiornato al: **luglio 2026** — allineamento stato reale: il ramo di sviluppo è stato **mergiato su `main`** (che ora è il branch attivo e gira in produzione) e le migrazioni **#27 `races-moderation.sql` e #28 `admin.sql` risultano APPLICATE in produzione** (verificate via query read-only sul DB: `profiles.is_admin`, `races.status`, `user_moderation`, `admin_actions`, `reports`, `admin_recovery_codes`, `runs.hidden_by_admin`, `profiles.moderation_status` tutte presenti). Completati anche: voce **Strumenti** nel menu Extra dell'Header e ripristino GPX Firenze (maratona completa).
 > Aggiornato al: **luglio 2026** — nuova funzionalità **Calendario gare** (`/calendario-gare`, PR #106–#109): catalogo di eventi reali (`races`) con import automatico (AIMS ICS + costanti Major/SuperHalfs), pagina lista/scheda con SEO (JSON-LD `SportsEvent`), tool **"Trova la tua gara ideale"** (`/tools/gara-ideale`), ponte community (`runs.race_id` + CTA precompilata + "Chi ci va?") e **segnalazioni utenti moderate**. Documentazione completa in **`docs/CALENDARIO-GARE.md`**.
 >
@@ -57,7 +59,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY → eyJhbGci... (JWT legacy)
 NEXT_PUBLIC_SITE_URL → https://vieniacorrere.it   ← IMPORTANTE per email redirect
 RESEND_API_KEY → re_...   ← invio email dalle API route Next (es. scheda ritmi tool)
 SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token unsubscribe lato Next
+STRAVA_CLIENT_ID → ...            ← OAuth Strava (da strava.com/settings/api)
+STRAVA_CLIENT_SECRET → ...        ← OAuth Strava (sensibile)
+STRAVA_WEBHOOK_VERIFY_TOKEN → ... ← stringa scelta da noi; deve combaciare tra .env.local e Vercel
 ```
+
+> Le 3 variabili `STRAVA_*` servono anche in `.env.local` (lo script `strava:webhook` e i test girano in locale). Il *Authorization Callback Domain* su Strava è `app.vieniacorrere.it` (in dev era `localhost`).
 
 > Nota: `RESEND_API_KEY` esiste anche come secret delle Edge Functions Supabase (ambiente separato).
 > Le API route Next girano su Vercel, quindi la chiave va presente **anche** nelle env di Vercel.
@@ -103,7 +110,7 @@ SUPABASE_SERVICE_ROLE_KEY → eyJhbGci... (service_role legacy) ← firma token 
 | 28 | `supabase/admin.sql` | ✅ | Sezione backend admin: `user_moderation` (ban graduale) + colonne moderazione su `profiles`, `admin_actions` (audit), soft-delete `hidden_by_admin` su runs/series/momenti/reviews/run_chat, `reports`, `admin_recovery_codes`, funzioni `is_admin_aal2()`/`is_active_user()`, RLS (admin AAL2 + blocco scrittura sospesi/bannati). Verifica: `supabase/admin-verify.sql`. **Richiede MFA TOTP abilitato in Dashboard.** |
 | 29 | `supabase/strava.sql` | ✅ | Integrazione Strava: `strava_connections` (token OAuth, **nessuna policy** → solo service-role), `strava_activities` (corse importate), `profiles.strava_share_activities`, helper `shares_private_crew_with()` + RLS feed (attività visibili a chi condivide una crew **privata** con l'autore che condivide). Vedi `docs/STRAVA.md`. |
 | 30 | `supabase/strava-public-profile.sql` | ✅ | Strava: `profiles.strava_public_profile` (opt-in, default false) + RLS feed aggiornata → attività visibili anche sul profilo pubblico se l'utente lo abilita. |
-| 31 | `supabase/strava-heartrate.sql` | ⏳ da applicare | Strava: `strava_activities.avg_heartrate_bpm`. Si popola solo dalle attività sincronizzate/ri-sincronizzate dopo l'applicazione. |
+| 31 | `supabase/strava-heartrate.sql` | ✅ | Strava: `strava_activities.avg_heartrate_bpm`. Si popola dalle attività sincronizzate/ri-sincronizzate dopo l'applicazione. |
 
 ### Schema tabelle aggiornato
 
@@ -113,7 +120,9 @@ profiles         id, full_name, city, level, pace_min, pace_max, bio,
                  age, why_i_run text[], pb_5k, pb_10k, pb_21k, pb_42k,
                  filter_by_city boolean,
                  reliability_score numeric(5,2), reliability_eligible numeric(5,2),
-                 reliability_confirmed numeric(5,2)
+                 reliability_confirmed numeric(5,2),
+                 strava_share_activities boolean (feed crew, default true),
+                 strava_public_profile boolean (profilo pubblico, default false)
 
 runs             id, organizer_id, series_id, title, description, date, time,
                  location, city, lat, lng, distance_km, pace_target, level,
@@ -166,6 +175,16 @@ crew_invites     id, crew_id, invited_by, token uuid, max_uses, use_count,
 
 runs             + crew_id → crews.id (nullable)
                  + run_visibility (public|crew_only|invite_only) default 'public'
+
+strava_connections  id, user_id (UNIQUE → profiles), strava_athlete_id (UNIQUE),
+                    access_token, refresh_token, expires_at, scope, connected_at
+                    — token OAuth, NESSUNA policy RLS (solo service-role)
+
+strava_activities   id, user_id, strava_activity_id (UNIQUE), name, distance_m,
+                    moving_time_s, elapsed_time_s, total_elevation_gain_m,
+                    activity_type ('Run'|'TrailRun'), start_date,
+                    avg_pace_s_per_km, avg_heartrate_bpm, created_at
+                    — feed calcolato a runtime (nessuna crew_id)
 ```
 
 ### Storage bucket
@@ -246,9 +265,10 @@ src/
 │   ├── profilo/
 │   │   ├── [id]/page.tsx             Profilo: età, perché corri, PB, momenti, recensioni
 │   │   └── modifica/
-│   │       ├── page.tsx
-│   │       └── EditProfileForm.tsx   Avatar (9 personaggi+lightbox), età, PB, perché corri,
-│   │                                 filtro città automatico
+│   │       ├── page.tsx              (+ stato connessione Strava via service-role)
+│   │       ├── EditProfileForm.tsx   Avatar (9 personaggi+lightbox), età, PB, perché corri,
+│   │       │                         filtro città automatico
+│   │       └── StravaConnectCard.tsx Collega/scollega Strava + 2 toggle (crew / profilo pubblico)
 │   ├── area-personale/page.tsx       Welcome banner (nuovo utente) + banner profilo incompleto
 │   ├── messaggi/
 │   │   ├── page.tsx
@@ -279,7 +299,12 @@ src/
 │   │   └── modera/                   Moderazione admin (profiles.is_admin): Approva/Rifiuta
 │   ├── api/og/corse/[id]/route.tsx
 │   ├── api/unsubscribe/route.ts      Unsubscribe email notifiche via token
-│   └── api/tools/scheda-ritmi/route.ts  POST: invia scheda zone di passo via email (auth + ricalcolo server-side)
+│   ├── api/tools/scheda-ritmi/route.ts  POST: invia scheda zone di passo via email (auth + ricalcolo server-side)
+│   └── api/strava/                   Integrazione Strava (vedi docs/STRAVA.md)
+│       ├── connect/route.ts          GET: avvia OAuth (state anti-CSRF in cookie)
+│       ├── callback/route.ts         GET: salva connessione (service-role) + backfill 30gg
+│       ├── disconnect/route.ts       POST: deauthorize + elimina connessione/attività
+│       └── webhook/route.ts          GET challenge + POST eventi (create/update/delete/deauth)
 │
 ├── components/
 │   ├── Header.tsx                    Mobile overlay menu (mobileOpen/userOpen separati)
@@ -287,6 +312,7 @@ src/
 │   ├── RunCard.tsx                   Badge interessi, luogo privato, compatibilità
 │   ├── GaraCard.tsx                  Card post community "cerca compagni" (accent indigo)
 │   ├── RaceCard.tsx                  Card evento catalogo (+ export countryLabel ISO→bandiera)
+│   ├── CrewActivityFeed.tsx          Feed corse Strava (crew private) — distanza/passo/HR/dislivello/link
 │   ├── SeriesCard.tsx
 │   ├── SpotRunsStrip.tsx             parseRunDateTime per fuso orario corretto
 │   ├── ReviewCard.tsx
@@ -336,9 +362,13 @@ src/
 │   │   ├── quiz.ts                   Grafo dichiarativo del quiz (step form/single/multi) + computeOutcome() (profilo, blocchi, obiettivi, anti-mollare)
 │   │   ├── nutrition.ts              Campi form + computeNutritionPlan() (piano alimentazione gara, calcolo puro)
 │   │   └── raceMatcher.ts            matchRaces()/scoreRace() — motore "gara ideale" (calcolo puro)
+│   ├── strava/
+│   │   └── api.ts                    Wrapper Strava server-only: OAuth, refresh token,
+│   │                                 fetch attività, backfill, deauthorize, mapping riga
 │   └── supabase/
 │       ├── client.ts
-│       └── server.ts
+│       ├── server.ts
+│       └── admin.ts                  Client service-role (bypassa RLS, solo server)
 │
 └── proxy.ts                          Protected paths aggiornati (nuova-gara, ecc.)
 ```
@@ -502,6 +532,16 @@ src/
 - [x] **Segnalazioni** (`/admin/segnalazioni`): coda report con filtri stato (aperte/in lavorazione/risolte/ignorate), azioni admin (API `/api/admin/reports`), link a entità e utente segnalato. Pulsante utente `<ReportButton>` (inserisce in `reports` via RLS) su dettaglio corsa e profilo
 - ✅ **`admin.sql` (#28) applicato in produzione** (tabelle/colonne moderazione verificate) — resta da confermare **MFA TOTP** abilitato in Dashboard per il gate AAL2
 
+### Integrazione Strava (`docs/STRAVA.md`) — SQL #29–#31
+- [x] Connessione OAuth per utente (`activity:read`) da `/profilo/modifica` → `StravaConnectCard`; token in `strava_connections` (nessuna policy RLS, solo service-role)
+- [x] **Sincronizzazione automatica** via webhook Strava (`/api/strava/webhook`): create/update/delete + deautorizzazione; importa solo Run/TrailRun non private
+- [x] **Backfill** ultimi 30 giorni al primo collegamento (`backfillRecentRuns`, best-effort)
+- [x] **Feed attività per crew private** (`CrewActivityFeed` in `/crew/[id]`): visibile solo ai membri, solo `visibility='private'`; RLS via helper `shares_private_crew_with()`
+- [x] **Visibilità sul profilo pubblico** (`strava_public_profile`, opt-in default false): sezione "Corse recenti" in `/profilo/[id]`, visibile a chiunque
+- [x] Due toggle indipendenti (feed crew / profilo pubblico); dati mostrati: distanza, passo, tempo, **dislivello**, **frequenza cardiaca media**, link all'attività su Strava
+- [x] Script gestione subscription webhook: `npm run strava:webhook -- create|list|delete`
+- ✅ **SQL #29 `strava.sql`, #30 `strava-public-profile.sql`, #31 `strava-heartrate.sql` applicati in produzione; webhook registrato; 3 env `STRAVA_*` su Vercel**
+
 ### UX
 - [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
 - [x] Homepage: hero video/img + "Perché Vieni a correre?" con foto fondatori
@@ -545,6 +585,11 @@ src/
 | Calendario — import | AIMS ICS + costanti circuiti + segnalazioni utenti; dedup `(source, external_ref)` | Copre IT+Europa+Major/SuperHalfs; FIDAL scartato (querystring ignorata, filtro JS-only) |
 | Calendario — moderazione | `profiles.is_admin` + policy RLS admin | Nessun ruolo admin di sito preesistente |
 | Calendario — tool "gara ideale" | Calcolo puro `raceMatcher.ts` sul catalogo | Coerente con gli altri tool, zero API esterne |
+| Strava — sync | Webhook Strava (non polling) | Rate limit stretti per-app; il webhook è push, non consuma quota per utente |
+| Strava — token | `strava_connections` senza policy RLS, accesso solo service-role | I token OAuth non devono mai essere leggibili dal client |
+| Strava — feed | Nessuna `crew_id` sulle attività; visibilità calcolata a runtime via RLS | Un'attività appare in tutte le crew condivise senza duplicazione |
+| Strava — visibilità | Due flag indipendenti (`strava_share_activities` crew / `strava_public_profile` opt-in) | Livelli di esposizione diversi: crew private ≠ profilo pubblico a tutti |
+| Strava — helper RLS | `shares_private_crew_with()` SECURITY DEFINER | Evita ricorsione (come `is_active_crew_member`) |
 
 > Dettaglio completo della funzionalità Calendario gare: [`docs/CALENDARIO-GARE.md`](docs/CALENDARIO-GARE.md)
 
@@ -593,6 +638,12 @@ pagina lista/scheda con SEO, tool "gara ideale", ponte community via `runs.race_
 9. **Strategia gara — gare precaricate** — ✅ FATTO (catalogo statico): 8 grandi maratone reali (Berlino, Boston, Firenze, NewYork, Parigi, Roma, Valencia, Venezia) selezionabili con ricerca per gara/città, oltre all'upload GPX. Pipeline ripetibile: droppare i .gpx in `scripts/race-courses-gpx/` e lanciare `npm run gen:courses` (genera `src/lib/running/raceCourses.generated.ts`). Nota: il GPX di Firenze risulta parziale (~31 km), da sostituire. Follow-up: migrazione a DB `race_courses` + segmenti quando il catalogo cresce; compilare campo `country`
 10. **Strategia gara — salvataggio strategie** — tabelle `race_strategy_plans`/`race_strategy_splits`, salvataggio nel profilo utente e collegamento alla sezione Gare
 11. **Strategia gara — evoluzioni** — API meteo per condizioni previste, import passo da Strava/Garmin, confronto previsione vs risultato reale, export PDF "Race Plan"
+
+### Follow-up integrazione Strava (`docs/STRAVA.md`)
+- **Auto-conferma presenze → `reliability_score`**: incrociare `start_date`+distanza delle attività Strava con le corse a cui l'utente ha partecipato, per confermare la presenza senza il check-in manuale del Purple Screen (riusa `lib/reliability.ts`)
+- **Webhook async**: oggi l'evento è processato in modo sincrono prima del 200; per volumi alti accodare (queue/Edge Function)
+- **Backfill storico più profondo**: oggi 30 giorni al primo collegamento; valutare finestra maggiore o import on-demand
+- **Dati aggiuntivi**: cadenza, kudos, scarpe, split per km, mappa percorso (polyline) — alcuni richiedono colonne nuove e/o la chiamata di dettaglio per attività
 
 ### Bassa priorità / idee future
 12. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo

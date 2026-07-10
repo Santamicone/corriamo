@@ -8,9 +8,10 @@
 
 - **App in produzione:** https://app.vieniacorrere.it
 - **Sito editoriale (magazine):** https://www.vieniacorrere.it
-- **Branch attivo:** `feat/ui-ux-redesign` (tutto lo sviluppo avviene qui)
+- **Branch attivo:** `main` (il ramo `feat/ui-ux-redesign` è stato mergiato; lo sviluppo procede via feature branch → PR su `main`)
 - **Stack:** Next.js 16.2.7 App Router · TypeScript · Tailwind v4 · Supabase · Vercel
 - **Calendario gare:** doc completa in `docs/CALENDARIO-GARE.md` (catalogo `races`, import `npm run import:aims` + `npm run seed:circuits`, moderazione).
+- **Integrazione Strava:** doc completa in `docs/STRAVA.md` (OAuth per utente, webhook sync, feed crew private + profilo pubblico, `npm run strava:webhook`).
 
 ## Convenzioni obbligatorie
 

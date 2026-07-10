@@ -10,7 +10,11 @@ Collega l'account Strava di un utente e sincronizza automaticamente le sue
   ⚠️ **Nessuna policy RLS** → i token si leggono/scrivono **solo con
   service-role** (callback OAuth + webhook). Il client non li vede mai.
 - **`strava_activities`** — 1 riga per corsa importata (nessuna colonna
-  `crew_id`: il feed è calcolato a runtime).
+  `crew_id`: il feed è calcolato a runtime). Campi mostrati: distanza, passo
+  medio (`avg_pace_s_per_km`), tempo, dislivello (`total_elevation_gain_m`),
+  **frequenza cardiaca media** (`avg_heartrate_bpm`, SQL #31) e link
+  all'attività (`strava.com/activities/<strava_activity_id>`). L'HR si popola
+  solo dalle attività (ri)sincronizzate dopo l'applicazione della #31.
 - **`profiles.strava_share_activities`** (bool, default `true`) — toggle di
   condivisione col feed delle crew private, indipendente dalla connessione.
 - **`profiles.strava_public_profile`** (bool, default `false`, SQL #30) — opt-in
