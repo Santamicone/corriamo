@@ -329,23 +329,41 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                 {stravaActivities.map(a => {
                   const km = a.distance_m ? a.distance_m / 1000 : 0
+                  const elev = a.total_elevation_gain_m ? Math.round(a.total_elevation_gain_m) : 0
                   return (
-                    <div key={a.id} className="flex items-center gap-4 px-5 py-3.5">
+                    <a
+                      key={a.id}
+                      href={`https://www.strava.com/activities/${a.strava_activity_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors"
+                    >
                       <span className="w-9 h-9 rounded-full bg-[#FC4C02]/10 flex items-center justify-center shrink-0">
                         <span className="material-symbols-outlined text-[#FC4C02] text-lg">directions_run</span>
                       </span>
                       <div className="flex-1 min-w-0">
-                        {a.name && <div className="text-sm font-semibold text-gray-900 truncate">{a.name}</div>}
+                        {a.name && (
+                          <div className="text-sm font-semibold text-gray-900 truncate flex items-center gap-1">
+                            {a.name}
+                            <span className="material-symbols-outlined text-[13px] text-gray-300 group-hover:text-[#FC4C02] transition-colors">open_in_new</span>
+                          </div>
+                        )}
                         <div className="text-xs text-gray-400">
                           {new Date(a.start_date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-600 shrink-0">
+                      <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-600 shrink-0">
                         {km > 0 && <span className="font-semibold text-gray-800">{formatDistance(a.distance_m ?? 0)}</span>}
                         {a.avg_pace_s_per_km && <span>{formatPace(a.avg_pace_s_per_km)}/km</span>}
+                        {elev > 0 && (
+                          <span className="hidden sm:flex items-center gap-0.5">
+                            <span className="material-symbols-outlined text-[13px] text-gray-400">altitude</span>
+                            {elev} m
+                          </span>
+                        )}
                         {a.moving_time_s && <span className="hidden sm:inline">{formatTime(a.moving_time_s)}</span>}
                       </div>
-                    </div>
+                    </a>
                   )
                 })}
               </div>

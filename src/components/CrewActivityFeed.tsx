@@ -41,6 +41,7 @@ export function CrewActivityFeed({ activities }: { activities: FeedActivity[] })
       <div className="space-y-3">
         {activities.map((a) => {
           const km = a.distance_m ? a.distance_m / 1000 : 0
+          const elev = a.total_elevation_gain_m ? Math.round(a.total_elevation_gain_m) : 0
           return (
             <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
               <Avatar name={a.user.full_name} src={a.user.avatar_url} size="md" />
@@ -51,7 +52,17 @@ export function CrewActivityFeed({ activities }: { activities: FeedActivity[] })
                   </Link>
                   <span className="text-xs text-gray-400">· {relativeDay(a.start_date)}</span>
                 </div>
-                {a.name && <div className="text-xs text-gray-500 truncate">{a.name}</div>}
+                {a.name && (
+                  <a
+                    href={`https://www.strava.com/activities/${a.strava_activity_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-gray-500 truncate hover:text-[#FC4C02] inline-flex items-center gap-1"
+                  >
+                    {a.name}
+                    <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                  </a>
+                )}
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-600">
                   {km > 0 && (
                     <span className="flex items-center gap-1">
@@ -63,6 +74,12 @@ export function CrewActivityFeed({ activities }: { activities: FeedActivity[] })
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-[13px] text-gray-400">speed</span>
                       {formatPace(a.avg_pace_s_per_km)}/km
+                    </span>
+                  )}
+                  {elev > 0 && (
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px] text-gray-400">altitude</span>
+                      {elev} m
                     </span>
                   )}
                   {a.moving_time_s && (
