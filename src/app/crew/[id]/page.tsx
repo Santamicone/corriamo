@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { CREW_TYPE_LABELS } from '@/lib/types'
 import type { Crew, CrewMember, Run } from '@/lib/types'
 import { RunCard } from '@/components/RunCard'
+import { CrewActivityFeed } from '@/components/CrewActivityFeed'
 import { JoinCrewButton } from './JoinCrewButton'
 import type { Metadata } from 'next'
 import { todayItaly } from '@/lib/utils'
@@ -58,6 +59,20 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
       .order('date', { ascending: true })
       .limit(5)
     crewRuns = data
+  }
+
+  // Feed attività Strava — solo crew private, solo per i membri.
+  // La RLS filtra alle attività effettivamente condivise dagli autori.
+  let activities = null
+  if (isMember && crew.visibility === 'private' && members && members.length > 0) {
+    const memberIds = members.map((m) => m.user_id)
+    const { data } = await supabase
+      .from('strava_activities')
+      .select('*, user:profiles!user_id(id, full_name, avatar_url)')
+      .in('user_id', memberIds)
+      .order('start_date', { ascending: false })
+      .limit(20)
+    activities = data
   }
 
   // Corse pubbliche della crew (visibili a tutti) + statistiche aggregate
@@ -202,6 +217,11 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                 {(publicRuns as unknown as Run[]).map(run => <RunCard key={run.id} run={run} />)}
               </div>
             </div>
+          )}
+
+          {/* Feed attività Strava (solo crew private, solo membri) */}
+          {isMember && crew.visibility === 'private' && (
+            <CrewActivityFeed activities={(activities ?? []) as never} />
           )}
 
           {/* Corse riservate (solo per membri) */}

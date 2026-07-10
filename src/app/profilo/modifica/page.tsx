@@ -1,16 +1,18 @@
 import type { Metadata } from 'next'
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { EditProfileForm } from './EditProfileForm'
+import { StravaConnectCard } from './StravaConnectCard'
 import type { Profile } from '@/lib/types'
 
 export default async function EditProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ unsubscribed?: string }>
+  searchParams: Promise<{ unsubscribed?: string; strava?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,7 +21,16 @@ export default async function EditProfilePage({
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
   if (!profile) redirect('/login')
 
-  const { unsubscribed } = await searchParams
+  const { unsubscribed, strava } = await searchParams
+
+  // Stato connessione Strava (tabella senza policy → service-role, solo esistenza)
+  const admin = createServiceRoleClient()
+  const { data: stravaConn } = await admin
+    .from('strava_connections')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const stravaConnected = !!stravaConn
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -36,6 +47,14 @@ export default async function EditProfilePage({
           </div>
         )}
         <EditProfileForm profile={profile as unknown as Profile} />
+        <div className="mt-5">
+          <StravaConnectCard
+            userId={user.id}
+            connected={stravaConnected}
+            shareActivities={(profile as unknown as Profile).strava_share_activities ?? true}
+            status={strava}
+          />
+        </div>
       </main>
       <Footer />
     </div>

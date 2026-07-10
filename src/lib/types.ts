@@ -34,6 +34,8 @@ export interface Profile {
   pb_21k: string | null
   pb_42k: string | null
   filter_by_city: boolean
+  // Strava — condivide le attività con le proprie crew private
+  strava_share_activities?: boolean
   // Preferenze email
   email_prefs: { immediate: boolean; digest: boolean; reminders: boolean } | null
   last_seen_at: string | null
@@ -347,6 +349,31 @@ export const CREW_TYPE_LABELS: Record<CrewType, { name: string; ownerLabel: stri
     memberLabelPlural: 'Membri',
     description: 'Gruppo informale per correre insieme',
   },
+}
+
+// --- Strava (connessione account + feed attività crew private, SQL #29) ------
+export interface StravaConnection {
+  id: string
+  user_id: string
+  strava_athlete_id: number
+  scope: string | null
+  connected_at: string
+}
+
+export interface StravaActivity {
+  id: string
+  user_id: string
+  user?: Profile
+  strava_activity_id: number
+  name: string | null
+  distance_m: number | null
+  moving_time_s: number | null
+  elapsed_time_s: number | null
+  total_elevation_gain_m: number | null
+  activity_type: string | null   // 'Run' | 'TrailRun'
+  start_date: string
+  avg_pace_s_per_km: number | null
+  created_at: string
 }
 
 export interface Participation {
