@@ -17,6 +17,7 @@ export default function ModificaCrewPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '',
@@ -71,6 +72,16 @@ export default function ModificaCrewPage() {
     const { data: pub } = supabase.storage.from('crew-covers').getPublicUrl(path)
     setForm((f) => ({ ...f, cover_url: pub.publicUrl }))
     setUploading(false)
+  }
+
+  async function handleCopy(url: string) {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard non disponibile: ignora
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -167,6 +178,31 @@ export default function ModificaCrewPage() {
               <p className="text-xs text-gray-400 mt-1">
                 Solo lettere minuscole, numeri e trattini. Il vecchio indirizzo continuerà a funzionare.
               </p>
+
+              {(() => {
+                const finalSlug = slugify(form.slug || form.name)
+                if (!finalSlug) return null
+                const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                const fullUrl = `${origin}/crew/${finalSlug}`
+                return (
+                  <div className="flex items-center gap-2 mt-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                    <span className="material-symbols-outlined text-base text-gray-400">link</span>
+                    <span className="flex-1 min-w-0 text-sm text-gray-600 truncate" title={fullUrl}>
+                      {fullUrl}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(fullUrl)}
+                      className="flex items-center gap-1 text-xs font-medium text-[var(--color-brand)] hover:opacity-80 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-base">
+                        {copied ? 'check' : 'content_copy'}
+                      </span>
+                      {copied ? 'Copiato' : 'Copia'}
+                    </button>
+                  </div>
+                )
+              })()}
             </div>
 
             <div>
