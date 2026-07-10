@@ -10,7 +10,8 @@ import { RatingBadge, StarsDisplay } from '@/components/ui/Stars'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { LEVEL_LABELS, todayItaly } from '@/lib/utils'
-import type { Profile, Run, Review, Momento } from '@/lib/types'
+import { formatDistance, formatPace, formatTime } from '@/lib/running/time'
+import type { Profile, Run, Review, Momento, StravaActivity } from '@/lib/types'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityBadge'
 import { ReportButton } from '@/components/ReportButton'
 import type { Metadata } from 'next'
@@ -84,6 +85,19 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
 
   const reviews = (reviewsData ?? []) as unknown as Review[]
   const momenti = (momentiData ?? []) as unknown as Momento[]
+
+  // Attività Strava sul profilo pubblico (opt-in). La RLS filtra comunque:
+  // le righe arrivano solo se strava_public_profile = true (o sei l'autore).
+  let stravaActivities: StravaActivity[] = []
+  if (p.strava_public_profile) {
+    const { data } = await supabase
+      .from('strava_activities')
+      .select('*')
+      .eq('user_id', id)
+      .order('start_date', { ascending: false })
+      .limit(10)
+    stravaActivities = (data ?? []) as unknown as StravaActivity[]
+  }
   const reviewCount = reviews.length
   const avgRating = reviewCount > 0
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
@@ -301,6 +315,44 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                   <MomentoCard key={m.id} momento={{ ...m, author: p }} showRun size="sm" />
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* ── Attività Strava (profilo pubblico) ── */}
+          {p.strava_public_profile && stravaActivities.length > 0 && (
+            <section>
+              <h2 className="text-lg font-extrabold text-gray-900 mb-5 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#FC4C02] text-xl">directions_run</span>
+                Corse recenti
+                <span className="text-sm font-normal text-gray-400">({stravaActivities.length})</span>
+              </h2>
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                {stravaActivities.map(a => {
+                  const km = a.distance_m ? a.distance_m / 1000 : 0
+                  return (
+                    <div key={a.id} className="flex items-center gap-4 px-5 py-3.5">
+                      <span className="w-9 h-9 rounded-full bg-[#FC4C02]/10 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[#FC4C02] text-lg">directions_run</span>
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        {a.name && <div className="text-sm font-semibold text-gray-900 truncate">{a.name}</div>}
+                        <div className="text-xs text-gray-400">
+                          {new Date(a.start_date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-600 shrink-0">
+                        {km > 0 && <span className="font-semibold text-gray-800">{formatDistance(a.distance_m ?? 0)}</span>}
+                        {a.avg_pace_s_per_km && <span>{formatPace(a.avg_pace_s_per_km)}/km</span>}
+                        {a.moving_time_s && <span className="hidden sm:inline">{formatTime(a.moving_time_s)}</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[13px]">bolt</span>
+                Dati sincronizzati da Strava
+              </p>
             </section>
           )}
 

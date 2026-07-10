@@ -36,6 +36,8 @@ export interface Profile {
   filter_by_city: boolean
   // Strava — condivide le attività con le proprie crew private
   strava_share_activities?: boolean
+  // Strava — mostra le attività sul profilo pubblico (opt-in)
+  strava_public_profile?: boolean
   // Preferenze email
   email_prefs: { immediate: boolean; digest: boolean; reminders: boolean } | null
   last_seen_at: string | null

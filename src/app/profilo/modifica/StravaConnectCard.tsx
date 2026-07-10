@@ -10,15 +10,18 @@ export function StravaConnectCard({
   userId,
   connected,
   shareActivities,
+  publicProfile,
   status,
 }: {
   userId: string
   connected: boolean
   shareActivities: boolean
+  publicProfile: boolean
   status?: string
 }) {
   const router = useRouter()
   const [share, setShare] = useState(shareActivities)
+  const [pub, setPub] = useState(publicProfile)
   const [busy, setBusy] = useState(false)
 
   const banner = {
@@ -37,6 +40,17 @@ export function StravaConnectCard({
       .update({ strava_share_activities: next })
       .eq('id', userId)
     if (error) setShare(!next) // rollback su errore
+  }
+
+  const togglePublic = async () => {
+    const next = !pub
+    setPub(next)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('profiles')
+      .update({ strava_public_profile: next })
+      .eq('id', userId)
+    if (error) setPub(!next) // rollback su errore
   }
 
   const disconnect = async () => {
@@ -108,6 +122,29 @@ export function StravaConnectCard({
                 {share
                   ? 'I membri delle tue crew private vedono le tue corse nel feed attività.'
                   : 'Le tue corse restano collegate ma non appaiono nel feed delle crew.'}
+              </p>
+            </div>
+          </label>
+
+          {/* Toggle profilo pubblico */}
+          <label className={cn(
+            'flex items-start gap-3 cursor-pointer p-3.5 rounded-2xl border transition-all',
+            pub ? 'bg-orange-50 border-orange-200' : 'border-gray-100 hover:bg-gray-50'
+          )}>
+            <input
+              type="checkbox"
+              checked={pub}
+              onChange={togglePublic}
+              className="w-4 h-4 mt-0.5 rounded accent-primary shrink-0"
+            />
+            <div>
+              <span className="text-sm font-semibold text-gray-900">
+                Mostra le mie corse sul profilo pubblico
+              </span>
+              <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+                {pub
+                  ? 'Chiunque visiti il tuo profilo vede le tue corse recenti.'
+                  : 'Le tue corse non appaiono sul profilo pubblico.'}
               </p>
             </div>
           </label>

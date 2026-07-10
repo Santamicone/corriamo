@@ -12,14 +12,22 @@ Collega l'account Strava di un utente e sincronizza automaticamente le sue
 - **`strava_activities`** — 1 riga per corsa importata (nessuna colonna
   `crew_id`: il feed è calcolato a runtime).
 - **`profiles.strava_share_activities`** (bool, default `true`) — toggle di
-  condivisione col feed, indipendente dalla connessione.
+  condivisione col feed delle crew private, indipendente dalla connessione.
+- **`profiles.strava_public_profile`** (bool, default `false`, SQL #30) — opt-in
+  per mostrare le corse recenti anche sul **profilo pubblico** (`/profilo/[id]`,
+  visibile a chiunque, anche non loggato). Indipendente dal toggle crew.
 - **`shares_private_crew_with(uuid)`** — helper `SECURITY DEFINER` (come
   `is_active_crew_member`): vero se l'utente corrente condivide una crew
   **privata** con l'altro utente. Usato dalla policy SELECT di
   `strava_activities`.
 
-**Visibilità feed:** un'attività è visibile a `U` se l'autore `A` condivide con
-`U` almeno una crew `private` (entrambi `active`) **e** `A.strava_share_activities = true`.
+**Visibilità attività** (policy SELECT su `strava_activities`) — un'attività è
+leggibile se almeno una condizione è vera:
+1. è la propria (`user_id = auth.uid()`);
+2. l'autore ha `strava_public_profile = true` → visibile a **chiunque** (anche anon);
+3. condivido una crew `private` con l'autore (entrambi `active`) **e** l'autore
+   ha `strava_share_activities = true`.
+
 Le crew **pubbliche** non mostrano il feed (decisione di privacy).
 
 ## Flusso

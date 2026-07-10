@@ -52,6 +52,7 @@ export default async function EditProfilePage({
             userId={user.id}
             connected={stravaConnected}
             shareActivities={(profile as unknown as Profile).strava_share_activities ?? true}
+            publicProfile={(profile as unknown as Profile).strava_public_profile ?? false}
             status={strava}
           />
         </div>
