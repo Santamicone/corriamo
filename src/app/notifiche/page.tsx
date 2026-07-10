@@ -23,6 +23,7 @@ const TYPE_CONFIG: Record<NotificationType, {
   promemoria_corsa:    { icon: 'alarm',         iconClass: 'text-primary',   bgClass: 'bg-orange-50',  href: n => `/corse/${n.run_id}` },
   corsa_annullata:     { icon: 'event_busy',    iconClass: 'text-red-500',   bgClass: 'bg-red-50',     href: n => `/corse/${n.run_id}` },
   corsa_modificata:    { icon: 'edit_calendar', iconClass: 'text-blue-500',  bgClass: 'bg-blue-50',    href: n => `/corse/${n.run_id}` },
+  presenza_confermata: { icon: 'where_to_vote',  iconClass: 'text-teal-600',  bgClass: 'bg-teal-50',    href: n => `/corse/${n.run_id}` },
 }
 
 export default async function NotifichePage() {

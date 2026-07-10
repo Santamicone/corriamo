@@ -110,6 +110,7 @@ export interface StravaActivityDetail {
   private: boolean
   has_heartrate?: boolean
   average_heartrate?: number      // bpm, presente solo se has_heartrate
+  start_latlng?: number[] | null  // [lat, lng]; [] o null se privacy zone
 }
 
 // Giorni di storico importati al primo collegamento
@@ -190,5 +191,7 @@ export function toActivityRow(userId: string, a: StravaActivityDetail) {
     start_date: a.start_date,
     avg_pace_s_per_km: avgPace,
     avg_heartrate_bpm: a.average_heartrate ?? null,
+    start_lat: Array.isArray(a.start_latlng) && a.start_latlng.length === 2 ? a.start_latlng[0] : null,
+    start_lng: Array.isArray(a.start_latlng) && a.start_latlng.length === 2 ? a.start_latlng[1] : null,
   }
 }

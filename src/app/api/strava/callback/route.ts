@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { exchangeCodeForToken, backfillRecentRuns } from '@/lib/strava/api'
+import { autoConfirmAttendance } from '@/lib/strava/attendance'
 
 /**
  * GET /api/strava/callback
@@ -57,6 +58,8 @@ export async function GET(request: NextRequest) {
     // Backfill best-effort: importa le corse recenti (non blocca il collegamento)
     try {
       await backfillRecentRuns(user.id, token.access_token)
+      // Con lo storico importato, prova ad auto-confermare le presenze passate
+      await autoConfirmAttendance(user.id)
     } catch (err) {
       console.error('[strava/callback] backfill', err)
     }

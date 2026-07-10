@@ -6,6 +6,7 @@ import {
   isImportableRun,
   toActivityRow,
 } from '@/lib/strava/api'
+import { autoConfirmAttendance } from '@/lib/strava/attendance'
 
 /**
  * GET /api/strava/webhook
@@ -90,6 +91,14 @@ export async function POST(request: NextRequest) {
     await admin
       .from('strava_activities')
       .upsert(toActivityRow(conn.user_id, detail), { onConflict: 'strava_activity_id' })
+
+    // Auto-conferma presenze: la nuova corsa potrebbe combaciare con una corsa
+    // a cui l'utente ha partecipato (best-effort, non blocca la risposta 200)
+    try {
+      await autoConfirmAttendance(conn.user_id)
+    } catch (err) {
+      console.error('[strava/webhook] attendance', err)
+    }
   } catch (err) {
     console.error('[strava/webhook]', err)
   }

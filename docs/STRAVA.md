@@ -81,6 +81,27 @@ Alla `create` Strava chiama subito l'endpoint in GET con una challenge:
 l'handler risponde con `hub.challenge` solo se `hub.verify_token` combacia con
 `STRAVA_WEBHOOK_VERIFY_TOKEN`.
 
+## Auto-conferma presenze (SQL #32)
+
+Quando un'attività Strava combacia con una corsa a cui l'utente ha partecipato,
+il backend conferma la presenza **in automatico**, senza il prompt manuale.
+
+- **Match** (`lib/strava/attendance.ts`, `activityMatchesRun`, calcolo puro):
+  - **tempo** — l'attività parte tra −15 e +45 min dal ritrovo (`parseRunDateTime`);
+  - **distanza** — entro ±20% della `distance_km` (saltato se un dato manca);
+  - **posizione** — se *entrambe* hanno coordinate e distano > 2 km → scartata;
+    se le coordinate mancano (privacy zone) la posizione non blocca il match.
+- **Orchestrazione** (`autoConfirmAttendance`, service-role): per ogni corsa
+  passata (approvata, ≤35gg) senza conferma esistente e con un'attività
+  compatibile → inserisce `run_confirmations(confirmed=true, source='strava')`
+  + una **notifica** `presenza_confermata`. Idempotente e **solo additivo**
+  (mai `confirmed=false`, mai sovrascrive una conferma manuale).
+- **Hook**: chiamata da webhook (nuova attività) e da backfill (al collegamento).
+- **Effetti**: la conferma alimenta il `reliability_score` dell'**organizzatore**
+  (trigger #18) e il nuovo `attendance_score` del **partecipante** (#32).
+- **Badge partecipante** (`getAttendanceBadge`): *"Si presenta"* (≥1 presenza)
+  e *"Sempre presente"* (≥3 corse, score ≥80%), mostrati nel profilo.
+
 ## Note e follow-up
 
 - Il webhook elabora l'evento in modo sincrono prima di rispondere 200. Per

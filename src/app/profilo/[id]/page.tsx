@@ -13,6 +13,7 @@ import { LEVEL_LABELS, todayItaly } from '@/lib/utils'
 import { formatDistance, formatPace, formatTime } from '@/lib/running/time'
 import type { Profile, Run, Review, Momento, StravaActivity } from '@/lib/types'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityBadge'
+import { AttendanceBadge } from '@/components/ui/AttendanceBadge'
 import { ReportButton } from '@/components/ReportButton'
 import type { Metadata } from 'next'
 
@@ -185,6 +186,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                   )}
                   {/* Badge affidabilità */}
                   <ReliabilityBadge profile={p} />
+                  {/* Badge presenze (partecipante) */}
+                  <AttendanceBadge profile={p} />
                 </div>
 
                 {/* Perché corre */}

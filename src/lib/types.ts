@@ -45,6 +45,10 @@ export interface Profile {
   reliability_score:     number | null
   reliability_eligible:  number
   reliability_confirmed: number
+  // Affidabilità come partecipante (presenze, SQL #32)
+  attendance_score?:     number | null
+  attendance_eligible?:  number
+  attendance_confirmed?: number
   // Moderazione (calendario gare)
   is_admin?: boolean
   // Moderazione utenti (sezione admin, SQL #28)
@@ -212,6 +216,7 @@ export type NotificationType =
   | 'promemoria_corsa'
   | 'corsa_annullata'
   | 'corsa_modificata'
+  | 'presenza_confermata'
 
 export interface Notification {
   id: string
@@ -294,6 +299,7 @@ export interface RunConfirmation {
   run_id: string
   user_id: string
   confirmed: boolean
+  source?: 'manual' | 'strava'
   created_at: string
 }
 
@@ -376,6 +382,8 @@ export interface StravaActivity {
   start_date: string
   avg_pace_s_per_km: number | null
   avg_heartrate_bpm: number | null
+  start_lat: number | null
+  start_lng: number | null
   created_at: string
 }
 

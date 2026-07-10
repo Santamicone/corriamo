@@ -111,6 +111,7 @@ STRAVA_WEBHOOK_VERIFY_TOKEN → ... ← stringa scelta da noi; deve combaciare t
 | 29 | `supabase/strava.sql` | ✅ | Integrazione Strava: `strava_connections` (token OAuth, **nessuna policy** → solo service-role), `strava_activities` (corse importate), `profiles.strava_share_activities`, helper `shares_private_crew_with()` + RLS feed (attività visibili a chi condivide una crew **privata** con l'autore che condivide). Vedi `docs/STRAVA.md`. |
 | 30 | `supabase/strava-public-profile.sql` | ✅ | Strava: `profiles.strava_public_profile` (opt-in, default false) + RLS feed aggiornata → attività visibili anche sul profilo pubblico se l'utente lo abilita. |
 | 31 | `supabase/strava-heartrate.sql` | ✅ | Strava: `strava_activities.avg_heartrate_bpm`. Si popola dalle attività sincronizzate/ri-sincronizzate dopo l'applicazione. |
+| 32 | `supabase/strava-attendance.sql` | ⏳ da applicare | Auto-conferma presenze: `run_confirmations.source`, `strava_activities.start_lat/lng`, colonne `profiles.attendance_*` + `update_attendance_score()` + trigger. Un match Strava↔corsa inserisce `run_confirmations(confirmed=true, source='strava')` → alimenta reliability organizzatore **e** attendance partecipante. |
 
 ### Schema tabelle aggiornato
 
@@ -122,7 +123,9 @@ profiles         id, full_name, city, level, pace_min, pace_max, bio,
                  reliability_score numeric(5,2), reliability_eligible numeric(5,2),
                  reliability_confirmed numeric(5,2),
                  strava_share_activities boolean (feed crew, default true),
-                 strava_public_profile boolean (profilo pubblico, default false)
+                 strava_public_profile boolean (profilo pubblico, default false),
+                 attendance_score numeric(5,2), attendance_eligible numeric(6,2),
+                 attendance_confirmed numeric(6,2)  (presenze partecipante)
 
 runs             id, organizer_id, series_id, title, description, date, time,
                  location, city, lat, lng, distance_km, pace_target, level,
@@ -183,7 +186,7 @@ strava_connections  id, user_id (UNIQUE → profiles), strava_athlete_id (UNIQUE
 strava_activities   id, user_id, strava_activity_id (UNIQUE), name, distance_m,
                     moving_time_s, elapsed_time_s, total_elevation_gain_m,
                     activity_type ('Run'|'TrailRun'), start_date,
-                    avg_pace_s_per_km, avg_heartrate_bpm, created_at
+                    avg_pace_s_per_km, avg_heartrate_bpm, start_lat, start_lng, created_at
                     — feed calcolato a runtime (nessuna crew_id)
 ```
 
@@ -363,8 +366,10 @@ src/
 │   │   ├── nutrition.ts              Campi form + computeNutritionPlan() (piano alimentazione gara, calcolo puro)
 │   │   └── raceMatcher.ts            matchRaces()/scoreRace() — motore "gara ideale" (calcolo puro)
 │   ├── strava/
-│   │   └── api.ts                    Wrapper Strava server-only: OAuth, refresh token,
-│   │                                 fetch attività, backfill, deauthorize, mapping riga
+│   │   ├── api.ts                    Wrapper Strava server-only: OAuth, refresh token,
+│   │   │                             fetch attività, backfill, deauthorize, mapping riga
+│   │   └── attendance.ts             Auto-conferma presenze: matcher puro activityMatchesRun
+│   │                                 + autoConfirmAttendance (service-role)
 │   └── supabase/
 │       ├── client.ts
 │       ├── server.ts
@@ -540,7 +545,8 @@ src/
 - [x] **Visibilità sul profilo pubblico** (`strava_public_profile`, opt-in default false): sezione "Corse recenti" in `/profilo/[id]`, visibile a chiunque
 - [x] Due toggle indipendenti (feed crew / profilo pubblico); dati mostrati: distanza, passo, tempo, **dislivello**, **frequenza cardiaca media**, link all'attività su Strava
 - [x] Script gestione subscription webhook: `npm run strava:webhook -- create|list|delete`
-- ✅ **SQL #29 `strava.sql`, #30 `strava-public-profile.sql`, #31 `strava-heartrate.sql` applicati in produzione; webhook registrato; 3 env `STRAVA_*` su Vercel**
+- [x] **Auto-conferma presenze** (SQL #32): il matcher puro `activityMatchesRun` (tempo −15/+45min, distanza ±20%, guardia posizione 2km) incrocia le attività con le corse partecipate; `autoConfirmAttendance()` inserisce `run_confirmations(source='strava')` + notifica. Alimenta reliability organizzatore **e** `attendance_score` partecipante. Badge **"Si presenta"** (≥1) / **"Sempre presente"** (≥3, ≥80%) nel profilo. Chiamato da webhook + backfill.
+- ✅ **SQL #29 `strava.sql`, #30 `strava-public-profile.sql`, #31 `strava-heartrate.sql` applicati in produzione; webhook registrato; 3 env `STRAVA_*` su Vercel** · #32 `strava-attendance.sql` ⏳ da applicare
 
 ### UX
 - [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
@@ -640,7 +646,7 @@ pagina lista/scheda con SEO, tool "gara ideale", ponte community via `runs.race_
 11. **Strategia gara — evoluzioni** — API meteo per condizioni previste, import passo da Strava/Garmin, confronto previsione vs risultato reale, export PDF "Race Plan"
 
 ### Follow-up integrazione Strava (`docs/STRAVA.md`)
-- **Auto-conferma presenze → `reliability_score`**: incrociare `start_date`+distanza delle attività Strava con le corse a cui l'utente ha partecipato, per confermare la presenza senza il check-in manuale del Purple Screen (riusa `lib/reliability.ts`)
+- ✅ **Auto-conferma presenze** — FATTO (SQL #32): match attività↔corse partecipate → `run_confirmations(source='strava')` + badge presenze partecipante
 - **Webhook async**: oggi l'evento è processato in modo sincrono prima del 200; per volumi alti accodare (queue/Edge Function)
 - **Backfill storico più profondo**: oggi 30 giorni al primo collegamento; valutare finestra maggiore o import on-demand
 - **Dati aggiuntivi**: cadenza, kudos, scarpe, split per km, mappa percorso (polyline) — alcuni richiedono colonne nuove e/o la chiamata di dettaglio per attività
