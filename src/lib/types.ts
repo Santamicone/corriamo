@@ -311,14 +311,26 @@ export type RunVisibility = 'public' | 'crew_only' | 'invite_only'
 
 export interface Crew {
   id: string
+  slug: string | null
   name: string
   description: string | null
   avatar_url: string | null
+  cover_url: string | null
   owner_id: string
   owner?: Profile
   crew_type: CrewType
   visibility: CrewVisibility
   whatsapp_group_link: string | null
+  created_at: string
+}
+
+export interface CrewPost {
+  id: string
+  crew_id: string
+  author_id: string
+  author?: Profile
+  body: string
+  pinned: boolean
   created_at: string
 }
 

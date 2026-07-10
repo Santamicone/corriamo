@@ -77,6 +77,20 @@ export function runRitrovoColor(runId: string): RitrovoColor {
   return RITROVO_COLORS[hash % RITROVO_COLORS.length]
 }
 
+/**
+ * Genera uno slug URL-safe da una stringa (accenti → ASCII, simboli → '-').
+ * es. "Città di Udine Runners" → "citta-di-udine-runners".
+ * Usato per l'URL personalizzato delle crew.
+ */
+export function slugify(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // rimuove i diacritici combinanti
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export function formatDate(dateStr: string): string {
   return format(parseISO(dateStr), "EEE d MMMM yyyy", { locale: it })
 }
