@@ -110,6 +110,44 @@ export interface StravaActivityDetail {
   private: boolean
 }
 
+// Giorni di storico importati al primo collegamento
+export const BACKFILL_DAYS = 30
+
+/**
+ * Attività dell'atleta create dopo `afterEpoch` (secondi). L'endpoint lista
+ * restituisce già i campi che ci servono (incluso `private`), quindi non serve
+ * il dettaglio per-attività. Pagina fino a 3 volte (max 300) per sicurezza.
+ */
+export async function fetchRecentActivities(accessToken: string, afterEpoch: number): Promise<StravaActivityDetail[]> {
+  const out: StravaActivityDetail[] = []
+  const perPage = 100
+  for (let page = 1; page <= 3; page++) {
+    const url = `${STRAVA_API_BASE}/athlete/activities?after=${afterEpoch}&per_page=${perPage}&page=${page}`
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, cache: 'no-store' })
+    if (!res.ok) throw new Error(`Strava fetch activities fallito: ${res.status}`)
+    const batch = await res.json()
+    if (!Array.isArray(batch) || batch.length === 0) break
+    out.push(...batch)
+    if (batch.length < perPage) break
+  }
+  return out
+}
+
+/**
+ * Backfill una tantum: importa le corse degli ultimi BACKFILL_DAYS giorni.
+ * Ritorna il numero di corse importate. Scrive con service-role (upsert).
+ */
+export async function backfillRecentRuns(userId: string, accessToken: string): Promise<number> {
+  const afterEpoch = Math.floor((Date.now() - BACKFILL_DAYS * 86_400_000) / 1000)
+  const activities = await fetchRecentActivities(accessToken, afterEpoch)
+  const rows = activities.filter(isImportableRun).map((a) => toActivityRow(userId, a))
+  if (rows.length === 0) return 0
+  const admin = createServiceRoleClient()
+  const { error } = await admin.from('strava_activities').upsert(rows, { onConflict: 'strava_activity_id' })
+  if (error) throw error
+  return rows.length
+}
+
 /** Dettaglio di una singola attività. */
 export async function fetchActivity(accessToken: string, activityId: number | string): Promise<StravaActivityDetail> {
   const res = await fetch(`${STRAVA_API_BASE}/activities/${activityId}`, {

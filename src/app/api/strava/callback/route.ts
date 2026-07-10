@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
-import { exchangeCodeForToken } from '@/lib/strava/api'
+import { exchangeCodeForToken, backfillRecentRuns } from '@/lib/strava/api'
 
 /**
  * GET /api/strava/callback
@@ -52,6 +52,13 @@ export async function GET(request: NextRequest) {
     if (upsertErr) {
       console.error('[strava/callback] upsert', upsertErr)
       return back('error')
+    }
+
+    // Backfill best-effort: importa le corse recenti (non blocca il collegamento)
+    try {
+      await backfillRecentRuns(user.id, token.access_token)
+    } catch (err) {
+      console.error('[strava/callback] backfill', err)
     }
   } catch (err) {
     console.error('[strava/callback]', err)
