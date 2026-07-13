@@ -112,7 +112,8 @@ STRAVA_WEBHOOK_VERIFY_TOKEN → ... ← stringa scelta da noi; deve combaciare t
 | 30 | `supabase/strava-public-profile.sql` | ✅ | Strava: `profiles.strava_public_profile` (opt-in, default false) + RLS feed aggiornata → attività visibili anche sul profilo pubblico se l'utente lo abilita. |
 | 31 | `supabase/strava-heartrate.sql` | ✅ | Strava: `strava_activities.avg_heartrate_bpm`. Si popola dalle attività sincronizzate/ri-sincronizzate dopo l'applicazione. |
 | 32 | `supabase/strava-attendance.sql` | ⏳ da applicare | Auto-conferma presenze: `run_confirmations.source`, `strava_activities.start_lat/lng`, colonne `profiles.attendance_*` + `update_attendance_score()` + trigger. Un match Strava↔corsa inserisce `run_confirmations(confirmed=true, source='strava')` → alimenta reliability organizzatore **e** attendance partecipante. |
-| 33 | `supabase/crew-enhancements.sql` | ⏳ da applicare | Potenziamento crew: `crews.slug` (UNIQUE, URL personalizzato) + `crews.cover_url` (immagine di testata) + funzione `crew_slugify()` + backfill slug; tabella `crew_posts` (bacheca del coach) + RLS (lettura pubblica per crew pubbliche / membri per private via `crew_is_public()`, scrittura solo owner/admin) + trigger notifica `crew_new_post`; bucket Storage `crew-covers` (scrittura ristretta agli admin della crew). |
+| 33 | `supabase/crew-enhancements.sql` | ✅ | Potenziamento crew: `crews.slug` (UNIQUE, URL personalizzato) + `crews.cover_url` (immagine di testata) + funzione `crew_slugify()` + backfill slug; tabella `crew_posts` (bacheca del coach) + RLS + trigger notifica `crew_new_post`; bucket Storage `crew-covers` (scrittura ristretta agli admin della crew). |
+| 34 | `supabase/crew-members-public-visibility.sql` | ✅ | Coerenza pagina crew. (a) `crew_members_select`: i membri **attivi** di una crew **pubblica** sono leggibili anche dagli anonimi (allinea la lista membri allo stat aggregato di `crew_stats`; il fix era già live in prod via hotfix Dashboard con helper `is_public_crew`, ora standardizzato su `crew_is_public`). (b) `crew_posts_select`: **bacheca del coach ristretta ai soli membri attivi** (rimossa la clausola crew pubblica). Front-end: `CrewBoard` renderizzata solo se `isMember` in `crew/[id]/page.tsx`. |
 
 ### Schema tabelle aggiornato
 
@@ -172,8 +173,8 @@ crews            id, slug (UNIQUE, URL personalizzato), name, description,
                  visibility (public|private), whatsapp_group_link, created_at
 
 crew_posts       id, crew_id, author_id, body, pinned boolean, created_at
-                 — bacheca del coach; scrivono solo owner/admin, leggono tutti
-                   (crew pubbliche) o i soli membri (crew private)
+                 — bacheca del coach; scrivono solo owner/admin, leggono
+                   SOLO i membri attivi (public + private) — vedi SQL #34
 
 crew_members     id, crew_id, user_id, role (owner|admin|member),
                  status (active|pending|rejected), joined_at,

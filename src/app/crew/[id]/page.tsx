@@ -225,13 +225,15 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* Bacheca del coach */}
-          <CrewBoard
-            crewId={crew.id}
-            posts={(posts ?? []) as never}
-            canManage={!!canManage}
-            coachLabel={typeInfo.ownerLabel}
-          />
+          {/* Bacheca del coach — riservata ai membri */}
+          {isMember && (
+            <CrewBoard
+              crewId={crew.id}
+              posts={(posts ?? []) as never}
+              canManage={!!canManage}
+              coachLabel={typeInfo.ownerLabel}
+            />
+          )}
 
           {/* Membri */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
