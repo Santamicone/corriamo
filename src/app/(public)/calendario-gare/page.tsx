@@ -15,10 +15,11 @@ interface SearchParams {
 }
 
 const DISTANCE_OPTIONS = [
-  { value: '42k', label: 'Maratona' },
-  { value: '21k', label: 'Mezza' },
-  { value: '10k', label: '10K' },
-  { value: '5k',  label: '5K' },
+  { value: '42k',   label: 'Maratona' },
+  { value: '21k',   label: 'Mezza' },
+  { value: '10k',   label: '10K' },
+  { value: '5k',    label: '5K' },
+  { value: 'other', label: 'Altre distanze' },
 ]
 
 const AREA_OPTIONS = [
@@ -98,7 +99,7 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
               Trova la tua prossima gara.
             </h1>
             <p className="mt-4 text-lg text-indigo-200 leading-relaxed max-w-xl">
-              Maratone e mezze maratone in <strong className="text-white">Italia</strong> e in <strong className="text-white">Europa</strong>, le <strong className="text-white">World Marathon Majors</strong> e le <strong className="text-white">SuperHalfs</strong>. Scegli la tua gara obiettivo e cerca compagni con cui viverla.
+              Gare di corsa su strada — dalle <strong className="text-white">10K</strong> alle <strong className="text-white">mezze</strong> e <strong className="text-white">maratone</strong>, e tante altre distanze — in <strong className="text-white">Italia</strong> e in <strong className="text-white">Europa</strong>, comprese le <strong className="text-white">World Marathon Majors</strong> e le <strong className="text-white">SuperHalfs</strong>. Scegli la tua gara obiettivo e cerca compagni con cui viverla.
             </p>
             <div className="mt-7">
               <Link href="/tools/gara-ideale"
