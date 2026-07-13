@@ -65,11 +65,12 @@ Realtime: **non** usato (il catalogo non è live).
 
 ---
 
-## 3. Tre motori d'import
+## 3. I motori d'import
 
 | Motore | Copre | Comando | Frequenza | `source` |
 |---|---|---|---|---|
 | **AIMS ICS** | Maratone/mezze europee + principali internazionali | `npm run import:aims` (o GitHub Action) | **settimanale automatico** | `aims` |
+| **Podisti.Net REST** | Gare su strada italiane (long-tail), solo competitive | `npm run import:podisti` (o GitHub Action) | **settimanale automatico** | `podisti` |
 | **Costanti circuiti** | 7 Major + 6 SuperHalfs | `npm run seed:circuits` | 1×/anno (aggiornare date) | `editoriale` |
 | **Segnalazioni utenti** | Long-tail (italiane e non) | form `/proponi` + moderazione | continuo | `utente` |
 
@@ -91,6 +92,32 @@ Girano con `node --env-file=.env.local`.
   romani. Il `name` conserva lo sponsor; la `city` è pulita. Editabile a mano.
 - Upsert idempotente per `(source, external_ref)` → preserva gli id (non rompe `runs.race_id`).
 
+### Podisti.Net — `scripts/import-podisti.mjs`
+- Fonte: `https://calendario.podisti.net/wp-json/wp/v2/gara` — **REST API pubblica di
+  WordPress** (il custom post type `gara` è esposto via `show_in_rest`, con campi ACF
+  strutturati: `data_gara`, `localita`, `competitiva`, `distanze_percorsi`, `link_evento`,
+  coordinate, contatti…). Nessuno scraping HTML.
+- **Perimetro** (deciso col committente): solo le categorie **su strada** (id 392),
+  **mezza maratona** (6) e **maratona** (5) — escluse trail/skyrace/vertical, ultra,
+  campestre, in montagna, pista, staffetta, corsa a tappe; solo gare **competitive**
+  (`acf.competitiva === true`); solo i **prossimi 12 mesi**. I filtri competitiva +
+  finestra sono lato script (la REST non filtra i campi ACF).
+- **Slug nostro**: `slugify(nome + città)-anno` — non riusiamo il permalink di Podisti.Net
+  (originalità SEO + igiene legale). Lo slug non viene toccato in update (permalink stabile).
+- Mapping: `title`→`name` (entità HTML decodificate), `localita`→`city` (provincia tra
+  parentesi rimossa) + regione dalla `class_list` (`localita_gara-<regione>`),
+  `distanze_percorsi`→`distances[]` (bucket 5k/10k/21k/42k; virgola = decimale italiano),
+  `link_evento`/`link_iscrizione`→`official_url`, `race_type='competitiva'`, `country='IT'`.
+- Upsert idempotente per `(source='podisti', external_ref = id WordPress)` → preserva gli
+  id (non rompe `runs.race_id`). Slug reso univoco per i soli nuovi inserimenti.
+- **Dry run**: `node scripts/import-podisti.mjs --dry-run` — solo fetch+mapping, nessuna
+  scrittura, non servono credenziali. Utile per validare il mapping su dati reali.
+- Nota volume: a inizio stagione il numero è basso (es. ~180 a metà luglio) perché il
+  grosso del calendario è non-competitivo o già passato; cresce settimanalmente.
+- **Dedup cross-fonte**: l'import è isolato (come AIMS). Un eventuale doppione con la
+  stessa maratona italiana già presente via AIMS/editoriale sarà gestito dal dedup
+  potenziato (`pg_trgm`), non da questo script — vedi §10.
+
 ### Costanti — `scripts/seed-circuits.mjs`
 - 7 Major + 6 SuperHalfs come costanti (nome, città, `circuit`, `official_url`, data).
 - **Manutenzione**: aggiornare le `date:` nell'array `CIRCUITS` a inizio stagione.
@@ -104,8 +131,17 @@ Girano con `node --env-file=.env.local`.
 UA/Referer, `livello` valorizzato, endpoint alternativi) e restituisce **sempre** solo
 il mese corrente. Il filtro mese/regione è JS-only, replicabile solo con browser
 headless (fragile + più esposto sul piano *sui generis* del diritto banca dati).
-**Decisione**: le principali maratone/mezze IT arrivano già da AIMS; il long-tail
-cresce con le segnalazioni utenti. Copertura totale solo con permesso/feed FIDAL.
+**Decisione**: il long-tail italiano è ora coperto da **Podisti.Net** (REST pulita),
+oltre alle principali maratone/mezze IT già presenti via AIMS e alle segnalazioni utenti.
+
+### Altre fonti valutate e scartate
+- **podistiche.it** — aggregatore Laravel/Livewire **derivato da Podisti.Net** (stessi
+  slug), niente API JSON pulita (solo HTML/JSON-LD da scrapare) e testo editoriale
+  proprio protetto. Fonte di secondo grado: nessun dato in più rispetto a Podisti.Net.
+- **running.life** — Laravel/Livewire internazionale; esiste un GeoJSON su `/it/map/…`
+  ma è **`Disallow` in robots.txt**, con dato "in prosa" (descrizioni originali protette)
+  e copertura minore/sbilanciata sul trail. Scartato.
+- Verdetto: **Podisti.Net resta l'unica fonte primaria** italiana sensata.
 
 ---
 
@@ -185,8 +221,9 @@ anche prima; solo la pagina `modera` richiede la migrazione.
 | Catalogo gare | Nuova tabella `races` | Anagrafica evento ≠ post community |
 | Ponte community | `runs.race_id` nullable | Riusa post gara/interessi/messaggi |
 | Collocazione | Route group `(public)` | SEO + design system, come `/tools` |
-| Import | AIMS ICS + costanti circuiti + segnalazioni utenti | Copre IT + Europa + Major/SuperHalfs |
-| FIDAL | Scartato (querystring ignorata, filtro JS-only) | Fragile + esposizione *sui generis* |
+| Import | AIMS ICS + Podisti.Net REST + costanti circuiti + segnalazioni utenti | Copre IT (long-tail) + Europa + Major/SuperHalfs |
+| Fonte long-tail IT | Podisti.Net REST API (`gara` via `show_in_rest`) | Feed strutturato pulito; no scraping. FIDAL/podistiche.it/running.life scartate |
+| Slug gare Podisti | Permalink nostro, non ereditato | Originalità SEO + igiene legale |
 | Dedup import | `(source, external_ref)` + match country+data+distanza | Idempotenza, no duplicati multi-fonte |
 | Tool "gara ideale" | Calcolo puro `raceMatcher.ts` | Coerente con gli altri tool, zero API esterne |
 | Orizzonte lista | Massimo 15 mesi | Nasconde le edizioni AIMS molto lontane |
@@ -202,6 +239,12 @@ anche prima; solo la pagina `modera` richiede la migrazione.
   rifinite. **Prerequisito**: i secret repo `NEXT_PUBLIC_SUPABASE_URL` e
   `SUPABASE_SERVICE_ROLE_KEY` (Settings → Secrets and variables → Actions). Lo script
   CI è `npm run import:aims:ci` (legge le env dai secret, senza `--env-file`).
+- **Catalogo Podisti.Net**: aggiornato **in automatico ogni lunedì (05:30 UTC)** dalla
+  GitHub Action `.github/workflows/import-podisti.yml` (o a mano con
+  `npm run import:podisti`; dry-run con `node scripts/import-podisti.mjs --dry-run`).
+  Idempotente, stessi secret di AIMS. Lo script CI è `npm run import:podisti:ci`.
+  Per cambiare il perimetro (categorie, competitive, mesi) modificare le costanti in
+  testa a `scripts/import-podisti.mjs`.
 - **Aggiornare le date dei circuiti** (1×/anno): modificare l'array `CIRCUITS` in
   `scripts/seed-circuits.mjs`, poi rilanciare con `npm run seed:circuits` **oppure**
   dalla GitHub Action manuale `.github/workflows/seed-circuits.yml` (Actions → "Seed
@@ -210,9 +253,34 @@ anche prima; solo la pagina `modera` richiede la migrazione.
 - **Rifinire una città AIMS sbagliata**: modificarla a mano in Supabase (verrà
   sovrascritta solo se cambia il `name` a monte nel feed).
 
-## 10. Idee future (non implementate)
+## 10. Roadmap (concordata, non ancora implementata)
 
-- Import FIDAL con permesso/feed ufficiale (copertura totale IT).
+Prossimi step dopo l'import Podisti.Net (#1, fatto):
+
+2. **Dedup potenziato cross-fonte** — abilitare `pg_trgm` in Postgres e affiancare al
+   match `country + data + distanza` una **similarità sul nome**, così una stessa gara
+   presente in più fonti (es. una maratona IT in AIMS *e* in Podisti.Net) viene
+   **segnalata** come possibile doppione all'admin (mai fusa/scartata in automatico).
+3. **Ingestione fonti grezze + AI** — pagina admin che accetta **testo incollato,
+   volantini (jpg/pdf), elenchi di URL, xls/csv** e usa Claude API (vision per i
+   volantini/PDF) per estrarre **una o più gare** strutturate → dedup (#2) → inserimento
+   `status='pending'` con provenienza **indistinguibile** (`source='editoriale'`, AI e
+   manuale non si distinguono) → revisione umana in `/calendario-gare/modera`.
+   Dipendenze: `ANTHROPIC_API_KEY`, libreria XLSX server-side. Dai volantini si estraggono
+   i **fatti** e si genera una card nostra (niente ripubblicazione dell'immagine altrui).
+
+Altre idee minori:
 - Link "Modera" nel menu (solo admin) invece dell'URL diretto.
 - Notifiche "iscrizioni aperte", filtro per circuito dedicato, export.
 - Collegamento `gpx_path` → catalogo percorsi del tool Strategia gara.
+- Le coordinate (`latitudine`/`longitudine`) di Podisti.Net non sono ancora salvate
+  (la tabella non ha colonne geo): utili per una futura vista mappa.
+
+## Nota legale (Podisti.Net / fonti terze)
+
+L'accesso è via REST API pubblica, ma non è un'API ufficiale per terzi: i **dati di
+fatto** (data, luogo, distanza) restano estratti dal loro database → prima della messa
+in produzione **concordare con Podisti.Net l'ok al riuso e l'attribuzione** ("Fonte:
+Calendario Podisti.Net" + link). Le **locandine** sono opere di terzi protette da
+copyright: non vanno ribattute — o si linka l'originale o si genera una grafica propria
+dai dati.

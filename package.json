@@ -10,6 +10,8 @@
     "gen:courses": "node scripts/generate-race-courses.mjs",
     "import:aims": "node --env-file=.env.local scripts/import-aims.mjs",
     "import:aims:ci": "node scripts/import-aims.mjs",
+    "import:podisti": "node --env-file=.env.local scripts/import-podisti.mjs",
+    "import:podisti:ci": "node scripts/import-podisti.mjs",
     "seed:circuits": "node --env-file=.env.local scripts/seed-circuits.mjs",
     "seed:circuits:ci": "node scripts/seed-circuits.mjs",
     "strava:webhook": "node --env-file=.env.local scripts/strava-webhook.mjs"
