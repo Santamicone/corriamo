@@ -32,7 +32,12 @@ leggibile se almeno una condizione è vera:
 3. condivido una crew `private` con l'autore (entrambi `active`) **e** l'autore
    ha `strava_share_activities = true`.
 
-Le crew **pubbliche** non mostrano il feed (decisione di privacy).
+Il feed compare sulla pagina di **ogni** crew (pubblica o privata) e per
+**qualsiasi** visitatore: è la RLS a filtrare per viewer, quindi un anonimo o
+un non-membro vede solo gli atleti con `strava_public_profile = true`, mentre un
+membro di una crew privata vede anche chi condivide col feed
+(`strava_share_activities = true`). Ai non-membri, se non c'è nulla di
+condivisibile, la sezione non viene renderizzata.
 
 ## Flusso
 
@@ -44,9 +49,10 @@ Le crew **pubbliche** non mostrano il feed (decisione di privacy).
    stretti per-app). `create/update` → fetch dettaglio → importa solo se
    Run/TrailRun e non privata; `delete` → rimuove; deautorizzazione athlete →
    cancella connessione + attività.
-3. **Feed** — `crew/[id]/page.tsx` carica `strava_activities` dei membri (solo
-   se `visibility='private'` e sei membro); la RLS filtra alle sole condivise.
-   Reso da `components/CrewActivityFeed.tsx`.
+3. **Feed** — `crew/[id]/page.tsx` carica `strava_activities` di tutti i membri
+   della crew (a prescindere da `visibility` e dall'essere membro); la RLS
+   filtra alle sole attività visibili al viewer. Reso da
+   `components/CrewActivityFeed.tsx` (`isMember` decide l'empty-state).
 4. **Disconnessione** — `POST /api/strava/disconnect` → deauthorize su Strava +
    delete connessione e attività.
 

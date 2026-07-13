@@ -76,10 +76,13 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
     crewRuns = data
   }
 
-  // Feed attività Strava — solo crew private, solo per i membri.
-  // La RLS filtra alle attività effettivamente condivise dagli autori.
+  // Feed attività Strava degli atleti della crew — mostrato su tutte le crew,
+  // a chiunque visiti la pagina. La RLS su strava_activities filtra per viewer:
+  //  · anon / non-membri → solo atleti con strava_public_profile = true;
+  //  · membri di una crew privata → anche gli atleti che condividono col feed
+  //    (strava_share_activities = true).
   let activities = null
-  if (isMember && crew.visibility === 'private' && members && members.length > 0) {
+  if (members && members.length > 0) {
     const memberIds = members.map((m) => m.user_id)
     const { data } = await supabase
       .from('strava_activities')
@@ -180,7 +183,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
               <Avatar name={crew.owner.full_name} src={crew.owner.avatar_url} size="sm" />
               <span className="text-sm text-gray-600">
-                <span className="font-medium text-[var(--color-brand)]">{typeInfo.ownerLabel}</span>
+                <span className="font-medium text-[var(--color-primary)]">{typeInfo.ownerLabel}</span>
                 {' '}&mdash; {crew.owner.full_name}
               </span>
             </div>
@@ -194,7 +197,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                   { value: Math.round(stats.total_km ?? 0), label: 'km di gruppo', icon: 'footprint' },
                 ].map(s => (
                   <div key={s.label} className="flex flex-col items-center gap-0.5 bg-gray-50 rounded-2xl py-3 px-2 text-center">
-                    <span className="material-symbols-outlined text-[var(--color-brand)] text-lg">{s.icon}</span>
+                    <span className="material-symbols-outlined text-[var(--color-primary)] text-lg">{s.icon}</span>
                     <span className="text-lg font-extrabold text-gray-900 leading-none">{s.value}</span>
                     <span className="text-[11px] text-gray-400 leading-tight">{s.label}</span>
                   </div>
@@ -210,7 +213,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           {!user && (
             <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
               <p className="text-sm text-gray-600 mb-3">
-                <Link href="/login" className="text-[var(--color-brand)] font-semibold">Accedi</Link> per entrare in questa crew
+                <Link href="/login" className="text-[var(--color-primary)] font-semibold">Accedi</Link> per entrare in questa crew
               </p>
             </div>
           )}
@@ -239,7 +242,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                 <div key={m.id} className="flex items-center gap-3">
                   <Avatar name={m.user.full_name} src={m.user.avatar_url} size="md" />
                   <div className="flex-1 min-w-0">
-                    <Link href={`/profilo/${m.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-brand)]">
+                    <Link href={`/profilo/${m.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-primary)]">
                       {m.user.full_name}
                     </Link>
                     {m.user.city && (
@@ -247,7 +250,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                     )}
                   </div>
                   {(m.role === 'owner' || m.role === 'admin') && (
-                    <span className="text-xs bg-[var(--color-brand)]/10 text-[var(--color-brand)] rounded-full px-2 py-0.5">
+                    <span className="text-xs bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full px-2 py-0.5">
                       {m.role === 'owner' ? typeInfo.ownerLabel : typeInfo.adminLabel}
                     </span>
                   )}
@@ -260,7 +263,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           {((publicRuns && publicRuns.length > 0) || (crewRuns && crewRuns.length > 0)) && (
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[var(--color-brand)] text-base">calendar_month</span>
+                <span className="material-symbols-outlined text-[var(--color-primary)] text-base">calendar_month</span>
                 Corse programmate
               </h2>
 
@@ -305,7 +308,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           {pastRuns && pastRuns.length > 0 && (
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[var(--color-brand)] text-base">history</span>
+                <span className="material-symbols-outlined text-[var(--color-primary)] text-base">history</span>
                 Corse effettuate
               </h2>
               <div className="space-y-2">
@@ -330,10 +333,8 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* Feed attività Strava (solo crew private, solo membri) */}
-          {isMember && crew.visibility === 'private' && (
-            <CrewActivityFeed activities={(activities ?? []) as never} />
-          )}
+          {/* Feed attività Strava degli atleti della crew */}
+          <CrewActivityFeed activities={(activities ?? []) as never} isMember={!!isMember} />
 
         </div>
       </main>
