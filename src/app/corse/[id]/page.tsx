@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -210,7 +211,7 @@ export default async function CorsaDetailPage({
 
         {/* Hero header */}
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <PageContainer width="content" className="py-10">
             <Link href="/bacheca" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 mb-6 transition-colors group">
               <span className="material-symbols-outlined text-base group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
               Torna alla bacheca
@@ -245,11 +246,11 @@ export default async function CorsaDetailPage({
             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
               {typedRun.title}
             </h1>
-          </div>
+          </PageContainer>
         </div>
 
         {/* Body */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8">
+        <PageContainer width="content" className="py-8 pb-28 lg:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
 
             {/* ── Main column ── */}
@@ -584,7 +585,7 @@ export default async function CorsaDetailPage({
                 label="Segnala questa corsa" />
             </div>
           )}
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

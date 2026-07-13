@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -54,8 +55,8 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-10 px-4">
-        <div className="max-w-2xl mx-auto space-y-6">
+      <main className="min-h-screen bg-gray-50 py-10">
+        <PageContainer width="form" className="space-y-6">
 
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -174,7 +175,7 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
             </div>
           )}
 
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </>

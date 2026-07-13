@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { NuovaGaraForm, type GaraPrefill } from './NuovaGaraForm'
 
 // Distanze del form gara (singola scelta). Dal catalogo prende la prima compatibile.
@@ -40,7 +41,7 @@ export default async function NuovaGaraPage({ searchParams }: { searchParams: Pr
       <Header />
 
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <PageContainer width="form" className="py-10">
           <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold mb-4">
             <span className="material-symbols-outlined text-sm">emoji_events</span>
             Nuova gara
@@ -49,11 +50,13 @@ export default async function NuovaGaraPage({ searchParams }: { searchParams: Pr
           <p className="mt-2 text-base text-gray-500">
             Stai cercando un pacer, un compagno di gara o un supporter? Pubblica un post e connettiti con runner che partecipano alla stessa gara.
           </p>
-        </div>
+        </PageContainer>
       </div>
 
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NuovaGaraForm userId={user.id} prefill={prefill} />
+      <main className="flex-1">
+        <PageContainer width="form" className="py-8">
+          <NuovaGaraForm userId={user.id} prefill={prefill} />
+        </PageContainer>
       </main>
       <Footer />
     </div>

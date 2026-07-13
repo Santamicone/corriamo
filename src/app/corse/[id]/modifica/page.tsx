@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { parseRunDateTime } from '@/lib/utils'
@@ -61,7 +62,7 @@ export default async function EditRunPage({
 
         {/* Header */}
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <PageContainer width="form" className="py-8">
             <Link href={`/corse/${id}`}
               className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 mb-6 transition-colors group">
               <span className="material-symbols-outlined text-base group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
@@ -69,11 +70,11 @@ export default async function EditRunPage({
             </Link>
             <h1 className="text-2xl font-extrabold text-gray-900">Modifica corsa</h1>
             <p className="text-sm text-gray-400 mt-1">{run.title}</p>
-          </div>
+          </PageContainer>
         </div>
 
         {/* Body */}
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageContainer width="form" className="py-8">
 
           {/* Blocco <2h */}
           {isLocked ? (
@@ -96,7 +97,7 @@ export default async function EditRunPage({
               approvedCount={approvedCount ?? 0}
             />
           )}
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

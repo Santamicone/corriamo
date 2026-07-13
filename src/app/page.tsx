@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function HomePage() {
   return (
@@ -180,7 +181,7 @@ function ValuePropsStrip() {
 
   return (
     <section className="bg-white border-y border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+      <PageContainer width="wide" className="py-8 sm:py-10">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-8 lg:gap-10">
           {props.map(p => (
             <div key={p.title} className="flex items-start gap-3">
@@ -194,7 +195,7 @@ function ValuePropsStrip() {
             </div>
           ))}
         </div>
-      </div>
+      </PageContainer>
     </section>
   )
 }
@@ -223,7 +224,7 @@ function HowItWorksSection() {
 
   return (
     <section className="py-14 sm:py-20 bg-[#FAFAF9]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <PageContainer width="wide">
         <div className="text-center mb-10 sm:mb-12">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Come funziona</h2>
           <p className="mt-3 text-base sm:text-lg text-gray-500">Tre passaggi, poi si corre.</p>
@@ -253,7 +254,7 @@ function HowItWorksSection() {
             Scopri tutte le funzionalità →
           </Link>
         </div>
-      </div>
+      </PageContainer>
     </section>
   )
 }
@@ -362,7 +363,7 @@ function WhyDifferentSection() {
 
   return (
     <section className="py-14 sm:py-20 bg-[#FAFAF9]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <PageContainer width="wide">
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 overflow-hidden relative">
           <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -406,7 +407,7 @@ function WhyDifferentSection() {
             </div>
           </div>
         </div>
-      </div>
+      </PageContainer>
     </section>
   )
 }

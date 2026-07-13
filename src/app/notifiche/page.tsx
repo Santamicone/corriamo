@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Avatar } from '@/components/ui/Avatar'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -56,7 +57,7 @@ export default async function NotifichePage() {
 
       <main className="flex-1">
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <PageContainer width="form" className="py-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-extrabold text-gray-900">Notifiche</h1>
@@ -68,10 +69,10 @@ export default async function NotifichePage() {
               </div>
             </div>
             <p className="text-gray-500 mt-1">Aggiornamenti su corse, messaggi e iscrizioni.</p>
-          </div>
+          </PageContainer>
         </div>
 
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageContainer width="form" className="py-8">
           {notifications.length === 0 ? (
             <div className="bg-white border border-gray-100 rounded-3xl p-12 text-center">
               <span className="material-symbols-outlined text-5xl text-gray-200 block mb-3">notifications</span>
@@ -96,7 +97,7 @@ export default async function NotifichePage() {
               ))}
             </div>
           )}
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

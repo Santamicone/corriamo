@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Avatar } from '@/components/ui/Avatar'
 import Link from 'next/link'
 import type { Profile } from '@/lib/types'
@@ -66,7 +67,7 @@ export default async function CompagniPage() {
       <Header />
       <main className="flex-1">
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <PageContainer width="content" className="py-10">
             <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-3xl">diversity_3</span>
               Runner come te
@@ -74,10 +75,10 @@ export default async function CompagniPage() {
             <p className="text-gray-500 mt-1">
               Persone vicine a te, allo stesso ritmo e con le stesse motivazioni. Scrivi e organizzate una corsa.
             </p>
-          </div>
+          </PageContainer>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageContainer width="content" className="py-8">
 
           {!hasSignal ? (
             <EmptyState
@@ -122,7 +123,7 @@ export default async function CompagniPage() {
               </div>
             </>
           )}
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>
