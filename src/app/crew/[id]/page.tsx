@@ -89,7 +89,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
       .select('*, user:profiles!user_id(id, full_name, avatar_url)')
       .in('user_id', memberIds)
       .order('start_date', { ascending: false })
-      .limit(20)
+      .limit(10)
     activities = data
   }
 
