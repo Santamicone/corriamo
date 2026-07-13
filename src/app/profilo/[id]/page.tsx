@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Avatar } from '@/components/ui/Avatar'
 import { AvatarLightbox } from '@/components/ui/AvatarLightbox'
 import { RunCard } from '@/components/RunCard'
@@ -140,7 +141,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
 
         {/* ── Hero profilo ── */}
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <PageContainer width="content" className="py-10">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <div className="relative">
                 <AvatarLightbox name={p.full_name} src={p.avatar_url} size="xl" />
@@ -269,11 +270,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
             <p className="mt-6 text-xs text-gray-400 border-t border-gray-100 pt-4">
               Informazioni utili per capire se potete correre bene insieme.
             </p>
-          </div>
+          </PageContainer>
         </div>
 
         {/* ── Contenuto ── */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-10">
+        <PageContainer width="content" className="py-8 flex flex-col gap-10">
 
           {/* Corse organizzate */}
           <section>
@@ -443,7 +444,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
               <ReportButton entityTable="profiles" entityId={id} reportedUserId={id} label="Segnala questo profilo" />
             </div>
           )}
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

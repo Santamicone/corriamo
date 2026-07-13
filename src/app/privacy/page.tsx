@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -12,7 +13,8 @@ export default function PrivacyPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="flex-1">
+       <PageContainer width="form" className="py-12">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Privacy Policy</h1>
         <p className="text-sm text-gray-400 mb-10">Ultimo aggiornamento: giugno 2026</p>
 
@@ -67,6 +69,7 @@ export default function PrivacyPage() {
           </Section>
 
         </div>
+       </PageContainer>
       </main>
       <Footer />
     </div>

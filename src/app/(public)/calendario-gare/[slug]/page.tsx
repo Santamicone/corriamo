@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { countryLabel } from '@/components/RaceCard'
 import { Avatar } from '@/components/ui/Avatar'
+import { PageContainer } from '@/components/PageContainer'
 import type { Race } from '@/lib/types'
 import { formatDate, todayItaly } from '@/lib/utils'
 
@@ -92,7 +93,7 @@ export default async function RaceDetailPage({ params }: { params: Promise<{ slu
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <PageContainer width="content" className="py-8 sm:py-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Breadcrumb */}
@@ -201,7 +202,7 @@ export default async function RaceDetailPage({ params }: { params: Promise<{ slu
       <p className="mt-8 text-xs text-gray-400">
         Dati indicativi, verifica sempre su fonte ufficiale. Iscrizioni e dettagli sul sito dell&apos;organizzatore.
       </p>
-    </div>
+    </PageContainer>
   )
 }
 
