@@ -61,6 +61,21 @@ alter table public.runs add column race_id uuid references public.races(id) on d
 - policy `"Admins can manage races"` (for all): gli admin vedono/gestiscono anche le `pending`
 - nomina admin l'owner (`m.santamicone@gmail.com`)
 
+### Dedup potenziato — `supabase/races-dedup.sql` (SQL #28) ⚠️ **da applicare**
+
+Affianca al match `country + data + distanza` una **similarità sul nome** (`pg_trgm`)
+per segnalare i doppioni cross-fonte (mai fusi/eliminati in automatico).
+
+- `create extension pg_trgm` + indice trigram `races_name_trgm_idx` su `name`.
+- `race_not_duplicates(race_a<race_b)` — coppie marcate "non è un doppione" (RLS: solo admin).
+- vista `race_duplicate_candidates` — coppie candidate (stesso paese, data ±3 g,
+  `similarity(name) ≥ 0.35`, distanze compatibili), escluse quelle già scartate.
+- funzione `find_duplicate_races(nome, data, paese, distanze, …)` — riutilizzabile
+  dall'ingestione AI (#3) per controllare un candidato prima di inserirlo.
+
+Pagina admin: **`/calendario-gare/duplicati`** (solo `is_admin`, linkata da `/modera`) →
+per ogni coppia: *Elimina la 1ª / Elimina la 2ª* oppure *Non è un doppione*.
+
 Realtime: **non** usato (il catalogo non è live).
 
 ---
@@ -163,9 +178,12 @@ src/app/(public)/calendario-gare/
 ├── proponi/
 │   ├── page.tsx               Server (auth) → redirect /login se non loggato
 │   └── ProponiGaraForm.tsx    Client: inserisce gara pending (source='utente')
-└── modera/
-    ├── page.tsx               Server: solo profiles.is_admin (else notFound)
-    └── ModeraActions.tsx      Client: Approva (published) / Rifiuta (rejected)
+├── modera/
+│   ├── page.tsx               Server: solo profiles.is_admin (else notFound)
+│   └── ModeraActions.tsx      Client: Approva (published) / Rifiuta (rejected)
+└── duplicati/                 Revisione doppioni cross-fonte (solo is_admin)
+    ├── page.tsx               Server: legge la vista race_duplicate_candidates
+    └── DuplicatiActions.tsx   Client: Elimina 1ª/2ª · "Non è un doppione"
 
 src/app/(public)/tools/gara-ideale/page.tsx   Tool "gara ideale" (server: carica catalogo)
 src/components/RaceCard.tsx                    Card gara (+ export countryLabel ISO→bandiera)
@@ -253,15 +271,15 @@ anche prima; solo la pagina `modera` richiede la migrazione.
 - **Rifinire una città AIMS sbagliata**: modificarla a mano in Supabase (verrà
   sovrascritta solo se cambia il `name` a monte nel feed).
 
-## 10. Roadmap (concordata, non ancora implementata)
+## 10. Roadmap
 
-Prossimi step dopo l'import Podisti.Net (#1, fatto):
-
-2. **Dedup potenziato cross-fonte** — abilitare `pg_trgm` in Postgres e affiancare al
-   match `country + data + distanza` una **similarità sul nome**, così una stessa gara
-   presente in più fonti (es. una maratona IT in AIMS *e* in Podisti.Net) viene
-   **segnalata** come possibile doppione all'admin (mai fusa/scartata in automatico).
-3. **Ingestione fonti grezze + AI** — pagina admin che accetta **testo incollato,
+1. ✅ **Import Podisti.Net** (`scripts/import-podisti.mjs`) — fatto.
+2. ✅ **Dedup potenziato cross-fonte** (`supabase/races-dedup.sql` + pagina
+   `/calendario-gare/duplicati`) — `pg_trgm` + similarità sul nome affiancata al match
+   `country + data + distanza`; le coppie candidate sono **segnalate** all'admin, mai
+   fuse/scartate in automatico. Funzione `find_duplicate_races()` pronta per il #3.
+   ⚠️ Prerequisito: eseguire `supabase/races-dedup.sql` in Supabase.
+3. ⏳ **Ingestione fonti grezze + AI** — pagina admin che accetta **testo incollato,
    volantini (jpg/pdf), elenchi di URL, xls/csv** e usa Claude API (vision per i
    volantini/PDF) per estrarre **una o più gare** strutturate → dedup (#2) → inserimento
    `status='pending'` con provenienza **indistinguibile** (`source='editoriale'`, AI e

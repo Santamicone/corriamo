@@ -46,6 +46,11 @@ export default async function ModeraPage() {
         <p className="mt-2 text-base text-gray-500">
           {pending.length === 0 ? 'Nessuna segnalazione in attesa.' : `${pending.length} in attesa di verifica.`}
         </p>
+        <Link href="/calendario-gare/duplicati"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:underline mt-3">
+          <span className="material-symbols-outlined text-base">content_copy</span>
+          Rivedi i possibili doppioni
+        </Link>
       </div>
 
       <div className="flex flex-col gap-3">
