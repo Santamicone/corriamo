@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import Link from 'next/link'
 import type { Crew } from '@/lib/types'
 import { slugify } from '@/lib/utils'
@@ -131,8 +132,8 @@ export default function ModificaCrewPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 bg-gray-50 py-10 pb-20 px-4">
-        <div className="max-w-lg mx-auto">
+      <main className="flex-1 bg-gray-50 py-10 pb-20">
+        <PageContainer width="form">
           <Link
             href={`/crew/${id}/gestisci`}
             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"
@@ -310,7 +311,7 @@ export default function ModificaCrewPage() {
               {saving ? 'Salvataggio...' : 'Salva modifiche'}
             </button>
           </form>
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

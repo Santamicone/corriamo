@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { CREW_TYPE_LABELS } from '@/lib/types'
 import type { CrewType } from '@/lib/types'
 
@@ -52,8 +53,8 @@ export default function NuovaCrewPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 bg-gray-50 py-10 pb-20 px-4">
-        <div className="max-w-lg mx-auto">
+      <main className="flex-1 bg-gray-50 py-10 pb-20">
+        <PageContainer width="form">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Crea la tua crew</h1>
           <p className="text-gray-500 mb-8 text-sm">
             Una crew è il tuo gruppo permanente di runner — per corse riservate e coordinamento facile.
@@ -200,7 +201,7 @@ export default function NuovaCrewPage() {
               </button>
             </form>
           )}
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>
