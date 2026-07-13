@@ -17,8 +17,18 @@ function relativeDay(iso: string): string {
   return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })
 }
 
-export function CrewActivityFeed({ activities }: { activities: FeedActivity[] }) {
+export function CrewActivityFeed({
+  activities,
+  isMember = false,
+}: {
+  activities: FeedActivity[]
+  isMember?: boolean
+}) {
   if (activities.length === 0) {
+    // Per i visitatori esterni non mostriamo un riquadro vuoto: la sezione
+    // compare solo se c'è qualcosa da vedere. Ai membri lasciamo l'invito a
+    // collegare Strava.
+    if (!isMember) return null
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm">
         <h2 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -47,7 +57,7 @@ export function CrewActivityFeed({ activities }: { activities: FeedActivity[] })
               <Avatar name={a.user.full_name} src={a.user.avatar_url} size="md" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <Link href={`/profilo/${a.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-brand)]">
+                  <Link href={`/profilo/${a.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-primary)]">
                     {a.user.full_name}
                   </Link>
                   <span className="text-xs text-gray-400">· {relativeDay(a.start_date)}</span>
@@ -101,8 +111,8 @@ export function CrewActivityFeed({ activities }: { activities: FeedActivity[] })
         })}
       </div>
       <p className="text-[11px] text-gray-400 mt-4 flex items-center gap-1">
-        <span className="material-symbols-outlined text-[13px]">lock</span>
-        Visibile solo ai membri di questa crew privata · dati da Strava
+        <span className="material-symbols-outlined text-[13px]">bolt</span>
+        Ogni atleta sceglie cosa condividere · dati da Strava
       </p>
     </div>
   )
