@@ -1,0 +1,35 @@
+name: Import gare Podisti.Net
+
+# Aggiorna il catalogo gare su strada italiane dal calendario Podisti.Net
+# (REST API pubblica di WordPress). Solo categorie su strada/mezza/maratona,
+# solo gare competitive, prossimi 12 mesi. Vedi scripts/import-podisti.mjs.
+# - Automatico: ogni lunedì alle 05:30 UTC (dopo l'import AIMS)
+# - Manuale: da Actions → "Run workflow"
+#
+# Richiede due secret del repository (Settings → Secrets and variables → Actions):
+#   NEXT_PUBLIC_SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY   (bypassa la RLS per scrivere le righe source='podisti')
+
+on:
+  schedule:
+    - cron: '30 5 * * 1'
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Import Podisti.Net
+        run: npm run import:podisti:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
