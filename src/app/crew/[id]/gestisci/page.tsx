@@ -81,7 +81,7 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
                   <div key={m.id} className="flex items-center gap-3">
                     <Avatar name={m.user.full_name} src={m.user.avatar_url} size="md" />
                     <div className="flex-1 min-w-0">
-                      <Link href={`/profilo/${m.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-brand)]">
+                      <Link href={`/profilo/${m.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-primary)]">
                         {m.user.full_name}
                       </Link>
                       {m.user.city && <div className="text-xs text-gray-400">{m.user.city}</div>}
@@ -114,13 +114,13 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
                 <div key={m.id} className="flex items-center gap-3">
                   <Avatar name={m.user.full_name} src={m.user.avatar_url} size="md" />
                   <div className="flex-1 min-w-0">
-                    <Link href={`/profilo/${m.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-brand)]">
+                    <Link href={`/profilo/${m.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-primary)]">
                       {m.user.full_name}
                     </Link>
                     <div className="text-xs text-gray-400 flex items-center gap-1">
                       {m.user.city && <span>{m.user.city}</span>}
                       {(m.role === 'owner' || m.role === 'admin') && (
-                        <span className="bg-[var(--color-brand)]/10 text-[var(--color-brand)] rounded-full px-1.5 py-0.5">
+                        <span className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full px-1.5 py-0.5">
                           {m.role === 'owner' ? typeInfo.ownerLabel : typeInfo.adminLabel}
                         </span>
                       )}
@@ -157,7 +157,7 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Gruppo WhatsApp</span>
                     <a href={crew.whatsapp_group_link} target="_blank" rel="noopener noreferrer"
-                      className="text-[var(--color-brand)] hover:underline">
+                      className="text-[var(--color-primary)] hover:underline">
                       Apri
                     </a>
                   </div>

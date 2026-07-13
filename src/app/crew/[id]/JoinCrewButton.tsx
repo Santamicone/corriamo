@@ -44,7 +44,7 @@ export function JoinCrewButton({ crewId }: { crewId: string }) {
     <button
       onClick={handleJoin}
       disabled={loading}
-      className="w-full bg-[var(--color-brand)] text-white font-semibold rounded-2xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+      className="w-full bg-[var(--color-primary)] text-white font-semibold rounded-2xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
     >
       {loading ? 'Invio...' : 'Chiedi di entrare'}
     </button>

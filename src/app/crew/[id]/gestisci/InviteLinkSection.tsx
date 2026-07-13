@@ -37,7 +37,7 @@ export function InviteLinkSection({ crewId }: { crewId: string }) {
         <button
           onClick={generateLink}
           disabled={loading}
-          className="flex items-center gap-2 text-sm font-semibold text-[var(--color-brand)] border border-[var(--color-brand)] rounded-xl px-4 py-2 hover:bg-[var(--color-brand)]/5 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 text-sm font-semibold text-[var(--color-primary)] border border-[var(--color-primary)] rounded-xl px-4 py-2 hover:bg-[var(--color-primary)]/5 transition-colors disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-base">link</span>
           {loading ? 'Generazione...' : 'Genera link'}
@@ -51,7 +51,7 @@ export function InviteLinkSection({ crewId }: { crewId: string }) {
           />
           <button
             onClick={copy}
-            className="shrink-0 flex items-center gap-1.5 text-sm font-semibold text-white bg-[var(--color-brand)] rounded-xl px-4 py-2 hover:opacity-90 transition-opacity"
+            className="shrink-0 flex items-center gap-1.5 text-sm font-semibold text-white bg-[var(--color-primary)] rounded-xl px-4 py-2 hover:opacity-90 transition-opacity"
           >
             <span className="material-symbols-outlined text-base">
               {copied ? 'check' : 'content_copy'}

@@ -121,7 +121,7 @@ export default function ModificaCrewPage() {
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full border-2 border-gray-200 border-t-[var(--color-brand)] animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 border-gray-200 border-t-[var(--color-primary)] animate-spin" />
         </main>
         <Footer />
       </div>
@@ -155,7 +155,7 @@ export default function ModificaCrewPage() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': 'var(--color-brand)' } as React.CSSProperties}
+                style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
               />
             </div>
 
@@ -163,7 +163,7 @@ export default function ModificaCrewPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 URL personalizzato
               </label>
-              <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[var(--color-brand)]">
+              <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[var(--color-primary)]">
                 <span className="text-sm text-gray-400 pl-4 pr-1 py-2.5 select-none whitespace-nowrap">/crew/</span>
                 <input
                   type="text"
@@ -193,7 +193,7 @@ export default function ModificaCrewPage() {
                     <button
                       type="button"
                       onClick={() => handleCopy(fullUrl)}
-                      className="flex items-center gap-1 text-xs font-medium text-[var(--color-brand)] hover:opacity-80 shrink-0"
+                      className="flex items-center gap-1 text-xs font-medium text-[var(--color-primary)] hover:opacity-80 shrink-0"
                     >
                       <span className="material-symbols-outlined text-base">
                         {copied ? 'check' : 'content_copy'}
@@ -267,7 +267,7 @@ export default function ModificaCrewPage() {
                     key={v}
                     type="button"
                     onClick={() => setForm({ ...form, visibility: v })}
-                    style={form.visibility === v ? { borderColor: 'var(--color-brand)', backgroundColor: 'color-mix(in srgb, var(--color-brand) 5%, transparent)' } : {}}
+                    style={form.visibility === v ? { borderColor: 'var(--color-primary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' } : {}}
                     className={`border rounded-xl px-4 py-3 text-sm text-left transition-colors ${
                       form.visibility === v ? 'border-2' : 'border border-gray-200 text-gray-600'
                     }`}

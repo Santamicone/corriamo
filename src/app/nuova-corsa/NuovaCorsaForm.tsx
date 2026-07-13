@@ -372,7 +372,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
                   onClick={() => setForm(p => ({ ...p, run_visibility: v }))}
                   className={`border rounded-xl px-3 py-2.5 text-xs text-left transition-colors ${
                     form.run_visibility === v
-                      ? 'border-[var(--color-brand)] bg-[var(--color-brand)]/5 font-semibold'
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 font-semibold'
                       : 'border-gray-200 text-gray-600'
                   }`}
                 >
