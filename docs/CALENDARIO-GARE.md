@@ -181,9 +181,16 @@ src/app/(public)/calendario-gare/
 ├── modera/
 │   ├── page.tsx               Server: solo profiles.is_admin (else notFound)
 │   └── ModeraActions.tsx      Client: Approva (published) / Rifiuta (rejected)
-└── duplicati/                 Revisione doppioni cross-fonte (solo is_admin)
-    ├── page.tsx               Server: legge la vista race_duplicate_candidates
-    └── DuplicatiActions.tsx   Client: Elimina 1ª/2ª · "Non è un doppione"
+├── duplicati/                 Revisione doppioni cross-fonte (solo is_admin)
+│   ├── page.tsx               Server: legge la vista race_duplicate_candidates
+│   └── DuplicatiActions.tsx   Client: Elimina 1ª/2ª · "Non è un doppione"
+└── importa/                   Ingestione AI da fonti grezze (solo is_admin)
+    ├── page.tsx               Server: gate is_admin
+    └── ImportaForm.tsx        Client: testo/volantini/URL/xls-csv → analizza → salva
+
+src/lib/calendario/ingest.ts                   Estrazione Claude + normalizzazione + slug
+src/app/api/calendario/importa/analizza/route.ts  POST: estrae + dedup (find_duplicate_races)
+src/app/api/calendario/importa/salva/route.ts     POST: inserisce come pending (source='editoriale')
 
 src/app/(public)/tools/gara-ideale/page.tsx   Tool "gara ideale" (server: carica catalogo)
 src/components/RaceCard.tsx                    Card gara (+ export countryLabel ISO→bandiera)
@@ -279,13 +286,18 @@ anche prima; solo la pagina `modera` richiede la migrazione.
    `country + data + distanza`; le coppie candidate sono **segnalate** all'admin, mai
    fuse/scartate in automatico. Funzione `find_duplicate_races()` pronta per il #3.
    ⚠️ Prerequisito: eseguire `supabase/races-dedup.sql` in Supabase.
-3. ⏳ **Ingestione fonti grezze + AI** — pagina admin che accetta **testo incollato,
-   volantini (jpg/pdf), elenchi di URL, xls/csv** e usa Claude API (vision per i
-   volantini/PDF) per estrarre **una o più gare** strutturate → dedup (#2) → inserimento
-   `status='pending'` con provenienza **indistinguibile** (`source='editoriale'`, AI e
-   manuale non si distinguono) → revisione umana in `/calendario-gare/modera`.
-   Dipendenze: `ANTHROPIC_API_KEY`, libreria XLSX server-side. Dai volantini si estraggono
-   i **fatti** e si genera una card nostra (niente ripubblicazione dell'immagine altrui).
+3. ✅ **Ingestione fonti grezze + AI** — pagina admin `/calendario-gare/importa`
+   (`is_admin`, linkata da `/modera`) che accetta **testo incollato, volantini (jpg/pdf),
+   elenchi di URL, xls/csv** e usa Claude (`claude-opus-4-8` vision per volantini/PDF,
+   `claude-sonnet-5` per testo/URL/CSV) per estrarre **una o più gare** strutturate →
+   dedup via `find_duplicate_races()` (#2) → salvataggio `status='pending'` con provenienza
+   **indistinguibile** (`source='editoriale'`) → revisione/pubblicazione in `/modera`.
+   Dai volantini si estraggono i **fatti** e si genera una scheda nostra (niente
+   ripubblicazione dell'immagine altrui).
+   ⚠️ Prerequisito runtime: variabile d'ambiente **`ANTHROPIC_API_KEY`** (Vercel +
+   `.env.local`). Dipendenze: `@anthropic-ai/sdk`, `exceljs` (parsing xls/csv;
+   scelto al posto di `xlsx` che ha una vulnerabilità high senza fix su npm).
+   Estrazione via `client.messages.parse()` con schema Zod (structured outputs).
 
 Altre idee minori:
 - Link "Modera" nel menu (solo admin) invece dell'URL diretto.
