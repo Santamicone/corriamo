@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { CREW_TYPE_LABELS } from '@/lib/types'
 import type { CrewType } from '@/lib/types'
 
@@ -52,8 +53,8 @@ export default function NuovaCrewPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 bg-gray-50 py-10 pb-20 px-4">
-        <div className="max-w-lg mx-auto">
+      <main className="flex-1 bg-gray-50 py-10 pb-20">
+        <PageContainer width="form">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Crea la tua crew</h1>
           <p className="text-gray-500 mb-8 text-sm">
             Una crew è il tuo gruppo permanente di runner — per corse riservate e coordinamento facile.
@@ -67,10 +68,10 @@ export default function NuovaCrewPage() {
                   <button
                     key={type}
                     onClick={() => { setCrewType(type); setStep('form') }}
-                    className="w-full text-left bg-white border border-gray-200 rounded-2xl p-5 hover:border-[var(--color-brand)] transition-colors group"
+                    className="w-full text-left bg-white border border-gray-200 rounded-2xl p-5 hover:border-[var(--color-primary)] transition-colors group"
                   >
                     <div className="flex items-start gap-4">
-                      <span className="material-symbols-outlined text-3xl text-gray-400 group-hover:text-[var(--color-brand)] mt-0.5">
+                      <span className="material-symbols-outlined text-3xl text-gray-400 group-hover:text-[var(--color-primary)] mt-0.5">
                         {CREW_TYPE_ICONS[type]}
                       </span>
                       <div>
@@ -98,12 +99,12 @@ export default function NuovaCrewPage() {
                 Cambia tipo
               </button>
 
-              <div className="bg-[var(--color-brand)]/10 rounded-xl px-4 py-3 flex items-center gap-3">
-                <span className="material-symbols-outlined text-[var(--color-brand)]">
+              <div className="bg-[var(--color-primary)]/10 rounded-xl px-4 py-3 flex items-center gap-3">
+                <span className="material-symbols-outlined text-[var(--color-primary)]">
                   {CREW_TYPE_ICONS[crewType]}
                 </span>
                 <div>
-                  <div className="text-sm font-semibold text-[var(--color-brand)]">
+                  <div className="text-sm font-semibold text-[var(--color-primary)]">
                     {CREW_TYPE_LABELS[crewType].name}
                   </div>
                   <div className="text-xs text-gray-500">
@@ -123,7 +124,7 @@ export default function NuovaCrewPage() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="es. Milano Trail Crew"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 />
               </div>
 
@@ -137,7 +138,7 @@ export default function NuovaCrewPage() {
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Chi siete, dove correte, che ritmo tenete..."
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] resize-none"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-none"
                 />
               </div>
 
@@ -153,7 +154,7 @@ export default function NuovaCrewPage() {
                       onClick={() => setForm({ ...form, visibility: v })}
                       className={`border rounded-xl px-4 py-3 text-sm text-left transition-colors ${
                         form.visibility === v
-                          ? 'border-[var(--color-brand)] bg-[var(--color-brand)]/5 font-medium'
+                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 font-medium'
                           : 'border-gray-200 text-gray-600'
                       }`}
                     >
@@ -180,7 +181,7 @@ export default function NuovaCrewPage() {
                   value={form.whatsapp_group_link}
                   onChange={(e) => setForm({ ...form, whatsapp_group_link: e.target.value })}
                   placeholder="https://chat.whatsapp.com/..."
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Ti permette di avvisare il gruppo con un tap quando crei una corsa riservata.
@@ -200,7 +201,7 @@ export default function NuovaCrewPage() {
               </button>
             </form>
           )}
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

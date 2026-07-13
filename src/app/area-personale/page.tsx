@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { RunCard } from '@/components/RunCard'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -129,13 +130,13 @@ export default async function AreaPersonalePage() {
       <Header />
       <main className="flex-1">
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <PageContainer width="content" className="py-10">
             <h1 className="text-3xl font-extrabold text-gray-900">Area personale</h1>
             <p className="text-gray-500 mt-1">Le tue corse, le tue serie, le tue iscrizioni.</p>
-          </div>
+          </PageContainer>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-10">
+        <PageContainer width="content" className="py-8 flex flex-col gap-10">
 
           {/* ── Checklist di attivazione ── */}
           {showActivation && (
@@ -401,7 +402,7 @@ export default async function AreaPersonalePage() {
             ) : <Empty icon="event_repeat" label="Nessuna serie creata" />}
           </section>
 
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import { PageContainer } from '@/components/PageContainer'
 import { Footer } from '@/components/Footer'
 import { GaraCard } from '@/components/GaraCard'
 import Link from 'next/link'
@@ -76,7 +77,7 @@ export default async function GarePage({ searchParams }: { searchParams: Promise
 
         {/* ── Hero section ── */}
         <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-18">
+          <PageContainer width="wide" className="py-14 sm:py-18">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-semibold mb-5">
                 <span className="material-symbols-outlined text-base">emoji_events</span>
@@ -107,12 +108,12 @@ export default async function GarePage({ searchParams }: { searchParams: Promise
                 )}
               </div>
             </div>
-          </div>
+          </PageContainer>
         </div>
 
         {/* ── Come funziona ── */}
         <div className="bg-indigo-50 border-b border-indigo-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <PageContainer width="wide" className="py-5">
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-10">
               {[
                 { icon: 'edit', step: '1', text: 'Pubblica un post con la gara e cosa cerchi' },
@@ -127,11 +128,11 @@ export default async function GarePage({ searchParams }: { searchParams: Promise
                 </div>
               ))}
             </div>
-          </div>
+          </PageContainer>
         </div>
 
         {/* ── Lista post ── */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
+        <PageContainer width="wide" className="py-8 flex flex-col gap-6">
 
           {/* Filtri */}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
@@ -241,7 +242,7 @@ export default async function GarePage({ searchParams }: { searchParams: Promise
               </Link>
             </div>
           )}
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

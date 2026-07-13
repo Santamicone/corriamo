@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { countryLabel } from '@/components/RaceCard'
+import { PageContainer } from '@/components/PageContainer'
 import { ModeraActions } from './ModeraActions'
 import type { Race } from '@/lib/types'
 import { formatDate } from '@/lib/utils'
@@ -30,7 +31,7 @@ export default async function ModeraPage() {
   const pending = (data ?? []) as unknown as Race[]
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <PageContainer width="content" className="py-8 sm:py-12">
       <Link href="/calendario-gare" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-indigo-600 transition-colors mb-6">
         <span className="material-symbols-outlined text-base">arrow_back</span>
         Calendario gare
@@ -75,6 +76,6 @@ export default async function ModeraPage() {
           )
         })}
       </div>
-    </div>
+    </PageContainer>
   )
 }

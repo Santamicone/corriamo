@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { RunCard } from '@/components/RunCard'
@@ -69,7 +70,8 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="max-w-5xl mx-auto px-4 md:px-12 py-8">
+      <main className="flex-1">
+       <PageContainer width="content" className="py-8">
         <Link href="/bacheca?tab=serie" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-on-surface mb-6 transition-colors">
           <span className="material-symbols-outlined text-base">arrow_back</span>
           Bacheca
@@ -166,6 +168,7 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
         </div>
+       </PageContainer>
       </main>
       <Footer />
     </div>

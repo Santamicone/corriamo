@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -86,7 +87,7 @@ export default async function GaraDetailPage({
 
         {/* Hero */}
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <PageContainer width="content" className="py-10">
             <Link href="/bacheca?tab=gare" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 mb-6 transition-colors group">
               <span className="material-symbols-outlined text-base group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
               Torna alle gare
@@ -118,11 +119,11 @@ export default async function GaraDetailPage({
             {typedRun.race_name && (
               <p className="mt-2 text-base text-gray-500">{typedRun.race_name}</p>
             )}
-          </div>
+          </PageContainer>
         </div>
 
         {/* Body */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageContainer width="content" className="py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
 
             {/* Main */}
@@ -240,7 +241,7 @@ export default async function GaraDetailPage({
               )}
             </div>
           </div>
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

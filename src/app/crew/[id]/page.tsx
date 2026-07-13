@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -137,8 +138,8 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-10 px-4">
-        <div className="max-w-2xl mx-auto space-y-6">
+      <main className="min-h-screen bg-gray-50 py-10">
+        <PageContainer width="form" className="space-y-6">
 
           {/* Immagine di testata (se presente) */}
           {crew.cover_url && (
@@ -336,7 +337,7 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           {/* Feed attività Strava degli atleti della crew */}
           <CrewActivityFeed activities={(activities ?? []) as never} isMember={!!isMember} />
 
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </>

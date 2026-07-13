@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { RunCard } from '@/components/RunCard'
 import { SeriesCard } from '@/components/SeriesCard'
 import Link from 'next/link'
@@ -319,7 +320,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
 
         {/* Page header */}
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <PageContainer width="wide" className="py-10">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
@@ -348,10 +349,10 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
                 </Link>
               )}
             </div>
-          </div>
+          </PageContainer>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
+        <PageContainer width="wide" className="py-8 flex flex-col gap-6">
 
           {/* Banner benvenuto al primo accesso */}
           {params.welcome === '1' && (
@@ -547,7 +548,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             <GeolocCityDetector currentCityParam={params.city} />
           )}
 
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

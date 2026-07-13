@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default function ComeFunzionaPage() {
 
         {/* Hero */}
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center">
+          <PageContainer width="content" className="py-14 text-center">
             <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
               <span className="material-symbols-outlined text-base">help_outline</span>
               Guida rapida
@@ -41,10 +42,10 @@ export default function ComeFunzionaPage() {
                 Registrati gratis
               </Link>
             </div>
-          </div>
+          </PageContainer>
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-16">
+        <PageContainer width="content" className="py-12 flex flex-col gap-16">
 
           {/* 1 — Trova una corsa */}
           <Section
@@ -305,7 +306,7 @@ export default function ComeFunzionaPage() {
             </div>
           </div>
 
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

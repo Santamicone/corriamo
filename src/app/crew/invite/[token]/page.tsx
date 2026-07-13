@@ -72,7 +72,7 @@ export default async function AccettaInvitoPage({ params }: { params: Promise<{ 
             </>
           ) : (
             <>
-              <span className="material-symbols-outlined text-5xl text-[var(--color-brand)] mb-4 block">group_add</span>
+              <span className="material-symbols-outlined text-5xl text-[var(--color-primary)] mb-4 block">group_add</span>
               <h1 className="text-xl font-bold text-gray-900 mb-1">Sei stato invitato</h1>
               {crew && (
                 <p className="text-sm text-gray-500 mb-6">
@@ -82,7 +82,7 @@ export default async function AccettaInvitoPage({ params }: { params: Promise<{ 
               )}
               <Link
                 href={`/login?redirect=/crew/invite/${token}`}
-                className="block w-full bg-[var(--color-brand)] text-white font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity"
+                className="block w-full bg-[var(--color-primary)] text-white font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity"
               >
                 Accedi per entrare
               </Link>

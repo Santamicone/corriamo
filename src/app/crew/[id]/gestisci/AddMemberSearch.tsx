@@ -66,7 +66,7 @@ export function AddMemberSearch({ crewId }: { crewId: string }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Cerca per nome…"
-          className="w-full border border-gray-200 rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/30 focus:border-[var(--color-brand)]"
+          className="w-full border border-gray-200 rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]"
         />
         {loading && (
           <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-base animate-spin">
@@ -92,7 +92,7 @@ export function AddMemberSearch({ crewId }: { crewId: string }) {
                     <div className="font-medium text-sm text-gray-900 truncate">{profile.full_name}</div>
                     {profile.city && <div className="text-xs text-gray-400">{profile.city}</div>}
                   </div>
-                  <span className="shrink-0 text-xs font-semibold text-[var(--color-brand)]">
+                  <span className="shrink-0 text-xs font-semibold text-[var(--color-primary)]">
                     {isAdded ? '✓ Aggiunto' : isAdding ? '…' : '+ Aggiungi'}
                   </span>
                 </button>

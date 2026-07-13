@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { PageContainer } from '@/components/PageContainer'
 
 const TOOLS = [
   {
@@ -54,7 +55,7 @@ const TOOLS = [
 
 export default function ToolsHubPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+    <PageContainer width="form" className="py-10 sm:py-16">
       <header className="text-center mb-12">
         <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-primary bg-orange-50 px-3 py-1 rounded-full mb-4">
           <span className="material-symbols-outlined text-sm">build</span>
@@ -110,6 +111,6 @@ export default function ToolsHubPage() {
           )
         })}
       </div>
-    </div>
+    </PageContainer>
   )
 }

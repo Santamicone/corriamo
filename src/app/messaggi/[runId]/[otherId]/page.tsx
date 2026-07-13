@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { Avatar } from '@/components/ui/Avatar'
 import Link from 'next/link'
 import { ReplyForm } from './ReplyForm'
@@ -50,7 +51,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ runId: 
       <main className="flex-1 flex flex-col">
         {/* Thread header */}
         <div className="bg-white border-b border-gray-100 sticky top-16 z-30">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-3">
+          <PageContainer width="form" className="py-4 flex items-center gap-3">
             <Link href="/messaggi" className="text-gray-400 hover:text-gray-700 transition-colors">
               <span className="material-symbols-outlined">arrow_back</span>
             </Link>
@@ -74,11 +75,11 @@ export default async function ThreadPage({ params }: { params: Promise<{ runId: 
                 Vedi corsa
               </Link>
             )}
-          </div>
+          </PageContainer>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-3">
+        <PageContainer width="form" className="flex-1 py-6 flex flex-col gap-3">
           {messages && messages.length > 0 ? (
             <>
               {messages.map(msg => {
@@ -114,17 +115,17 @@ export default async function ThreadPage({ params }: { params: Promise<{ runId: 
               <p className="text-sm text-gray-400">Inizia la conversazione.</p>
             </div>
           )}
-        </div>
+        </PageContainer>
 
         {/* Reply form (sticky bottom) */}
         <div className="sticky bottom-0 bg-white border-t border-gray-100 shadow-lg">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <PageContainer width="form" className="py-3">
             <ReplyForm
               runId={runId !== 'direct' ? runId : null}
               recipientId={otherId}
               senderId={user.id}
             />
-          </div>
+          </PageContainer>
         </div>
       </main>
 

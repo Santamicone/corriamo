@@ -5,6 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { PageContainer } from '@/components/PageContainer'
 import { EditProfileForm } from './EditProfileForm'
 import { StravaConnectCard } from './StravaConnectCard'
 import type { Profile } from '@/lib/types'
@@ -35,7 +36,8 @@ export default async function EditProfilePage({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="max-w-2xl mx-auto px-4 md:px-12 py-8">
+      <main className="flex-1">
+       <PageContainer width="form" className="py-8">
         <h1 className="text-2xl font-extrabold text-on-surface mb-6">Modifica profilo</h1>
         {unsubscribed === '1' && (
           <div className="mb-5 flex items-start gap-3 bg-green-50 border border-green-100 rounded-2xl px-4 py-3.5">
@@ -56,6 +58,7 @@ export default async function EditProfilePage({
             status={strava}
           />
         </div>
+       </PageContainer>
       </main>
       <Footer />
     </div>
