@@ -17,11 +17,13 @@
     "strava:webhook": "node --env-file=.env.local scripts/strava-webhook.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
     "@hookform/resolvers": "^5.4.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.107.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "exceljs": "^4.4.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.17.0",
     "next": "16.2.7",
