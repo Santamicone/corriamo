@@ -227,6 +227,7 @@ async function main() {
     const catIds = inferCatFromClassList(g.class_list)
     const distances = parseDistances(acf.distanze_percorsi ?? acf.distanza_gara, catIds)
     const year = eventDate.slice(0, 4)
+    const officialUrl = normalizeUrl(acf.link_evento) || normalizeUrl(acf.link_iscrizione)
 
     rows.push({
       slug: `${slugify(`${name} ${city || ''}`)}-${year}`,
@@ -237,16 +238,20 @@ async function main() {
       event_date: eventDate,
       distances,
       race_type: 'competitiva',
-      official_url: normalizeUrl(acf.link_evento) || normalizeUrl(acf.link_iscrizione),
+      official_url: officialUrl,
       source: 'podisti',
       external_ref: String(g.id),
-      status: 'published',
+      // Gare senza sito ufficiale: nascoste (status='rejected'), non pubblicate.
+      // Idempotente: alla riesecuzione si ripubblicano da sole se acquisiscono un sito.
+      status: officialUrl ? 'published' : 'rejected',
     })
   }
 
+  const hidden = rows.filter(r => r.status !== 'published').length
   console.log(
-    `  → ${rows.length} da importare ` +
-      `(scartate: ${skippedNonComp} non competitive, ${skippedWindow} fuori 12 mesi)`
+    `  → ${rows.length} da importare (${rows.length - hidden} con sito pubblicate, ` +
+      `${hidden} senza sito nascoste; scartate: ${skippedNonComp} non competitive, ` +
+      `${skippedWindow} fuori 12 mesi)`
   )
 
   if (DRY_RUN) {

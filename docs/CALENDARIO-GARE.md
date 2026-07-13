@@ -123,6 +123,10 @@ Girano con `node --env-file=.env.local`.
   parentesi rimossa) + regione dalla `class_list` (`localita_gara-<regione>`),
   `distanze_percorsi`→`distances[]` (bucket 5k/10k/21k/42k; virgola = decimale italiano),
   `link_evento`/`link_iscrizione`→`official_url`, `race_type='competitiva'`, `country='IT'`.
+- **Solo gare con sito**: le gare senza `link_evento`/`link_iscrizione` sono importate
+  ma **nascoste** (`status='rejected'`, non pubbliche). Idempotente: alla riesecuzione
+  settimanale si ripubblicano da sole se acquisiscono un sito. (Es. a metà luglio: 97
+  con sito pubblicate, 87 senza sito nascoste.)
 - Upsert idempotente per `(source='podisti', external_ref = id WordPress)` → preserva gli
   id (non rompe `runs.race_id`). Slug reso univoco per i soli nuovi inserimenti.
 - **Dry run**: `node scripts/import-podisti.mjs --dry-run` — solo fetch+mapping, nessuna
