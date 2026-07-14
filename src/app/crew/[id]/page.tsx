@@ -139,15 +139,26 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
     <>
       <Header />
       <main className="min-h-screen bg-gray-50 py-10">
-        <PageContainer width="form" className="space-y-6">
+        <PageContainer width="content" className="space-y-6">
 
-          {/* Immagine di testata (se presente) */}
+          {/* Immagine di testata (se presente) — a tutta larghezza sopra le due colonne */}
           {crew.cover_url && (
             <div className="rounded-2xl overflow-hidden shadow-sm aspect-[16/6] bg-gray-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={crew.cover_url} alt={crew.name} className="w-full h-full object-cover" />
             </div>
           )}
+
+          {/*
+            Desktop: due colonne. La sidebar (identità/navigazione) sta a destra,
+            la colonna principale (attività) a sinistra. In DOM la sidebar viene
+            prima, così su mobile — dove il grid collassa a una colonna — l'header
+            della crew resta in cima; su lg si scambia l'ordine con `order`.
+          */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+
+          {/* ───────── SIDEBAR — identità e navigazione (a destra su desktop) ───────── */}
+          <aside className="space-y-6 lg:order-2 lg:sticky lg:top-24 self-start">
 
           {/* Header crew */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -242,16 +253,6 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* Bacheca del coach — riservata ai membri */}
-          {isMember && (
-            <CrewBoard
-              crewId={crew.id}
-              posts={(posts ?? []) as never}
-              canManage={!!canManage}
-              coachLabel={typeInfo.ownerLabel}
-            />
-          )}
-
           {/* Membri */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-900 mb-4">
@@ -278,6 +279,21 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
               ))}
             </div>
           </div>
+
+          </aside>
+
+          {/* ───────── COLONNA PRINCIPALE — attività (a sinistra su desktop) ───────── */}
+          <div className="space-y-6 min-w-0 lg:order-1">
+
+          {/* Bacheca del coach — riservata ai membri */}
+          {isMember && (
+            <CrewBoard
+              crewId={crew.id}
+              posts={(posts ?? []) as never}
+              canManage={!!canManage}
+              coachLabel={typeInfo.ownerLabel}
+            />
+          )}
 
           {/* Corse programmate */}
           {((publicRuns && publicRuns.length > 0) || (crewRuns && crewRuns.length > 0)) && (
@@ -355,6 +371,12 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
 
           {/* Feed attività Strava degli atleti della crew */}
           <CrewActivityFeed activities={(activities ?? []) as never} isMember={!!isMember} />
+
+          </div>
+          {/* /COLONNA PRINCIPALE */}
+
+          </div>
+          {/* /grid due colonne */}
 
         </PageContainer>
       </main>
