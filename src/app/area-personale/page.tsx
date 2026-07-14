@@ -295,21 +295,24 @@ export default async function AreaPersonalePage() {
             {myOwnedCrews.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {myOwnedCrews.map(m => (
-                  <Link key={m.crew_id} href={`/crew/${m.crew_id}/gestisci`}
+                  <div key={m.crew_id}
                     className="flex items-center gap-4 bg-white border border-gray-100 rounded-2xl px-5 py-4 hover:shadow-sm transition-all">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-primary text-xl">group</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{m.crew!.name}</p>
-                      <p className="text-xs text-gray-400">
-                        {CREW_TYPE_LABELS[m.crew!.crew_type].ownerLabel} · {CREW_TYPE_LABELS[m.crew!.crew_type].name}
-                      </p>
-                    </div>
-                    <span className="text-xs font-semibold text-primary border border-primary/30 rounded-full px-3 py-1 shrink-0">
+                    <Link href={`/crew/${m.crew_id}`} className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-primary text-xl">group</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{m.crew!.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {CREW_TYPE_LABELS[m.crew!.crew_type].ownerLabel} · {CREW_TYPE_LABELS[m.crew!.crew_type].name}
+                        </p>
+                      </div>
+                    </Link>
+                    <Link href={`/crew/${m.crew_id}/gestisci`}
+                      className="text-xs font-semibold text-primary border border-primary/30 rounded-full px-3 py-1 shrink-0 hover:bg-primary/5 transition-colors">
                       Gestisci
-                    </span>
-                  </Link>
+                    </Link>
+                  </div>
                 ))}
               </div>
             ) : myMemberCrews.length > 0 ? (
