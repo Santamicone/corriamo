@@ -113,7 +113,7 @@ STRAVA_WEBHOOK_VERIFY_TOKEN → ... ← stringa scelta da noi; deve combaciare t
 | 31 | `supabase/strava-heartrate.sql` | ✅ | Strava: `strava_activities.avg_heartrate_bpm`. Si popola dalle attività sincronizzate/ri-sincronizzate dopo l'applicazione. |
 | 32 | `supabase/strava-attendance.sql` | ⏳ da applicare | Auto-conferma presenze: `run_confirmations.source`, `strava_activities.start_lat/lng`, colonne `profiles.attendance_*` + `update_attendance_score()` + trigger. Un match Strava↔corsa inserisce `run_confirmations(confirmed=true, source='strava')` → alimenta reliability organizzatore **e** attendance partecipante. |
 | 33 | `supabase/crew-enhancements.sql` | ✅ | Potenziamento crew: `crews.slug` (UNIQUE, URL personalizzato) + `crews.cover_url` (immagine di testata) + funzione `crew_slugify()` + backfill slug; tabella `crew_posts` (bacheca del coach) + RLS + trigger notifica `crew_new_post`; bucket Storage `crew-covers` (scrittura ristretta agli admin della crew). |
-| 35 | `supabase/crew-chat.sql` | ⏳ da applicare | **Chat di gruppo privata della crew** (`crew_chat`, specchio di `run_chat`): scrivono/leggono **solo i membri attivi** (anche per crew pubbliche), delete dell'autore o admin/owner (moderazione). RLS via helper `is_active_crew_member` / `is_crew_admin`. Aggiunge `crew_chat` a `supabase_realtime`. Distinta da `crew_posts` (bacheca unidirezionale) e `run_chat` (chat del singolo evento). |
+| 35 | `supabase/crew-chat.sql` | ✅ | **Chat di gruppo privata della crew** (`crew_chat`, specchio di `run_chat`): scrivono/leggono **solo i membri attivi** (anche per crew pubbliche), delete dell'autore o admin/owner (moderazione). RLS via helper `is_active_crew_member` / `is_crew_admin`. Aggiunge `crew_chat` a `supabase_realtime`. Distinta da `crew_posts` (bacheca unidirezionale) e `run_chat` (chat del singolo evento). |
 | 34 | `supabase/crew-members-public-visibility.sql` | ✅ | Coerenza pagina crew. (a) `crew_members_select`: i membri **attivi** di una crew **pubblica** sono leggibili anche dagli anonimi (allinea la lista membri allo stat aggregato di `crew_stats`; il fix era già live in prod via hotfix Dashboard con helper `is_public_crew`, ora standardizzato su `crew_is_public`). (b) `crew_posts_select`: **bacheca del coach ristretta ai soli membri attivi** (rimossa la clausola crew pubblica). Front-end: `CrewBoard` renderizzata solo se `isMember` in `crew/[id]/page.tsx`. |
 
 ### Schema tabelle aggiornato
@@ -505,7 +505,7 @@ src/
 - [x] **Corse effettuate**: nuova sezione storico (le riservate visibili solo ai membri — filtro in query perché la SELECT policy su `runs` è `using(true)`)
 - [x] **Feed attività Strava dei membri**: invariato (`CrewActivityFeed`, solo crew private, solo membri)
 
-#### Chat di gruppo della crew (SQL #35 `crew-chat.sql` ⏳ da applicare)
+#### Chat di gruppo della crew (SQL #35 `crew-chat.sql` ✅ applicato in produzione)
 - [x] **Chat privata** (`crew_chat`, route `/crew/[id]/chat`): messaggistica di gruppo tra **tutti i membri attivi** — distinta dalla bacheca del coach (unidirezionale) e dalla chat delle corse (legata al singolo evento)
 - [x] Riservata ai **soli membri attivi** anche per le crew pubbliche (RLS `is_active_crew_member`); Realtime + insert ottimistico, stile iMessage (riuso pattern `run_chat`)
 - [x] Cancellazione messaggio dell'autore o di **admin/owner** (moderazione, RLS `is_crew_admin`)
