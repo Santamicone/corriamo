@@ -12,7 +12,10 @@ interface SearchParams {
   distanza?: string
   area?:     string   // italia | internazionali
   circuito?: string   // major | superhalfs
+  mostra?:   string   // quante gare mostrare (oltre alle "In evidenza"); default 12
 }
+
+const PAGE_SIZE = 12
 
 const DISTANCE_OPTIONS = [
   { value: '42k',   label: 'Maratona' },
@@ -83,7 +86,10 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
   const featured = !hasFilters ? races.filter(r => r.featured).slice(0, 6) : []
   const featuredIds = new Set(featured.map(r => r.id))
   const rest = races.filter(r => !featuredIds.has(r.id))
-  const grouped = groupByMonth(rest)
+  const mostra = Math.max(PAGE_SIZE, parseInt(params.mostra ?? '', 10) || PAGE_SIZE)
+  const visibleRest = rest.slice(0, mostra)
+  const hasMore = rest.length > visibleRest.length
+  const grouped = groupByMonth(visibleRest)
 
   return (
     <div>
@@ -203,6 +209,17 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
             </div>
           </div>
         )}
+
+        {/* Carica altre */}
+        {hasMore && (
+          <div className="flex justify-center pt-2">
+            <Link href={buildUrl(params, { mostra: String(mostra + PAGE_SIZE) })} scroll={false}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold bg-white border border-gray-200 text-gray-700 hover:border-indigo-400 hover:text-indigo-600 transition-colors shadow-sm">
+              <span className="material-symbols-outlined text-base">expand_more</span>
+              Carica altre
+            </Link>
+          </div>
+        )}
       </PageContainer>
     </div>
   )
@@ -215,6 +232,8 @@ function FilterChips({ label, options, active, params, field }: {
   params: SearchParams
   field: keyof SearchParams
 }) {
+  // Cambiare un filtro riparte da capo con la paginazione ("prossime 12")
+  const base = { ...params, mostra: undefined }
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</span>
@@ -224,8 +243,8 @@ function FilterChips({ label, options, active, params, field }: {
           return (
             <Link key={o.value}
               href={isActive
-                ? buildUrl(params, { [field]: undefined })
-                : buildUrl(params, { [field]: o.value })}
+                ? buildUrl(base, { [field]: undefined })
+                : buildUrl(base, { [field]: o.value })}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                 isActive
                   ? 'bg-indigo-600 text-white border-indigo-600'
