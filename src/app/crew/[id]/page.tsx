@@ -207,6 +207,23 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
 
+          {/* Chat privata della crew — riservata ai membri */}
+          {isMember && (
+            <Link
+              href={`/crew/${crew.slug ?? crew.id}/chat`}
+              className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[var(--color-primary)]">forum</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900">Chat della crew</p>
+                <p className="text-xs text-gray-400">Scrivi con tutti i membri in tempo reale</p>
+              </div>
+              <span className="material-symbols-outlined text-gray-300">chevron_right</span>
+            </Link>
+          )}
+
           {/* Azione: entra / stato */}
           {user && !isMember && (
             <JoinCrewButton crewId={crew.id} />

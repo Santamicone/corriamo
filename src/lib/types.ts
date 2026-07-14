@@ -334,6 +334,15 @@ export interface CrewPost {
   created_at: string
 }
 
+export interface CrewChatMessage {
+  id: string
+  crew_id: string
+  author_id: string
+  author?: Profile
+  body: string
+  created_at: string
+}
+
 export interface CrewMember {
   id: string
   crew_id: string
