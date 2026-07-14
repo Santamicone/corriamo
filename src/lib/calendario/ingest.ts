@@ -1,8 +1,11 @@
 import 'server-only'
-import Anthropic from '@anthropic-ai/sdk'
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
+import type Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
-import ExcelJS from 'exceljs'
+
+// NB: @anthropic-ai/sdk ed exceljs sono importati in modo LAZY (dynamic import)
+// dentro le funzioni che li usano, non in cima al modulo: così non vengono
+// caricati per i percorsi che non li usano (es. "Testo") e un eventuale errore
+// di caricamento nel bundle serverless resta catturabile dal try/catch.
 
 /**
  * Ingestione fonti grezze → gare candidate (calendario gare).
@@ -61,6 +64,7 @@ async function spreadsheetToText(buffer: Buffer, mediaType: string): Promise<str
   if (mediaType === 'text/csv' || mediaType === 'application/csv') {
     return buffer.toString('utf8').slice(0, 200_000)
   }
+  const { default: ExcelJS } = await import('exceljs')
   const wb = new ExcelJS.Workbook()
   // Cast: attrito tra il Buffer generico di @types/node e la firma di exceljs
   await wb.xlsx.load(buffer as never)
@@ -142,6 +146,8 @@ export async function extractRaces(payload: IngestPayload): Promise<RaceCandidat
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY non configurata: l\'ingestione AI non è disponibile.')
   }
+  const { default: Anthropic } = await import('@anthropic-ai/sdk')
+  const { zodOutputFormat } = await import('@anthropic-ai/sdk/helpers/zod')
   const client = new Anthropic()
   const { blocks, model } = await buildContent(payload)
 
