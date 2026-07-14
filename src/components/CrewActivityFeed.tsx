@@ -73,33 +73,33 @@ export function CrewActivityFeed({
                     <span className="material-symbols-outlined text-[12px]">open_in_new</span>
                   </a>
                 )}
-                <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-600">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-gray-600">
                   {km > 0 && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[13px] text-gray-400">footprint</span>
                       {formatDistance(a.distance_m ?? 0)}
                     </span>
                   )}
                   {a.avg_pace_s_per_km && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[13px] text-gray-400">speed</span>
                       {formatPace(a.avg_pace_s_per_km)}/km
                     </span>
                   )}
                   {a.avg_heartrate_bpm && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[13px] text-red-400">cardiology</span>
                       {Math.round(a.avg_heartrate_bpm)} bpm
                     </span>
                   )}
                   {elev > 0 && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[13px] text-gray-400">altitude</span>
                       {elev} m
                     </span>
                   )}
                   {a.moving_time_s && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[13px] text-gray-400">timer</span>
                       {formatTime(a.moving_time_s)}
                     </span>
