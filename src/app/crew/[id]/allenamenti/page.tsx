@@ -22,7 +22,7 @@ function lookupColumn(param: string): 'id' | 'slug' {
 }
 
 /** Finestra temporale delle attività mostrate nell'elenco completo. */
-const WINDOW_DAYS = 90
+const WINDOW_DAYS = 30
 
 function relativeDay(iso: string): string {
   const d = new Date(iso)
