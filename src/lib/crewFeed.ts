@@ -123,15 +123,25 @@ export function buildCrewFeed({
   members,
   now = new Date(),
   maxInsights = 2,
+  maxActivities,
 }: {
   activities: FeedActivity[]
   members: FeedMember[]
   now?: Date
   maxInsights?: number
+  /**
+   * Tetto alle attività Strava mostrate in timeline (le più recenti). Gli insight
+   * restano calcolati sull'intero set: si limita solo ciò che finisce nel feed.
+   * Se assente, nessun limite.
+   */
+  maxActivities?: number
 }): FeedItem[] {
   type TimedItem = Extract<FeedItem, { ts: number }>
   const events: TimedItem[] = []
-  for (const a of activities) {
+  // `activities` arriva già ordinato per start_date desc dalla query: prendiamo
+  // le prime N come "le più recenti" quando è impostato un tetto.
+  const shownActivities = maxActivities != null ? activities.slice(0, maxActivities) : activities
+  for (const a of shownActivities) {
     events.push({ kind: 'activity', ts: new Date(a.start_date).getTime(), activity: a })
   }
   for (const m of members) {

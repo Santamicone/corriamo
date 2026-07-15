@@ -201,11 +201,15 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   // Mostra un empty-state curato invece di lasciare la colonna spoglia.
   const noRuns = !nextRun && restPublicRuns.length === 0 && restCrewRuns.length === 0 && (pastRuns?.length ?? 0) === 0
 
-  // Feed unificato: attività Strava + nuovi membri + insight (assemblato lato TS)
+  // Feed unificato: attività Strava + nuovi membri + insight (assemblato lato TS).
+  // In bacheca mostriamo al massimo 10 allenamenti; l'elenco completo, organizzato
+  // per atleta e con statistiche, vive in /crew/[id]/allenamenti.
   const feed = buildCrewFeed({
     activities: (activities ?? []) as unknown as FeedActivity[],
     members: (members ?? []) as unknown as FeedMember[],
+    maxActivities: 10,
   })
+  const hasActivities = (activities?.length ?? 0) > 0
 
   return (
     <>
@@ -449,7 +453,11 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           {/* Feed unificato: attività Strava, nuovi membri, insight di gruppo.
               Se la crew è vuota l'empty-state sopra basta: evita il doppio riquadro. */}
           {(feed.length > 0 || (isMember && !noRuns)) && (
-            <CrewFeed items={feed} isMember={!!isMember} />
+            <CrewFeed
+              items={feed}
+              isMember={!!isMember}
+              seeAllHref={hasActivities ? `/crew/${crew.slug ?? crew.id}/allenamenti` : undefined}
+            />
           )}
 
           </div>
