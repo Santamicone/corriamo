@@ -8,11 +8,17 @@ import Link from 'next/link'
 import { CREW_TYPE_LABELS } from '@/lib/types'
 import type { Crew, CrewMember, Run } from '@/lib/types'
 import { RunCard } from '@/components/RunCard'
-import { CrewActivityFeed } from '@/components/CrewActivityFeed'
+import { CrewFeed } from '@/components/CrewFeed'
+import { buildCrewFeed } from '@/lib/crewFeed'
+import type { FeedActivity, FeedMember } from '@/lib/crewFeed'
 import { CrewBoard } from '@/components/CrewBoard'
+import { ImpactCard } from '@/components/ImpactCard'
+import { NextOutingCard } from '@/components/NextOutingCard'
+import type { NextOutingRun, NextOutingParticipant } from '@/components/NextOutingCard'
+import { AttendanceButton } from '@/components/AttendanceButton'
 import { JoinCrewButton } from './JoinCrewButton'
 import type { Metadata } from 'next'
-import { todayItaly } from '@/lib/utils'
+import { todayItaly, parseRunDateTime } from '@/lib/utils'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -89,14 +95,16 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
       .from('strava_activities')
       .select('*, user:profiles!user_id(id, full_name, avatar_url)')
       .in('user_id', memberIds)
+      // Finestra 30gg (limit ampio) per alimentare feed unificato + insight
+      .gte('start_date', new Date(Date.now() - 30 * 86_400_000).toISOString())
       .order('start_date', { ascending: false })
-      .limit(10)
+      .limit(40)
     activities = data
   }
 
   // Corse pubbliche future (a tutti) + corse effettuate + bacheca + statistiche
   const today = todayItaly()
-  const [{ data: publicRuns }, { data: pastRuns }, { data: posts }, { data: statsRows }] = await Promise.all([
+  const [{ data: publicRuns }, { data: pastRuns }, { data: posts }, { data: statsRows }, { data: impactRows }] = await Promise.all([
     supabase
       .from('runs')
       .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
@@ -127,13 +135,59 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
       .order('created_at', { ascending: false })
       .limit(10),
     supabase.rpc('crew_stats', { p_crew_id: crew.id }),
+    // Impatto sociale del gruppo (persone coinvolte / tornate / prime uscite) —
+    // segnali verificati, calcolati al volo. Vedi docs/GAMIFICATION.md §7.
+    supabase.rpc('crew_impact_stats', { p_crew_id: crew.id }),
   ])
   const stats = (Array.isArray(statsRows) ? statsRows[0] : statsRows) as
     { total_runs: number; total_km: number; member_count: number } | null
+  const impact = (Array.isArray(impactRows) ? impactRows[0] : impactRows) as
+    { distinct_people: number; returning_people: number; activated_newcomers: number } | null
 
   const typeInfo = CREW_TYPE_LABELS[crew.crew_type]
   const currentMember = members?.find((m) => m.user_id === user?.id)
   const canManage = currentMember?.role === 'owner' || currentMember?.role === 'admin'
+
+  // ───── Prossima uscita in evidenza ─────
+  // La più imminente tra le corse pubbliche e (per i membri) quelle riservate.
+  const nextCandidates: NextOutingRun[] = [
+    ...((publicRuns ?? []) as unknown as Run[]).map((r) => ({
+      id: r.id, title: r.title, date: r.date, time: r.time,
+      city: r.city, location: (r as Run & { location?: string | null }).location ?? null,
+      distance_km: r.distance_km ?? null,
+      run_visibility: (r as Run & { run_visibility?: string }).run_visibility ?? 'public',
+    })),
+    ...((crewRuns ?? []) as { id: string; title: string; date: string; time: string; city: string | null; distance_km: number | null }[]).map((r) => ({
+      id: r.id, title: r.title, date: r.date, time: r.time,
+      city: r.city, location: null, distance_km: r.distance_km ?? null,
+      run_visibility: 'crew_only',
+    })),
+  ]
+  const nextRun = nextCandidates
+    .sort((a, b) => parseRunDateTime(a.date, a.time).getTime() - parseRunDateTime(b.date, b.time).getTime())[0] ?? null
+
+  let nextParticipants: NextOutingParticipant[] = []
+  let nextApprovedCount = 0
+  let iAmGoing = false
+  if (nextRun) {
+    // Roster dei confermati via RPC SECURITY DEFINER: la RLS su participations
+    // nasconderebbe le partecipazioni altrui a un membro qualsiasi.
+    const { data: roster } = await supabase.rpc('run_going_roster', { p_run_id: nextRun.id })
+    const people = (Array.isArray(roster) ? roster : []) as NextOutingParticipant[]
+    nextApprovedCount = people.length
+    nextParticipants = people.slice(0, 6)
+    iAmGoing = !!user && people.some((p) => p.id === user.id)
+  }
+
+  // Griglie "Corse programmate" senza la corsa già mostrata in evidenza (no duplicati)
+  const restPublicRuns = ((publicRuns ?? []) as unknown as Run[]).filter((r) => r.id !== nextRun?.id)
+  const restCrewRuns = ((crewRuns ?? []) as { id: string; title: string; date: string; time: string; city: string | null; distance_km: number | null }[]).filter((r) => r.id !== nextRun?.id)
+
+  // Feed unificato: attività Strava + nuovi membri + insight (assemblato lato TS)
+  const feed = buildCrewFeed({
+    activities: (activities ?? []) as unknown as FeedActivity[],
+    members: (members ?? []) as unknown as FeedMember[],
+  })
 
   return (
     <>
@@ -285,6 +339,18 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           {/* ───────── COLONNA PRINCIPALE — attività (a sinistra su desktop) ───────── */}
           <div className="space-y-6 min-w-0 lg:order-1">
 
+          {/* Prossima uscita in evidenza — il driver del ritorno quotidiano */}
+          {nextRun && (
+            <NextOutingCard
+              run={nextRun}
+              participants={nextParticipants}
+              approvedCount={nextApprovedCount}
+              action={isMember && user ? (
+                <AttendanceButton runId={nextRun.id} userId={user.id} initialGoing={iAmGoing} />
+              ) : undefined}
+            />
+          )}
+
           {/* Bacheca del coach — riservata ai membri */}
           {isMember && (
             <CrewBoard
@@ -295,28 +361,28 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             />
           )}
 
-          {/* Corse programmate */}
-          {((publicRuns && publicRuns.length > 0) || (crewRuns && crewRuns.length > 0)) && (
+          {/* Corse programmate (esclusa la prossima uscita già in evidenza) */}
+          {(restPublicRuns.length > 0 || restCrewRuns.length > 0) && (
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[var(--color-primary)] text-base">calendar_month</span>
                 Corse programmate
               </h2>
 
-              {publicRuns && publicRuns.length > 0 && (
+              {restPublicRuns.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(publicRuns as unknown as Run[]).map(run => <RunCard key={run.id} run={run} />)}
+                  {restPublicRuns.map(run => <RunCard key={run.id} run={run} />)}
                 </div>
               )}
 
-              {isMember && crewRuns && crewRuns.length > 0 && (
-                <div className={publicRuns && publicRuns.length > 0 ? 'mt-5 pt-5 border-t border-gray-100' : ''}>
+              {isMember && restCrewRuns.length > 0 && (
+                <div className={restPublicRuns.length > 0 ? 'mt-5 pt-5 border-t border-gray-100' : ''}>
                   <h3 className="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-gray-400 text-base">lock</span>
                     Riservate ai membri
                   </h3>
                   <div className="space-y-2">
-                    {crewRuns.map((run) => (
+                    {restCrewRuns.map((run) => (
                       <Link
                         key={run.id}
                         href={`/corse/${run.id}`}
@@ -338,6 +404,19 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                 </div>
               )}
             </div>
+          )}
+
+          {/* Impatto della crew — persone coinvolte / tornate / prime uscite (verificate) */}
+          {impact && (
+            <ImpactCard
+              title="L'impatto della crew"
+              subtitle="Non quanti km, ma quante persone fate correre insieme"
+              stats={[
+                { value: impact.distinct_people ?? 0, label: 'persona coinvolta', labelPlural: 'persone diverse coinvolte', icon: 'diversity_3' },
+                { value: impact.returning_people ?? 0, label: 'tornata a correre', labelPlural: 'tornate a correre', icon: 'replay' },
+                { value: impact.activated_newcomers ?? 0, label: 'alla prima corsa', labelPlural: 'alla loro prima corsa', icon: 'celebration' },
+              ]}
+            />
           )}
 
           {/* Corse effettuate */}
@@ -369,8 +448,8 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* Feed attività Strava degli atleti della crew */}
-          <CrewActivityFeed activities={(activities ?? []) as never} isMember={!!isMember} />
+          {/* Feed unificato: attività Strava, nuovi membri, insight di gruppo */}
+          <CrewFeed items={feed} isMember={!!isMember} />
 
           </div>
           {/* /COLONNA PRINCIPALE */}
