@@ -12,48 +12,27 @@ export async function POST(
 
   const { token } = await params
 
-  const { data: invite, error: inviteError } = await supabase
-    .from('crew_invites')
-    .select('id, crew_id, max_uses, use_count, expires_at')
-    .eq('token', token)
-    .single()
+  // Accettazione atomica via RPC SECURITY DEFINER: valida il token, inserisce la
+  // membership e incrementa use_count. Bypassa la RLS (crew_invites è leggibile
+  // solo dagli admin) in modo controllato, lavorando solo sul token fornito.
+  const { data, error } = await supabase.rpc('accept_crew_invite', { p_token: token })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  if (inviteError || !invite) {
-    return NextResponse.json({ error: 'Link non valido o scaduto' }, { status: 404 })
+  const outcome = (Array.isArray(data) ? data[0] : data) as
+    { crew_id: string | null; result: string } | null | undefined
+
+  switch (outcome?.result) {
+    case 'joined':
+      return NextResponse.json({ crew_id: outcome.crew_id })
+    case 'already_member':
+      return NextResponse.json({ crew_id: outcome.crew_id, already_member: true })
+    case 'expired':
+      return NextResponse.json({ error: 'Link scaduto' }, { status: 410 })
+    case 'exhausted':
+      return NextResponse.json({ error: 'Link esaurito' }, { status: 410 })
+    case 'not_found':
+      return NextResponse.json({ error: 'Link non valido o scaduto' }, { status: 404 })
+    default:
+      return NextResponse.json({ error: 'Impossibile accettare l\'invito' }, { status: 500 })
   }
-
-  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-    return NextResponse.json({ error: 'Link scaduto' }, { status: 410 })
-  }
-
-  if (invite.max_uses !== null && invite.use_count >= invite.max_uses) {
-    return NextResponse.json({ error: 'Link esaurito' }, { status: 410 })
-  }
-
-  // Controlla se già membro
-  const { data: existing } = await supabase
-    .from('crew_members')
-    .select('status')
-    .eq('crew_id', invite.crew_id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (existing?.status === 'active') {
-    return NextResponse.json({ crew_id: invite.crew_id, already_member: true })
-  }
-
-  // Inserisci come membro attivo (il link invito bypassa l'approvazione)
-  const { error: insertError } = await supabase
-    .from('crew_members')
-    .upsert({ crew_id: invite.crew_id, user_id: user.id, role: 'member', status: 'active' })
-
-  if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
-
-  // Incrementa use_count
-  await supabase
-    .from('crew_invites')
-    .update({ use_count: invite.use_count + 1 })
-    .eq('id', invite.id)
-
-  return NextResponse.json({ crew_id: invite.crew_id })
 }
