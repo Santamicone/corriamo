@@ -15,6 +15,7 @@ import { formatDistance, formatPace, formatTime } from '@/lib/running/time'
 import type { Profile, Run, Review, Momento, StravaActivity } from '@/lib/types'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityBadge'
 import { AttendanceBadge } from '@/components/ui/AttendanceBadge'
+import { ImpactCard } from '@/components/ImpactCard'
 import { ReportButton } from '@/components/ReportButton'
 import type { Metadata } from 'next'
 
@@ -62,7 +63,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   if (!profile) notFound()
   const p = profile as unknown as Profile
 
-  const [{ data: organizedRuns }, { data: reviewsData }, { data: momentiData }] = await Promise.all([
+  const [{ data: organizedRuns }, { data: reviewsData }, { data: momentiData }, { data: impactRows }] = await Promise.all([
     supabase
       .from('runs')
       .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
@@ -83,10 +84,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
       .eq('author_id', id)
       .order('created_at', { ascending: false })
       .limit(12),
+
+    // Impatto sociale come organizzatore ("Runner ispirati") — segnali
+    // verificati, calcolati al volo. Vedi docs/GAMIFICATION.md §7.
+    supabase.rpc('user_impact_stats', { p_user_id: id }),
   ])
 
   const reviews = (reviewsData ?? []) as unknown as Review[]
   const momenti = (momentiData ?? []) as unknown as Momento[]
+  const impact = (Array.isArray(impactRows) ? impactRows[0] : impactRows) as
+    { events_verified: number; participations: number; distinct_people: number; returning_people: number; activated_newcomers: number } | null
 
   // Attività Strava sul profilo pubblico (opt-in). La RLS filtra comunque:
   // le righe arrivano solo se strava_public_profile = true (o sei l'autore).
@@ -275,6 +282,21 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
 
         {/* ── Contenuto ── */}
         <PageContainer width="content" className="py-8 flex flex-col gap-10">
+
+          {/* Runner ispirati — impatto come organizzatore (segnali verificati) */}
+          {impact && (
+            <ImpactCard
+              title="Runner ispirati"
+              subtitle="Non quanto corre, ma quante persone fa correre insieme"
+              stats={[
+                { value: impact.events_verified ?? 0, label: 'uscita organizzata', labelPlural: 'uscite organizzate', icon: 'event' },
+                { value: impact.participations ?? 0, label: 'partecipazione generata', labelPlural: 'partecipazioni generate', icon: 'groups' },
+                { value: impact.distinct_people ?? 0, label: 'persona coinvolta', labelPlural: 'persone diverse coinvolte', icon: 'diversity_3' },
+                { value: impact.returning_people ?? 0, label: 'diventata abituale', labelPlural: 'diventate abituali', icon: 'replay' },
+                { value: impact.activated_newcomers ?? 0, label: 'alla prima corsa', labelPlural: 'alla loro prima corsa', icon: 'celebration' },
+              ]}
+            />
+          )}
 
           {/* Corse organizzate */}
           <section>
