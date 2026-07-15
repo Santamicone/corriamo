@@ -2,13 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { PageContainer } from '@/components/PageContainer'
-import { Avatar } from '@/components/ui/Avatar'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import type { Crew } from '@/lib/types'
-import { buildCrewStats, type StatsActivity, type AthleteStats } from '@/lib/crewStats'
-import { formatDistance, formatPace, formatTime } from '@/lib/running/time'
+import { buildCrewStats, type StatsActivity } from '@/lib/crewStats'
+import { formatDistance, formatTime } from '@/lib/running/time'
+import { CrewTrainingsBrowser } from './CrewTrainingsBrowser'
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -23,16 +23,6 @@ function lookupColumn(param: string): 'id' | 'slug' {
 
 /** Finestra temporale delle attività mostrate nell'elenco completo. */
 const WINDOW_DAYS = 30
-
-function relativeDay(iso: string): string {
-  const d = new Date(iso)
-  const now = new Date()
-  const days = Math.floor((now.getTime() - d.getTime()) / 86_400_000)
-  if (days <= 0) return 'oggi'
-  if (days === 1) return 'ieri'
-  if (days < 7) return `${days} giorni fa`
-  return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })
-}
 
 export default async function CrewAllenamentiPage({
   params,
@@ -124,108 +114,12 @@ export default async function CrewAllenamentiPage({
             )}
           </div>
 
-          {/* Un blocco per atleta, ordinati per km totali */}
-          {athletes.map((athlete) => (
-            <AthleteBlock key={athlete.userId} athlete={athlete} />
-          ))}
+          {/* Ricerca, ordinamento e accordion per atleta (client) */}
+          {athletes.length > 0 && <CrewTrainingsBrowser athletes={athletes} />}
 
         </PageContainer>
       </main>
       <Footer />
     </>
-  )
-}
-
-function AthleteBlock({ athlete: at }: { athlete: AthleteStats }) {
-  return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm">
-      {/* Testata atleta con statistiche */}
-      <div className="flex items-center gap-3">
-        <Avatar name={at.user.full_name} src={at.user.avatar_url} size="md" />
-        <div className="flex-1 min-w-0">
-          <Link
-            href={`/profilo/${at.userId}`}
-            className="font-semibold text-gray-900 hover:text-[var(--color-primary)]"
-          >
-            {at.user.full_name}
-          </Link>
-          <p className="text-xs text-gray-400">
-            {at.count} {at.count === 1 ? 'allenamento' : 'allenamenti'}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-        {[
-          { value: formatDistance(at.totalDistanceM), label: 'km totali', icon: 'footprint' },
-          { value: at.avgPaceSPerKm ? `${formatPace(at.avgPaceSPerKm)}/km` : '—', label: 'passo medio', icon: 'speed' },
-          { value: formatDistance(at.longestDistanceM), label: 'uscita più lunga', icon: 'trending_up' },
-          { value: formatTime(at.totalMovingTimeS), label: 'tempo totale', icon: 'timer' },
-        ].map((s) => (
-          <div key={s.label} className="flex flex-col items-center gap-0.5 bg-gray-50 rounded-2xl py-3 px-2 text-center">
-            <span className="material-symbols-outlined text-[var(--color-primary)] text-lg">{s.icon}</span>
-            <span className="text-base font-extrabold text-gray-900 leading-none">{s.value}</span>
-            <span className="text-[11px] text-gray-400 leading-tight">{s.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Elenco allenamenti dell'atleta */}
-      <div className="mt-4 divide-y divide-gray-100">
-        {at.activities.map((a) => {
-          const elev = a.total_elevation_gain_m ? Math.round(a.total_elevation_gain_m) : 0
-          return (
-            <div key={a.id} className="flex items-center gap-3 py-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <a
-                    href={`https://www.strava.com/activities/${a.strava_activity_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-gray-900 truncate hover:text-[#FC4C02] inline-flex items-center gap-1"
-                  >
-                    {a.name || 'Allenamento'}
-                    <span className="material-symbols-outlined text-[12px]">open_in_new</span>
-                  </a>
-                  <span className="text-xs text-gray-400">· {relativeDay(a.start_date)}</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-gray-600">
-                  {(a.distance_m ?? 0) > 0 && (
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <span className="material-symbols-outlined text-[13px] text-gray-400">footprint</span>
-                      {formatDistance(a.distance_m ?? 0)}
-                    </span>
-                  )}
-                  {a.avg_pace_s_per_km && (
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <span className="material-symbols-outlined text-[13px] text-gray-400">speed</span>
-                      {formatPace(a.avg_pace_s_per_km)}/km
-                    </span>
-                  )}
-                  {a.avg_heartrate_bpm && (
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <span className="material-symbols-outlined text-[13px] text-red-400">cardiology</span>
-                      {Math.round(a.avg_heartrate_bpm)} bpm
-                    </span>
-                  )}
-                  {elev > 0 && (
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <span className="material-symbols-outlined text-[13px] text-gray-400">altitude</span>
-                      {elev} m
-                    </span>
-                  )}
-                  {a.moving_time_s && (
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <span className="material-symbols-outlined text-[13px] text-gray-400">timer</span>
-                      {formatTime(a.moving_time_s)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
   )
 }
