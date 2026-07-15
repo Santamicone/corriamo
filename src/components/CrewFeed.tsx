@@ -21,9 +21,12 @@ function relativeDay(iso: string): string {
 export function CrewFeed({
   items,
   isMember = false,
+  seeAllHref,
 }: {
   items: FeedItem[]
   isMember?: boolean
+  /** Se presente, mostra il link all'elenco completo degli allenamenti. */
+  seeAllHref?: string
 }) {
   if (items.length === 0) {
     // Ai visitatori esterni non mostriamo un riquadro vuoto.
@@ -55,6 +58,15 @@ export function CrewFeed({
           return <InsightRow key={`i-${i}`} text={item.text} icon={item.icon} />
         })}
       </div>
+      {seeAllHref && (
+        <Link
+          href={seeAllHref}
+          className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-[var(--color-primary)] transition-colors"
+        >
+          <span className="material-symbols-outlined text-base">leaderboard</span>
+          Tutti gli allenamenti
+        </Link>
+      )}
       <p className="text-[11px] text-gray-400 mt-4 flex items-center gap-1">
         <span className="material-symbols-outlined text-[13px]">bolt</span>
         Attività da Strava · ogni atleta sceglie cosa condividere
