@@ -12,6 +12,8 @@ import { CrewFeed } from '@/components/CrewFeed'
 import { buildCrewFeed } from '@/lib/crewFeed'
 import type { FeedActivity, FeedMember } from '@/lib/crewFeed'
 import { CrewBoard } from '@/components/CrewBoard'
+import { CrewMemberList } from '@/components/CrewMemberList'
+import { CrewEmptyState } from '@/components/CrewEmptyState'
 import { ImpactCard } from '@/components/ImpactCard'
 import { NextOutingCard } from '@/components/NextOutingCard'
 import type { NextOutingRun, NextOutingParticipant } from '@/components/NextOutingCard'
@@ -183,6 +185,10 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   const restPublicRuns = ((publicRuns ?? []) as unknown as Run[]).filter((r) => r.id !== nextRun?.id)
   const restCrewRuns = ((crewRuns ?? []) as { id: string; title: string; date: string; time: string; city: string | null; distance_km: number | null }[]).filter((r) => r.id !== nextRun?.id)
 
+  // Colonna principale "vuota": nessuna uscita in evidenza, programmata o effettuata.
+  // Mostra un empty-state curato invece di lasciare la colonna spoglia.
+  const noRuns = !nextRun && restPublicRuns.length === 0 && restCrewRuns.length === 0 && (pastRuns?.length ?? 0) === 0
+
   // Feed unificato: attività Strava + nuovi membri + insight (assemblato lato TS)
   const feed = buildCrewFeed({
     activities: (activities ?? []) as unknown as FeedActivity[],
@@ -307,37 +313,16 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* Membri */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="font-semibold text-gray-900 mb-4">
-              {members?.length ?? 0} {(members?.length ?? 0) !== 1 ? typeInfo.memberLabelPlural : typeInfo.memberLabel}
-            </h2>
-            <div className="space-y-3">
-              {members?.map((m) => (
-                <div key={m.id} className="flex items-center gap-3">
-                  <Avatar name={m.user.full_name} src={m.user.avatar_url} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/profilo/${m.user_id}`} className="font-medium text-sm text-gray-900 hover:text-[var(--color-primary)]">
-                      {m.user.full_name}
-                    </Link>
-                    {m.user.city && (
-                      <div className="text-xs text-gray-400">{m.user.city}</div>
-                    )}
-                  </div>
-                  {(m.role === 'owner' || m.role === 'admin') && (
-                    <span className="text-xs bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full px-2 py-0.5">
-                      {m.role === 'owner' ? typeInfo.ownerLabel : typeInfo.adminLabel}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Membri — collasso "+altri N" per le crew numerose */}
+          <CrewMemberList members={(members ?? []) as never} typeInfo={typeInfo} />
 
           </aside>
 
           {/* ───────── COLONNA PRINCIPALE — attività (a sinistra su desktop) ───────── */}
           <div className="space-y-6 min-w-0 lg:order-1">
+
+          {/* Empty-state: crew senza corse (evita la colonna principale spoglia) */}
+          {noRuns && <CrewEmptyState canManage={!!canManage} isMember={!!isMember} />}
 
           {/* Prossima uscita in evidenza — il driver del ritorno quotidiano */}
           {nextRun && (
@@ -448,8 +433,11 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* Feed unificato: attività Strava, nuovi membri, insight di gruppo */}
-          <CrewFeed items={feed} isMember={!!isMember} />
+          {/* Feed unificato: attività Strava, nuovi membri, insight di gruppo.
+              Se la crew è vuota l'empty-state sopra basta: evita il doppio riquadro. */}
+          {(feed.length > 0 || (isMember && !noRuns)) && (
+            <CrewFeed items={feed} isMember={!!isMember} />
+          )}
 
           </div>
           {/* /COLONNA PRINCIPALE */}
