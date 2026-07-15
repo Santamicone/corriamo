@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { notFound, redirect } from 'next/navigation'
-import { ChatWindow } from './ChatWindow'
-import type { RunChatMessage, Participation } from '@/lib/types'
+import { BoardWindow, type BoardMessage } from '@/components/board/BoardWindow'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
@@ -55,11 +54,11 @@ export default async function RunChatPage({
               <span className="material-symbols-outlined text-3xl text-gray-400">lock</span>
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-gray-900 mb-2">Chat riservata</h1>
+              <h1 className="text-xl font-extrabold text-gray-900 mb-2">Bacheca riservata</h1>
               <p className="text-sm text-gray-500 leading-relaxed">
                 {isPending
-                  ? 'La tua iscrizione è ancora in attesa di approvazione. Accederai alla chat non appena l\'organizzatore ti approverà.'
-                  : 'Questa chat è riservata ai partecipanti approvati della corsa.'}
+                  ? 'La tua iscrizione è ancora in attesa di approvazione. Accederai alla bacheca non appena l\'organizzatore ti approverà.'
+                  : 'Questa bacheca è riservata ai partecipanti approvati della corsa.'}
               </p>
             </div>
             <Link href={`/corse/${id}`}
@@ -73,15 +72,15 @@ export default async function RunChatPage({
     )
   }
 
-  /* ── Messaggi iniziali (ultimi 50) ── */
+  /* ── Post iniziali (ultimi 50, più recenti in cima) ── */
   const { data: rawMessages } = await supabase
     .from('run_chat')
     .select('*, author:profiles!run_chat_author_id_fkey(*)')
     .eq('run_id', id)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(50)
 
-  const messages = (rawMessages ?? []) as unknown as RunChatMessage[]
+  const messages = (rawMessages ?? []) as unknown as BoardMessage[]
 
   /* ── Partecipanti approvati (per contare il gruppo) ── */
   const { data: approvedParts } = await supabase
@@ -97,13 +96,24 @@ export default async function RunChatPage({
     <div className="flex flex-col h-screen overflow-hidden">
       <Header />
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
-        <ChatWindow
-          runId={id}
+        <BoardWindow
+          scopeId={id}
           userId={user.id}
-          runTitle={run.title}
-          runDetailHref={`/corse/${id}`}
+          title={run.title}
+          subtitle={`Bacheca · ${groupSize} runner nel gruppo`}
+          backHref={`/corse/${id}`}
+          backLabel="Torna alla corsa"
+          headerIcon="chat_bubble"
+          emptyText="Sii il primo a scrivere! Coordinarsi, condividere il percorso o motivarsi — questa bacheca è vostra."
+          placeholder="Scrivi sulla bacheca della corsa…"
           initialMessages={messages}
-          groupSize={groupSize}
+          canModerate={false}
+          config={{
+            table: 'run_chat',
+            scopeColumn: 'run_id',
+            authorSelect: '*, author:profiles!run_chat_author_id_fkey(*)',
+            channelPrefix: 'run-board',
+          }}
         />
       </main>
     </div>

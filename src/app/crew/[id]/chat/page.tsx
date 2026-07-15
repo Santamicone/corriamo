@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { notFound, redirect } from 'next/navigation'
-import { CrewChatWindow } from './CrewChatWindow'
-import type { CrewChatMessage } from '@/lib/types'
+import { BoardWindow, type BoardMessage } from '@/components/board/BoardWindow'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
@@ -61,11 +60,11 @@ export default async function CrewChatPage({
               <span className="material-symbols-outlined text-3xl text-gray-400">lock</span>
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-gray-900 mb-2">Chat riservata</h1>
+              <h1 className="text-xl font-extrabold text-gray-900 mb-2">Bacheca riservata</h1>
               <p className="text-sm text-gray-500 leading-relaxed">
                 {isPending
-                  ? 'La tua richiesta di ingresso è ancora in attesa di approvazione. Accederai alla chat non appena verrai approvato.'
-                  : 'Questa chat è riservata ai membri della crew. Entra nella crew per partecipare.'}
+                  ? 'La tua richiesta di ingresso è ancora in attesa di approvazione. Accederai alla bacheca non appena verrai approvato.'
+                  : 'Questa bacheca è riservata ai membri della crew. Entra nella crew per partecipare.'}
               </p>
             </div>
             <Link href={crewDetailHref}
@@ -79,15 +78,15 @@ export default async function CrewChatPage({
     )
   }
 
-  /* ── Messaggi iniziali (ultimi 50) ── */
+  /* ── Post iniziali (ultimi 50, più recenti in cima) ── */
   const { data: rawMessages } = await supabase
     .from('crew_chat')
     .select('*, author:profiles!crew_chat_author_id_fkey(*)')
     .eq('crew_id', crew.id)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(50)
 
-  const messages = (rawMessages ?? []) as unknown as CrewChatMessage[]
+  const messages = (rawMessages ?? []) as unknown as BoardMessage[]
 
   /* ── Conteggio membri attivi ── */
   const { count } = await supabase
@@ -100,14 +99,24 @@ export default async function CrewChatPage({
     <div className="flex flex-col h-screen overflow-hidden">
       <Header />
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
-        <CrewChatWindow
-          crewId={crew.id}
+        <BoardWindow
+          scopeId={crew.id}
           userId={user.id}
-          crewName={crew.name}
-          crewDetailHref={crewDetailHref}
+          title={crew.name}
+          subtitle={`Bacheca della crew · ${count ?? 0} ${count === 1 ? 'membro' : 'membri'}`}
+          backHref={crewDetailHref}
+          backLabel="Torna alla crew"
+          headerIcon="forum"
+          emptyText="Questa è la bacheca della crew. Coordinatevi, organizzate le uscite o fatevi due chiacchiere."
+          placeholder="Scrivi sulla bacheca della crew…"
           initialMessages={messages}
-          memberCount={count ?? 0}
           canModerate={canModerate}
+          config={{
+            table: 'crew_chat',
+            scopeColumn: 'crew_id',
+            authorSelect: '*, author:profiles!crew_chat_author_id_fkey(*)',
+            channelPrefix: 'crew-board',
+          }}
         />
       </main>
     </div>
