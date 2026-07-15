@@ -41,6 +41,8 @@ interface Props {
   initialMessages: BoardMessage[]
   canModerate:     boolean
   config:          BoardConfig
+  /** Se presente, salva in localStorage l'ultimo messaggio letto (segnale "nuovi messaggi"). */
+  seenStorageKey?: string
 }
 
 /** Data + ora esplicite: "oggi alle 14:32", "ieri alle 09:10", "12 lug alle 18:00". */
@@ -78,7 +80,7 @@ function linkify(text: string): React.ReactNode[] {
 
 export function BoardWindow({
   scopeId, userId, title, subtitle, backHref, backLabel, headerIcon,
-  emptyText, placeholder, initialMessages, canModerate, config,
+  emptyText, placeholder, initialMessages, canModerate, config, seenStorageKey,
 }: Props) {
   // Stato mantenuto con i più recenti in testa.
   const [messages, setMessages] = useState<BoardMessage[]>(initialMessages)
@@ -86,6 +88,13 @@ export function BoardWindow({
   const prepend = useCallback((msg: BoardMessage) => {
     setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [msg, ...prev]))
   }, [])
+
+  // Segna come "letto" fino all'ultimo messaggio noto (messages[0] = più recente),
+  // così il pallino "nuovi messaggi" sul link della bacheca si spegne.
+  useEffect(() => {
+    if (!seenStorageKey || messages.length === 0) return
+    try { localStorage.setItem(seenStorageKey, messages[0].created_at) } catch { /* storage non disponibile */ }
+  }, [seenStorageKey, messages])
 
   /* ── Supabase Realtime: solo i post degli ALTRI utenti ── */
   useEffect(() => {

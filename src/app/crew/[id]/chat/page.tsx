@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { notFound, redirect } from 'next/navigation'
 import { BoardWindow, type BoardMessage } from '@/components/board/BoardWindow'
+import { boardSeenKey } from '@/components/board/seen'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
@@ -111,6 +112,7 @@ export default async function CrewChatPage({
           placeholder="Scrivi sulla bacheca della crew…"
           initialMessages={messages}
           canModerate={canModerate}
+          seenStorageKey={boardSeenKey('crew', crew.id)}
           config={{
             table: 'crew_chat',
             scopeColumn: 'crew_id',

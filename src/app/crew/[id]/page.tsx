@@ -18,6 +18,7 @@ import { ImpactCard } from '@/components/ImpactCard'
 import { NextOutingCard } from '@/components/NextOutingCard'
 import type { NextOutingRun, NextOutingParticipant } from '@/components/NextOutingCard'
 import { AttendanceButton } from '@/components/AttendanceButton'
+import { BoardUnreadDot } from '@/components/board/BoardUnreadDot'
 import { JoinCrewButton } from './JoinCrewButton'
 import type { Metadata } from 'next'
 import { todayItaly, parseRunDateTime } from '@/lib/utils'
@@ -73,6 +74,8 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
 
   // Corse crew-only future (visibili solo ai membri)
   let crewRuns = null
+  // Ultimo messaggio della bacheca crew → segnale "nuovi messaggi" (solo membri)
+  let latestBoardMessageAt: string | null = null
   if (isMember) {
     const { data } = await supabase
       .from('runs')
@@ -83,6 +86,15 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
       .order('date', { ascending: true })
       .limit(5)
     crewRuns = data
+
+    const { data: lastMsg } = await supabase
+      .from('crew_chat')
+      .select('created_at')
+      .eq('crew_id', crew.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    latestBoardMessageAt = lastMsg?.created_at ?? null
   }
 
   // Feed attività Strava degli atleti della crew — mostrato su tutte le crew,
@@ -284,8 +296,9 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
               href={`/crew/${crew.slug ?? crew.id}/chat`}
               className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+              <div className="relative w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-[var(--color-primary)]">forum</span>
+                <BoardUnreadDot scope="crew" scopeId={crew.id} latestMessageAt={latestBoardMessageAt} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900">Bacheca della crew</p>
