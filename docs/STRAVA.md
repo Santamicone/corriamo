@@ -51,8 +51,9 @@ condivisibile, la sezione non viene renderizzata.
    cancella connessione + attività.
 3. **Feed** — `crew/[id]/page.tsx` carica `strava_activities` di tutti i membri
    della crew (a prescindere da `visibility` e dall'essere membro); la RLS
-   filtra alle sole attività visibili al viewer. Reso da
-   `components/CrewActivityFeed.tsx` (`isMember` decide l'empty-state).
+   filtra alle sole attività visibili al viewer. Confluisce nel feed unificato
+   `components/CrewFeed.tsx` (assemblato da `src/lib/crewFeed.ts`; `isMember`
+   decide l'empty-state).
 4. **Disconnessione** — `POST /api/strava/disconnect` → deauthorize su Strava +
    delete connessione e attività.
 

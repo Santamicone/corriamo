@@ -334,7 +334,9 @@ src/
 │   ├── RunCard.tsx                   Badge interessi, luogo privato, compatibilità
 │   ├── GaraCard.tsx                  Card post community "cerca compagni" (accent indigo)
 │   ├── RaceCard.tsx                  Card evento catalogo (+ export countryLabel ISO→bandiera)
-│   ├── CrewActivityFeed.tsx          Feed corse Strava (crew private) — distanza/passo/HR/dislivello/link
+│   ├── CrewFeed.tsx                  Feed unificato crew: attività Strava + nuovi membri + insight (da src/lib/crewFeed.ts)
+│   ├── CrewMemberList.tsx            Lista membri con collasso "+altri N" per crew numerose
+│   ├── CrewEmptyState.tsx            Empty-state colonna principale per crew senza corse (owner/membro/visitatore)
 │   ├── CrewBoard.tsx                 Bacheca del coach: lista messaggi + composer (owner/admin) + elimina
 │   ├── SeriesCard.tsx
 │   ├── SpotRunsStrip.tsx             parseRunDateTime per fuso orario corretto
@@ -505,13 +507,14 @@ src/
 - [x] **Bacheca del coach** (`crew_posts`, componente `CrewBoard`): scrivono solo owner/admin, con opzione "in evidenza" (pinned); leggono tutti sulle crew pubbliche, i soli membri sulle private; trigger notifica `crew_new_post` ai membri
 - [x] **Corse programmate**: sezione consolidata (pubbliche a tutti + riservate `crew_only` ai soli membri)
 - [x] **Corse effettuate**: nuova sezione storico (le riservate visibili solo ai membri — filtro in query perché la SELECT policy su `runs` è `using(true)`)
-- [x] **Feed attività Strava dei membri**: invariato (`CrewActivityFeed`, solo crew private, solo membri)
+- [x] **Feed attività Strava dei membri**: confluito nel feed unificato `CrewFeed` (vedi sotto); il vecchio `CrewActivityFeed` è stato rimosso
 
 #### Miglioramenti area crew (feat/crew-community-impact — in sviluppo)
 - [x] **Gamification Fase 1 — card impatto** (`ImpactCard`): "L'impatto della crew" (pagina crew) e "Runner ispirati" (profilo), da RPC `crew_impact_stats`/`user_impact_stats` (SQL #36, read-only, al volo). Vedi `docs/GAMIFICATION.md`.
 - [x] **Prossima uscita in evidenza** (`NextOutingCard`): la corsa futura più imminente in cima alla colonna principale, con roster dei confermati (RPC `run_going_roster`).
 - [x] **Presenze rapide "Ci sono"** (`AttendanceButton` + SQL #37 `crew-attendance.sql`): conferma immediata dei membri, aggiornamento ottimistico.
 - [x] **Feed unificato** (`CrewFeed` + `src/lib/crewFeed.ts`): sostituisce `CrewActivityFeed`, fonde attività Strava + nuovi membri + insight generati. **Assemblato lato TypeScript, nessuna modifica DB** (eredita i filtri di visibilità delle query esistenti; finestra attività allargata a 30gg).
+- [x] **Rifiniture UX (Step 5)**: empty-state curato per crew senza corse (`CrewEmptyState`, testo diverso per owner/membro/visitatore), lista membri collassabile con "+altri N" per i gruppi numerosi (`CrewMemberList`), rimozione del componente morto `CrewActivityFeed`. Nessuna modifica DB.
 
 #### Chat di gruppo della crew (SQL #35 `crew-chat.sql` ✅ applicato in produzione)
 - [x] **Chat privata** (`crew_chat`, route `/crew/[id]/chat`): messaggistica di gruppo tra **tutti i membri attivi** — distinta dalla bacheca del coach (unidirezionale) e dalla chat delle corse (legata al singolo evento)
@@ -582,7 +585,7 @@ src/
 - [x] Connessione OAuth per utente (`activity:read`) da `/profilo/modifica` → `StravaConnectCard`; token in `strava_connections` (nessuna policy RLS, solo service-role)
 - [x] **Sincronizzazione automatica** via webhook Strava (`/api/strava/webhook`): create/update/delete + deautorizzazione; importa solo Run/TrailRun non private
 - [x] **Backfill** ultimi 30 giorni al primo collegamento (`backfillRecentRuns`, best-effort)
-- [x] **Feed attività per crew private** (`CrewActivityFeed` in `/crew/[id]`): visibile solo ai membri, solo `visibility='private'`; RLS via helper `shares_private_crew_with()`
+- [x] **Feed attività per crew private** (in `/crew/[id]`, ora reso dal feed unificato `CrewFeed`): visibile solo ai membri, solo `visibility='private'`; RLS via helper `shares_private_crew_with()`
 - [x] **Visibilità sul profilo pubblico** (`strava_public_profile`, opt-in default false): sezione "Corse recenti" in `/profilo/[id]`, visibile a chiunque
 - [x] Due toggle indipendenti (feed crew / profilo pubblico); dati mostrati: distanza, passo, tempo, **dislivello**, **frequenza cardiaca media**, link all'attività su Strava
 - [x] Script gestione subscription webhook: `npm run strava:webhook -- create|list|delete`
