@@ -488,7 +488,7 @@ export default async function CorsaDetailPage({
                     <span className="material-symbols-outlined text-primary text-xl">chat_bubble</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900">Chat del gruppo</p>
+                    <p className="text-sm font-bold text-gray-900">Bacheca del gruppo</p>
                     <p className="text-xs text-gray-400">
                       {approved.length + 1} runner · {isPast ? 'storico disponibile' : 'coordinarsi prima della corsa'}
                     </p>

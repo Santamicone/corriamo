@@ -288,8 +288,8 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                 <span className="material-symbols-outlined text-[var(--color-primary)]">forum</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900">Chat della crew</p>
-                <p className="text-xs text-gray-400">Scrivi con tutti i membri in tempo reale</p>
+                <p className="text-sm font-semibold text-gray-900">Bacheca della crew</p>
+                <p className="text-xs text-gray-400">Scrivi e leggi i post di tutti i membri</p>
               </div>
               <span className="material-symbols-outlined text-gray-300">chevron_right</span>
             </Link>
