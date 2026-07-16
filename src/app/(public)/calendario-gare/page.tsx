@@ -11,6 +11,7 @@ interface SearchParams {
   q?:        string
   distanza?: string
   area?:     string   // italia | internazionali
+  regione?:  string   // regione italiana (es. Lazio)
   circuito?: string   // major | superhalfs
   mostra?:   string   // quante gare mostrare (oltre alle "In evidenza"); default 12
 }
@@ -33,6 +34,14 @@ const AREA_OPTIONS = [
 const CIRCUIT_OPTIONS = [
   { value: 'major',      label: 'Major' },
   { value: 'superhalfs', label: 'SuperHalfs' },
+]
+
+// Le 20 regioni italiane (i valori corrispondono al testo salvato in races.region)
+const REGION_OPTIONS = [
+  'Abruzzo', 'Basilicata', 'Calabria', 'Campania', 'Emilia-Romagna',
+  'Friuli-Venezia Giulia', 'Lazio', 'Liguria', 'Lombardia', 'Marche',
+  'Molise', 'Piemonte', 'Puglia', 'Sardegna', 'Sicilia', 'Toscana',
+  'Trentino-Alto Adige', 'Umbria', "Valle d'Aosta", 'Veneto',
 ]
 
 function buildUrl(base: SearchParams, extra: Partial<SearchParams>): string {
@@ -77,12 +86,13 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
   if (params.distanza) query = query.contains('distances', [params.distanza])
   if (params.area === 'italia')         query = query.eq('country', 'IT')
   if (params.area === 'internazionali') query = query.neq('country', 'IT')
+  if (params.regione) query = query.ilike('region', params.regione)
   if (params.circuito) query = query.eq('circuit', params.circuito)
 
   const { data } = await query
   const races = (data ?? []) as unknown as Race[]
 
-  const hasFilters = !!(params.q || params.distanza || params.area || params.circuito)
+  const hasFilters = !!(params.q || params.distanza || params.area || params.regione || params.circuito)
   const featured = !hasFilters ? races.filter(r => r.featured).slice(0, 6) : []
   const featuredIds = new Set(featured.map(r => r.id))
   const rest = races.filter(r => !featuredIds.has(r.id))
@@ -129,6 +139,14 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
               <input name="q" defaultValue={params.q}
                 placeholder="Nome gara o città…"
                 className="h-10 px-3.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/50 focus:border-indigo-400 transition-all" />
+            </div>
+            <div className="flex flex-col gap-1.5 min-w-[160px]">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Regione</label>
+              <select name="regione" defaultValue={params.regione ?? ''}
+                className="h-10 px-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-300/50 focus:border-indigo-400 transition-all">
+                <option value="">Tutte le regioni</option>
+                {REGION_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
             </div>
             {/* mantiene i filtri chip attivi anche al submit del testo */}
             {params.distanza && <input type="hidden" name="distanza" value={params.distanza} />}
