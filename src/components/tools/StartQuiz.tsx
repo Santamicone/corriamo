@@ -198,16 +198,18 @@ export function StartQuiz() {
         {/* Invito programma Da zero a 5K */}
         {outcome.showZeroTo5k && (
           <div className="mt-4 bg-tertiary-container border border-tertiary/20 rounded-2xl p-5 text-center">
-            <p className="text-sm font-bold text-on-tertiary-container">Programma "Da zero a 5K"</p>
+            <p className="text-sm font-bold text-on-tertiary-container">Da zero a 5 km</p>
             <p className="text-xs text-on-tertiary-container/80 mt-1 mb-3">
-              Un percorso guidato di 8 settimane per arrivare alla prima 5K. In arrivo.
+              La guida completa per iniziare a correre e arrivare alla prima 5K, passo dopo passo.
             </p>
             <Link
-              href={isLogged ? '/area-personale' : '/registrati'}
+              href="https://www.vieniacorrere.it/da-zero-a-5-km-la-guida-completa-per-iniziare-a-correre/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-tertiary text-on-tertiary text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
             >
-              <span className="material-symbols-outlined text-lg">notifications</span>
-              {isLogged ? 'Avvisami quando è pronto' : 'Registrati per essere avvisato'}
+              <span className="material-symbols-outlined text-lg">menu_book</span>
+              Leggi la guida
             </Link>
           </div>
         )}
