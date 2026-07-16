@@ -86,7 +86,8 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
   if (params.distanza) query = query.contains('distances', [params.distanza])
   if (params.area === 'italia')         query = query.eq('country', 'IT')
   if (params.area === 'internazionali') query = query.neq('country', 'IT')
-  if (params.regione) query = query.ilike('region', params.regione)
+  if (params.regione === 'estero')     query = query.neq('country', 'IT')
+  else if (params.regione)             query = query.ilike('region', params.regione)
   if (params.circuito) query = query.eq('circuit', params.circuito)
 
   const { data } = await query
@@ -146,6 +147,7 @@ export default async function CalendarioGarePage({ searchParams }: { searchParam
                 className="h-10 px-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-300/50 focus:border-indigo-400 transition-all">
                 <option value="">Tutte le regioni</option>
                 {REGION_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                <option value="estero">Estero</option>
               </select>
             </div>
             {/* mantiene i filtri chip attivi anche al submit del testo */}
