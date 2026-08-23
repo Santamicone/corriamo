@@ -8,7 +8,7 @@
 
 - **App in produzione:** https://app.vieniacorrere.it
 - **Sito editoriale (magazine):** https://www.vieniacorrere.it
-- **Branch attivo:** `main` (il ramo `feat/ui-ux-redesign` è stato mergiato; lo sviluppo procede via feature branch → PR su `main`)
+- **Branch attivo:** `main`. **Workflow: push diretto su `main`** (deciso il 23/08/2026 — non più feature branch + PR, salvo diversa indicazione esplicita).
 - **Stack:** Next.js 16.2.7 App Router · TypeScript · Tailwind v4 · Supabase · Vercel
 - **Calendario gare:** doc completa in `docs/CALENDARIO-GARE.md` (catalogo `races`, import `npm run import:aims` + `npm run seed:circuits`, moderazione).
 - **Integrazione Strava:** doc completa in `docs/STRAVA.md` (OAuth per utente, webhook sync, feed crew private + profilo pubblico, `npm run strava:webhook`).
@@ -21,7 +21,7 @@
 - **Serie:** la route `/nuova-serie` è un redirect — la creazione serie avviene in `/nuova-corsa` con selettore tipo.
 - **DB Realtime:** aggiungere sempre `ALTER PUBLICATION supabase_realtime ADD TABLE public.nome;` per nuove tabelle che usano Realtime.
 
-## Prima di ogni PR
+## Prima di ogni push su main
 
 1. `npm run build` deve passare senza errori TypeScript
 2. Testare su mobile (Chrome + Safari)
