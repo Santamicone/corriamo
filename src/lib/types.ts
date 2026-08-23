@@ -169,6 +169,8 @@ export interface Series {
   id: string
   organizer_id: string
   organizer: Profile
+  co_organizer_id?: string | null
+  co_organizer?: Profile | null
   title: string
   description: string | null
   location: string

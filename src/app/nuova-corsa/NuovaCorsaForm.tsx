@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { geocodeAddress, type GeoResult } from '@/lib/geocoding'
 import { TagPicker } from '@/components/ui/TagPicker'
+import { CoOrganizerPicker } from '@/components/CoOrganizerPicker'
 import { addWeeks, addDays, format, nextDay, parseISO, getDay } from 'date-fns'
 import { DAY_LABELS, cn, todayItaly } from '@/lib/utils'
 
@@ -77,6 +78,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
   const [tags, setTags]       = useState<string[]>([])
+  const [coOrganizer, setCoOrganizer] = useState<{ id: string; full_name: string; avatar_url: string | null } | null>(null)
 
   const [form, setForm] = useState({
     // Campi comuni
@@ -183,6 +185,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
         max_participants: form.max_participants ? parseInt(form.max_participants) : null,
         is_no_drop:       form.is_no_drop,
         location_public:  form.location_public,
+        co_organizer_id:  coOrganizer?.id ?? null,
         tags,
         recurrence_type:  form.recurrence_type,
         recurrence_day:   parseInt(form.recurrence_day),
@@ -532,6 +535,16 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
               <option value="">— Corsa singola —</option>
               {userSeries.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
             </select>
+          </div>
+        )}
+        {/* Co-organizzatore — solo per le serie */}
+        {tipo === 'serie' && (
+          <div>
+            <label className={labelCls}>Co-organizzatore (opzionale)</label>
+            <p className="text-xs text-gray-400 mb-2">
+              Può gestire la serie insieme a te (pausa/ripresa) — utile se non sei sempre presente.
+            </p>
+            <CoOrganizerPicker value={coOrganizer} onChange={setCoOrganizer} />
           </div>
         )}
       </FormSection>

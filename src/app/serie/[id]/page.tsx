@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { formatDate, LEVEL_LABELS, RECURRENCE_LABELS, DAY_LABELS, todayItaly } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/TagBadge'
 import { SeriesStatusToggle } from '@/components/SeriesStatusToggle'
+import { SeriesCoOrganizerManager } from '@/components/SeriesCoOrganizerManager'
 import type { Series, Run } from '@/lib/types'
 import type { Metadata } from 'next'
 
@@ -50,7 +51,7 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
 
   const { data: series } = await supabase
     .from('series')
-    .select('*, organizer:profiles!series_organizer_id_fkey(*)')
+    .select('*, organizer:profiles!series_organizer_id_fkey(*), co_organizer:profiles!series_co_organizer_id_fkey(*)')
     .eq('id', id)
     .single()
 
@@ -151,24 +152,53 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
 
           {/* Sidebar */}
           <div className="flex flex-col gap-5">
-            {user?.id === typedSeries.organizer_id && (
+            {(user?.id === typedSeries.organizer_id || user?.id === typedSeries.co_organizer_id) && (
               <SeriesStatusToggle seriesId={typedSeries.id} status={typedSeries.status} />
             )}
 
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-3">Organizzatore</p>
-              <Link href={`/profilo/${typedSeries.organizer_id}`} className="flex items-center gap-3 group">
-                <Avatar name={typedSeries.organizer.full_name} src={typedSeries.organizer.avatar_url} size="md" />
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 flex flex-col gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-3">Organizzatore</p>
+                <Link href={`/profilo/${typedSeries.organizer_id}`} className="flex items-center gap-3 group">
+                  <Avatar name={typedSeries.organizer.full_name} src={typedSeries.organizer.avatar_url} size="md" />
+                  <div>
+                    <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">
+                      {typedSeries.organizer.full_name}
+                    </p>
+                    {typedSeries.organizer.city && (
+                      <p className="text-xs text-on-surface-variant">{typedSeries.organizer.city}</p>
+                    )}
+                  </div>
+                </Link>
+              </div>
+              {typedSeries.co_organizer && (
                 <div>
-                  <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">
-                    {typedSeries.organizer.full_name}
-                  </p>
-                  {typedSeries.organizer.city && (
-                    <p className="text-xs text-on-surface-variant">{typedSeries.organizer.city}</p>
-                  )}
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-3">Co-organizzatore</p>
+                  <Link href={`/profilo/${typedSeries.co_organizer.id}`} className="flex items-center gap-3 group">
+                    <Avatar name={typedSeries.co_organizer.full_name} src={typedSeries.co_organizer.avatar_url} size="md" />
+                    <div>
+                      <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">
+                        {typedSeries.co_organizer.full_name}
+                      </p>
+                      {typedSeries.co_organizer.city && (
+                        <p className="text-xs text-on-surface-variant">{typedSeries.co_organizer.city}</p>
+                      )}
+                    </div>
+                  </Link>
                 </div>
-              </Link>
+              )}
             </div>
+
+            {user?.id === typedSeries.organizer_id && (
+              <SeriesCoOrganizerManager
+                seriesId={typedSeries.id}
+                initialCoOrganizer={typedSeries.co_organizer ? {
+                  id: typedSeries.co_organizer.id,
+                  full_name: typedSeries.co_organizer.full_name,
+                  avatar_url: typedSeries.co_organizer.avatar_url,
+                } : null}
+              />
+            )}
 
             <div className="bg-surface-container border border-outline-variant rounded-2xl p-4">
               <div className="flex items-start gap-3">

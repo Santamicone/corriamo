@@ -14,14 +14,16 @@ export async function GET(request: NextRequest) {
 
   if (q.length < 2) return NextResponse.json([])
 
-  // Recupera ID già presenti nella crew (active o pending)
-  const { data: existing } = await supabase
-    .from('crew_members')
-    .select('user_id')
-    .eq('crew_id', crewId)
-    .in('status', ['active', 'pending'])
-
-  const excludeIds = [user.id, ...(existing?.map((m) => m.user_id) ?? [])]
+  // Recupera ID già presenti nella crew (active o pending) — solo se la ricerca è per una crew
+  let excludeIds = [user.id]
+  if (crewId) {
+    const { data: existing } = await supabase
+      .from('crew_members')
+      .select('user_id')
+      .eq('crew_id', crewId)
+      .in('status', ['active', 'pending'])
+    excludeIds = [user.id, ...(existing?.map((m) => m.user_id) ?? [])]
+  }
 
   let profilesQuery = supabase
     .from('profiles')

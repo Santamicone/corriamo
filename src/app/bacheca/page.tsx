@@ -575,6 +575,7 @@ function FilterBar({
   const hasTextFilters = !!(current.q || current.city || current.level)
   const hasDateFilter  = !!(current.from || current.to)
   const hasAnyFilter   = hasTextFilters || hasDateFilter
+  const hasAdvancedFilters = hasDateFilter || !!(current.tag || current.race_distance || current.looking_for)
 
   // Determina quale chip è attiva
   const activeChip = Object.entries(chips).find(
@@ -641,6 +642,17 @@ function FilterBar({
           </a>
         )}
       </form>
+
+      {/* ── Righe 2-4: filtri avanzati, espandibili ── */}
+      {(showDateFilter || showGareFilter || showTagFilter) && (
+      <details className="group" open={hasAdvancedFilters}>
+        <summary className="list-none flex items-center gap-2 px-4 py-2.5 border-b border-gray-50 cursor-pointer select-none text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
+          <span className="material-symbols-outlined text-base transition-transform group-open:rotate-180">expand_more</span>
+          {hasAdvancedFilters ? 'Filtri avanzati' : 'Altri filtri (quando, caratteristiche...)'}
+          {hasAdvancedFilters && (
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
+          )}
+        </summary>
 
       {/* ── Riga 2: filtro data (solo tab corse) ── */}
       {showDateFilter && (
@@ -799,6 +811,8 @@ function FilterBar({
             })}
           </div>
         </div>
+      )}
+      </details>
       )}
     </div>
   )
