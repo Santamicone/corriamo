@@ -117,6 +117,8 @@ STRAVA_WEBHOOK_VERIFY_TOKEN → ... ← stringa scelta da noi; deve combaciare t
 | 34 | `supabase/crew-members-public-visibility.sql` | ✅ | Coerenza pagina crew. (a) `crew_members_select`: i membri **attivi** di una crew **pubblica** sono leggibili anche dagli anonimi (allinea la lista membri allo stat aggregato di `crew_stats`; il fix era già live in prod via hotfix Dashboard con helper `is_public_crew`, ora standardizzato su `crew_is_public`). (b) `crew_posts_select`: **bacheca del coach ristretta ai soli membri attivi** (rimossa la clausola crew pubblica). Front-end: `CrewBoard` renderizzata solo se `isMember` in `crew/[id]/page.tsx`. |
 | 37 | `supabase/crew-attendance.sql` | ⏳ da applicare | **Presenze rapide "Ci sono" (Step 3 area crew).** Due funzioni `SECURITY DEFINER`: `run_going_roster(run_id)` restituisce il roster dei confermati (nome+avatar) aggirando la RLS di `participations` (che nasconde le partecipazioni altrui), con guard di visibilità (corsa pubblica / membro attivo / organizzatore); `crew_confirm_attendance(run_id)` conferma immediatamente il **membro attivo** della crew (insert `in_attesa`→update `approvata` per riusare i trigger di notifica + promemoria 24h esistenti). L'annulla usa la DELETE diretta (RLS già consente). Alimenta `NextOutingCard` + `AttendanceButton`. Nessuna modifica ai trigger esistenti. |
 | 36 | `supabase/community-impact.sql` | ⏳ da applicare | **Gamification Fase 1 (variante "RPC al volo")** — vedi `docs/GAMIFICATION.md` §7. Due funzioni read-only `SECURITY DEFINER` che calcolano l'impatto sociale dai segnali già verificati (`run_confirmations.confirmed` / `check_ins`), senza nuove tabelle/colonne/trigger: `crew_impact_stats(crew_id)` (persone diverse coinvolte / tornate / prime uscite del gruppo) e `user_impact_stats(user_id)` (eventi verificati, partecipazioni generate, persone coinvolte/abituali/newcomer di un organizzatore). Alimentano la `ImpactCard` su pagina crew ("L'impatto della crew") e profilo ("Runner ispirati"). Le colonne `ci_*` + trigger restano per la Fase 2. |
+| 38 | `supabase/add-location-public-series.sql` | ✅ | Colonna `location_public boolean` su `series` (fix bug: mancava, creazione serie falliva) |
+| 39 | `supabase/add-series-status.sql` | ✅ | Colonna `status text` (`attiva`\|`in_pausa`) su `series` — pausa serie senza eliminarla |
 
 ### Schema tabelle aggiornato
 
@@ -148,7 +150,8 @@ races            id, slug, name, city, region, country, event_date, end_date,
 
 series           id, organizer_id, title, description, location, city,
                  recurrence_type, recurrence_day, recurrence_time, start_date,
-                 distance_km, pace_target, level, max_participants, is_no_drop, tags text[]
+                 distance_km, pace_target, level, max_participants, is_no_drop, tags text[],
+                 location_public boolean, status (attiva|in_pausa)
 
 participations   id, run_id, user_id, status (in_attesa|approvata|rifiutata), message
 

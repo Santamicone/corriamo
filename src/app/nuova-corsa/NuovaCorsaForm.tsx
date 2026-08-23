@@ -53,14 +53,15 @@ function FormSection({ title, desc, children }: { title: string; desc?: string; 
 type GeoStatus = 'idle' | 'loading' | 'found' | 'not_found' | 'city_only'
 type TipoCorsa = 'singola' | 'serie'
 
-const WEEKS_AHEAD = 8
+const WEEKS_AHEAD_OPTIONS = [4, 8, 12, 16] as const
+const WEEKS_AHEAD_DEFAULT = 8
 
-function generateDates(startDate: string, recurrenceDay: number, recurrenceType: string): string[] {
+function generateDates(startDate: string, recurrenceDay: number, recurrenceType: string, weeksAhead: number): string[] {
   const dates: string[] = []
   let current = parseISO(startDate)
   const targetDay = recurrenceDay as 0 | 1 | 2 | 3 | 4 | 5 | 6
   if (getDay(current) !== targetDay) current = nextDay(current, targetDay)
-  const endDate = addWeeks(parseISO(startDate), WEEKS_AHEAD)
+  const endDate = addWeeks(parseISO(startDate), weeksAhead)
   while (current <= endDate) {
     dates.push(format(current, 'yyyy-MM-dd'))
     if (recurrenceType === 'settimanale')       current = addWeeks(current, 1)
@@ -90,6 +91,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
     // Campi serie
     recurrence_type: 'settimanale', recurrence_day: '1',
     recurrence_time: '07:00', start_date: '',
+    weeks_ahead: String(WEEKS_AHEAD_DEFAULT),
   })
 
   /* ── Geocoding ── */
@@ -190,7 +192,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
 
       if (seriesErr || !seriesData) { setError(seriesErr?.message ?? 'Errore'); setLoading(false); return }
 
-      const dates = generateDates(form.start_date, parseInt(form.recurrence_day), form.recurrence_type)
+      const dates = generateDates(form.start_date, parseInt(form.recurrence_day), form.recurrence_type, parseInt(form.weeks_ahead))
       const runs = dates.map(date => ({
         organizer_id:     userId,
         series_id:        seriesData.id,
@@ -409,7 +411,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
         )}
 
         {tipo === 'singola' ? (
-          <div className="grid grid-cols-2 gap-4 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div>
               <label className={labelCls}>Data *</label>
               <input className={inputCls} type="date" min={today} value={form.date} onChange={set('date')} required />
@@ -437,7 +439,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>Orario *</label>
                 <input className={inputCls} type="time" value={form.recurrence_time} onChange={set('recurrence_time')} required />
@@ -447,10 +449,19 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
                 <input className={inputCls} type="date" min={today} value={form.start_date} onChange={set('start_date')} required />
               </div>
             </div>
+            <div>
+              <label className={labelCls}>Genera appuntamenti per</label>
+              <select className={inputCls} value={form.weeks_ahead} onChange={set('weeks_ahead')}>
+                {WEEKS_AHEAD_OPTIONS.map(w => (
+                  <option key={w} value={w}>{w} settimane</option>
+                ))}
+              </select>
+            </div>
             <div className="flex items-start gap-2 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2.5">
               <span className="material-symbols-outlined text-primary text-sm shrink-0 mt-0.5">auto_awesome</span>
               <p className="text-xs text-orange-800">
-                Verranno generati automaticamente i prossimi <strong>{WEEKS_AHEAD} appuntamenti</strong> a partire dalla data di inizio.
+                Verranno generati automaticamente gli appuntamenti delle prossime <strong>{form.weeks_ahead} settimane</strong> a partire dalla data di inizio.
+                Potrai mettere la serie in pausa in qualsiasi momento dalla pagina della serie.
               </p>
             </div>
           </div>

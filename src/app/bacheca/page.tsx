@@ -278,6 +278,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     let seriesQuery = supabase
       .from('series')
       .select('*, organizer:profiles!series_organizer_id_fkey(*)')
+      .eq('status', 'attiva')
       .order('created_at', { ascending: false })
     if (filterCity)   seriesQuery = seriesQuery.ilike('city', `%${filterCity}%`)
     if (params.level) seriesQuery = seriesQuery.in('level', [params.level, 'tutti'])
@@ -291,6 +292,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       let fallbackSeries = supabase
         .from('series')
         .select('*, organizer:profiles!series_organizer_id_fkey(*)')
+        .eq('status', 'attiva')
         .order('created_at', { ascending: false })
         .ilike('city', `%${params.geo_county}%`)
       if (params.level) fallbackSeries = fallbackSeries.in('level', [params.level, 'tutti'])

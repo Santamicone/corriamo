@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate, LEVEL_LABELS, RECURRENCE_LABELS, DAY_LABELS, todayItaly } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/TagBadge'
+import { SeriesStatusToggle } from '@/components/SeriesStatusToggle'
 import type { Series, Run } from '@/lib/types'
 import type { Metadata } from 'next'
 
@@ -89,6 +90,7 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
                     {LEVEL_LABELS[typedSeries.level]}
                   </Badge>
                   {typedSeries.is_no_drop && <Badge variant="green">No Drop</Badge>}
+                  {typedSeries.status === 'in_pausa' && <Badge variant="default">In pausa</Badge>}
                 </div>
                 <h1 className="text-2xl font-extrabold text-on-surface">{typedSeries.title}</h1>
                 {typedSeries.description && (
@@ -96,9 +98,9 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
                 )}
 
                 {/* Tag caratteristiche serie */}
-                {(typedSeries as Series & { tags?: string[] }).tags?.length ? (
+                {typedSeries.tags?.length ? (
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {(typedSeries as Series & { tags?: string[] }).tags!.map(id => (
+                    {typedSeries.tags.map(id => (
                       <TagBadge key={id} tagId={id} size="md" />
                     ))}
                   </div>
@@ -134,8 +136,14 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
                 </div>
               ) : (
                 <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-8 text-center">
-                  <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2 block">event_busy</span>
-                  <p className="text-sm text-on-surface-variant">Nessun appuntamento imminente.</p>
+                  <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2 block">
+                    {typedSeries.status === 'in_pausa' ? 'pause_circle' : 'event_busy'}
+                  </span>
+                  <p className="text-sm text-on-surface-variant">
+                    {typedSeries.status === 'in_pausa'
+                      ? 'Questa serie è in pausa: nessun nuovo appuntamento in programma.'
+                      : 'Nessun appuntamento imminente.'}
+                  </p>
                 </div>
               )}
             </div>
@@ -143,6 +151,10 @@ export default async function SerieDetailPage({ params }: { params: Promise<{ id
 
           {/* Sidebar */}
           <div className="flex flex-col gap-5">
+            {user?.id === typedSeries.organizer_id && (
+              <SeriesStatusToggle seriesId={typedSeries.id} status={typedSeries.status} />
+            )}
+
             <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-3">Organizzatore</p>
               <Link href={`/profilo/${typedSeries.organizer_id}`} className="flex items-center gap-3 group">

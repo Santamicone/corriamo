@@ -12,6 +12,7 @@ export type RaceSource = 'editoriale' | 'utente' | 'aims' | 'fidal' | 'podisti'
 export type RaceStatus = 'published' | 'pending' | 'rejected'
 export type ParticipationStatus = 'in_attesa' | 'approvata' | 'rifiutata'
 export type RecurrenceType = 'settimanale' | 'bisettimanale' | 'mensile'
+export type SeriesStatus = 'attiva' | 'in_pausa'
 
 export interface Profile {
   id: string
@@ -183,6 +184,9 @@ export interface Series {
   start_date: string
   end_date: string | null
   created_at: string
+  status: SeriesStatus
+  location_public?: boolean
+  tags?: string[]
   upcoming_runs?: Run[]
 }
 

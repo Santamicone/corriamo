@@ -31,6 +31,12 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
                   No drop
                 </span>
               )}
+              {series.status === 'in_pausa' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-500">
+                  <span className="material-symbols-outlined text-sm">pause_circle</span>
+                  In pausa
+                </span>
+              )}
             </div>
             <span className="shrink-0 text-xs font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded-full">
               {RECURRENCE_LABELS[series.recurrence_type]}
@@ -50,8 +56,8 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
           </div>
 
           {/* Tag caratteristiche */}
-          {(series as Series & { tags?: string[] }).tags?.length ? (
-            <TagBadgeList tags={(series as Series & { tags?: string[] }).tags!} max={3} />
+          {series.tags?.length ? (
+            <TagBadgeList tags={series.tags} max={3} />
           ) : null}
 
           {/* Footer */}

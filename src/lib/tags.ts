@@ -23,10 +23,13 @@ export const TAGS: TagDef[] = [
   { id: 'caffe_dopo',          label: 'Caffè dopo',             icon: 'local_cafe',       group: 'Dopo la corsa',   color: 'bg-amber-50 text-amber-700 border-amber-200' },
   { id: 'colazione_dopo',      label: 'Colazione dopo',         icon: 'breakfast_dining', group: 'Dopo la corsa',   color: 'bg-orange-50 text-orange-700 border-orange-200' },
   { id: 'aperitivo_dopo',      label: 'Aperitivo dopo',         icon: 'wine_bar',         group: 'Dopo la corsa',   color: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { id: 'stretching',          label: 'Stretching',             icon: 'self_improvement', group: 'Dopo la corsa',   color: 'bg-teal-50 text-teal-700 border-teal-200' },
 
   /* ── Percorso ── */
   { id: 'trail',               label: 'Trail / sterrato',       icon: 'forest',           group: 'Percorso',        color: 'bg-green-50 text-green-700 border-green-200' },
   { id: 'pista',               label: 'Pista',                  icon: 'sports_score',     group: 'Percorso',        color: 'bg-sky-50 text-sky-700 border-sky-200' },
+  { id: 'ciclo_pedonale',      label: 'Ciclo-pedonale',         icon: 'directions_bike',  group: 'Percorso',        color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { id: 'strada_traffico',     label: 'Strada aperta al traffico', icon: 'traffic',       group: 'Percorso',        color: 'bg-stone-50 text-stone-700 border-stone-200' },
 
   /* ── Partecipazione ── */
   { id: 'principianti',        label: 'Principianti benvenuti', icon: 'emoji_people',     group: 'Partecipazione',  color: 'bg-green-50 text-green-700 border-green-200' },
