@@ -134,6 +134,19 @@ export default async function GarePage({ searchParams }: { searchParams: Promise
         {/* ── Lista post ── */}
         <PageContainer width="wide" className="py-8 flex flex-col gap-6">
 
+          {/* Tabs: cerca compagni (qui) / calendario gare reali */}
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-full w-fit">
+            <span className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold bg-white text-gray-900 shadow-sm">
+              <span className="material-symbols-outlined text-base">group</span>
+              Cerca compagni
+            </span>
+            <Link href="/calendario-gare"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold text-gray-500 hover:text-gray-700 transition-all">
+              <span className="material-symbols-outlined text-base">event</span>
+              Calendario gare
+            </Link>
+          </div>
+
           {/* Filtri */}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             <form method="GET" action="/gare" className="flex flex-wrap gap-3 items-end p-4 border-b border-gray-50">

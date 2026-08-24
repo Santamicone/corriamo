@@ -173,6 +173,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
 
     } else {
       /* ── Serie ricorrente ── */
+      const seriesCrewId = form.run_visibility === 'crew_only' ? (form.crew_id || null) : null
       const { data: seriesData, error: seriesErr } = await supabase.from('series').insert({
         organizer_id:     userId,
         title:            form.title,
@@ -186,6 +187,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
         is_no_drop:       form.is_no_drop,
         location_public:  form.location_public,
         co_organizer_id:  coOrganizer?.id ?? null,
+        crew_id:          seriesCrewId,
         tags,
         recurrence_type:  form.recurrence_type,
         recurrence_day:   parseInt(form.recurrence_day),
@@ -211,6 +213,8 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
         max_participants: form.max_participants ? parseInt(form.max_participants) : null,
         is_no_drop:       form.is_no_drop,
         location_public:  form.location_public,
+        run_visibility:   seriesCrewId ? 'crew_only' : 'public',
+        crew_id:          seriesCrewId,
         tags,
         status:           'aperta',
         lat:              coords?.lat       ?? null,

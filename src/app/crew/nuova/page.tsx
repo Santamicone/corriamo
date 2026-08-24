@@ -26,6 +26,8 @@ export default function NuovaCrewPage() {
     description: '',
     visibility: 'public' as 'public' | 'private',
     whatsapp_group_link: '',
+    city: '',
+    zone: '',
   })
 
   async function handleSubmit(e: React.FormEvent) {
@@ -126,6 +128,36 @@ export default function NuovaCrewPage() {
                   placeholder="es. Milano Trail Crew"
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Città
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={60}
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    placeholder="es. Milano"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Zona
+                    <span className="text-gray-400 font-normal ml-1">(opzionale)</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={60}
+                    value={form.zone}
+                    onChange={(e) => setForm({ ...form, zone: e.target.value })}
+                    placeholder="es. Navigli"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  />
+                </div>
               </div>
 
               <div>

@@ -10,10 +10,11 @@ export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { SeriesCard } from '@/components/SeriesCard'
 import Link from 'next/link'
 import { Avatar } from '@/components/ui/Avatar'
-import type { Run, Series, CrewType, Profile } from '@/lib/types'
+import type { Run, Series, Profile } from '@/lib/types'
 import { CREW_TYPE_LABELS } from '@/lib/types'
 import { formatDate, todayItaly } from '@/lib/utils'
 import { rankRunners } from '@/lib/matchmaking'
+import { fetchMyCrewMemberships } from '@/lib/crews'
 
 export default async function AreaPersonalePage() {
   const supabase = await createClient()
@@ -27,7 +28,7 @@ export default async function AreaPersonalePage() {
     { data: myParticipations },
     { data: mySeries },
     { data: unreadMessages },
-    { data: myCrewMemberships },
+    crewMemberships,
     { data: myProfile },
   ] = await Promise.all([
     supabase.from('runs')
@@ -51,10 +52,7 @@ export default async function AreaPersonalePage() {
       .eq('recipient_id', user.id)
       .is('read_at', null),
 
-    supabase.from('crew_members')
-      .select('crew_id, role, status, crew:crews!crew_id(id, name, crew_type)')
-      .eq('user_id', user.id)
-      .eq('status', 'active'),
+    fetchMyCrewMemberships(supabase, user.id),
 
     supabase.from('profiles')
       .select('*')
@@ -71,13 +69,6 @@ export default async function AreaPersonalePage() {
     const { data: cand } = await candQuery
     topMatches = rankRunners(meProfile, (cand ?? []) as Profile[], 3)
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const crewMemberships = (myCrewMemberships ?? []).map((m: any) => ({
-    crew_id: m.crew_id as string,
-    role: m.role as string,
-    crew: (Array.isArray(m.crew) ? m.crew[0] : m.crew) as { id: string; name: string; crew_type: CrewType } | null,
-  })).filter(m => m.crew)
 
   const myOwnedCrews = crewMemberships.filter(m => m.role === 'owner')
   const myMemberCrews = crewMemberships.filter(m => m.role !== 'owner')

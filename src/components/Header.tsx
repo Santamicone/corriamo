@@ -62,26 +62,32 @@ function useUnreadNotifications(userId: string | null) {
 let profileCache: Profile | null = null
 
 const navLinks = [
-  { href: '/bacheca',        label: 'Bacheca',                icon: 'directions_run', help: false },
-  { href: '/nuova-corsa',    label: 'Proponi una corsa',      icon: 'add_circle',     help: false },
-  { href: '/gare',           label: 'Cerca compagni di gara', icon: 'emoji_events',   help: false },
-  { href: '/come-funziona',  label: 'Come funziona',          icon: 'help_outline',   help: true  },
+  { href: '/bacheca', label: 'Trova una corsa', icon: 'directions_run' },
+  { href: '/crew',    label: 'Crew',            icon: 'groups' },
+  { href: '/gare',    label: 'Gare',            icon: 'emoji_events' },
+  { href: '/tools',   label: 'Strumenti',       icon: 'calculate' },
 ]
 
-/* Voci del menu "Extra" — Strumenti (interno) + Magazine (sito editoriale, esterno) */
-const extraLinks = [
-  { href: '/tools',                       label: 'Strumenti per chi corre', icon: 'calculate', external: false },
-  { href: '/calendario-gare',             label: 'Calendario gare',         icon: 'event',     external: false },
-  { href: 'https://www.vieniacorrere.it', label: 'Vieni a Correre - La Crew', icon: 'open_in_new', external: true  },
+/* CTA "+ Proponi una corsa" — apre la scelta tra corsa programmata e corsa adesso */
+const proposeLinks = [
+  { href: '/nuova-corsa',      label: 'Corsa programmata', icon: 'event',        external: false },
+  { href: '/nuova-corsa-spot', label: '⚡ Corsa adesso',    icon: 'bolt',         external: false },
+]
+
+/* Menu "? Aiuto" — Come funziona + rimando al magazine editoriale */
+const helpLinks = [
+  { href: '/come-funziona',               label: 'Come funziona', icon: 'help_outline', external: false },
+  { href: 'https://www.vieniacorrere.it', label: 'VaC Magazine',  icon: 'open_in_new',  external: true  },
 ]
 
 export function Header() {
   const pathname  = usePathname()
   const router    = useRouter()
-  const [profile,    setProfile]    = useState<Profile | null>(profileCache)
+  const [profile,     setProfile]     = useState<Profile | null>(profileCache)
   const [mobileOpen,  setMobileOpen]  = useState(false)  // hamburger mobile
   const [userOpen,    setUserOpen]    = useState(false)  // dropdown avatar desktop
-  const [extraOpen,   setExtraOpen]   = useState(false)  // dropdown "Extra" desktop
+  const [proposeOpen, setProposeOpen] = useState(false)  // dropdown CTA "+ Proponi una corsa"
+  const [helpOpen,    setHelpOpen]    = useState(false)  // dropdown "? Aiuto"
   const [loggingOut,  setLoggingOut]  = useState(false)  // feedback logout
 
   const unreadMessages      = useUnreadMessages(profile?.id ?? null)
@@ -104,7 +110,7 @@ export function Header() {
   }, [pathname])
 
   // Chiudi menu al cambio pagina
-  useEffect(() => { setMobileOpen(false); setUserOpen(false); setExtraOpen(false) }, [pathname])
+  useEffect(() => { setMobileOpen(false); setUserOpen(false); setProposeOpen(false); setHelpOpen(false) }, [pathname])
 
   const handleLogout = async () => {
     setMobileOpen(false)
@@ -149,49 +155,66 @@ export function Header() {
               <Link key={link.href} href={link.href}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors',
-                  link.help
-                    ? isActive(link.href)
-                      ? 'bg-gray-100 text-gray-700 font-semibold'
-                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                    : isActive(link.href)
-                      ? 'bg-orange-50 text-primary font-semibold'
-                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                  isActive(link.href)
+                    ? 'bg-orange-50 text-primary font-semibold'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                 )}>
-                {link.help && (
-                  <span className="material-symbols-outlined text-base">{link.icon}</span>
-                )}
                 {link.label}
               </Link>
             ))}
 
-            {/* Dropdown "Extra" */}
+            {/* CTA "+ Proponi una corsa" */}
+            <div className="relative ml-1">
+              <button
+                onClick={() => setProposeOpen(!proposeOpen)}
+                className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200"
+              >
+                <span className="material-symbols-outlined text-lg">add</span>
+                Proponi una corsa
+                <span className="material-symbols-outlined text-lg">expand_more</span>
+              </button>
+              {proposeOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setProposeOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden py-1">
+                    {proposeLinks.map(item => (
+                      <Link key={item.href} href={item.href} onClick={() => setProposeOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap">
+                        <span className="material-symbols-outlined text-base text-gray-400">{item.icon}</span>
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Dropdown "? Aiuto" */}
             <div className="relative">
               <button
-                onClick={() => setExtraOpen(!extraOpen)}
+                onClick={() => setHelpOpen(!helpOpen)}
                 className={cn(
-                  'inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors',
-                  extraOpen
-                    ? 'bg-gray-100 text-gray-900 font-semibold'
-                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                  'inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors',
+                  helpOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                 )}
+                aria-label="Aiuto"
               >
-                Extra
-                <span className="material-symbols-outlined text-lg text-gray-400">expand_more</span>
+                <span className="material-symbols-outlined text-xl">help_outline</span>
               </button>
-              {extraOpen && (
+              {helpOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setExtraOpen(false)} />
-                  <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden py-1">
-                    {extraLinks.map(item =>
+                  <div className="fixed inset-0 z-40" onClick={() => setHelpOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden py-1">
+                    {helpLinks.map(item =>
                       item.external ? (
                         <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer"
-                          onClick={() => setExtraOpen(false)}
+                          onClick={() => setHelpOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap">
                           <span className="material-symbols-outlined text-base text-gray-400">{item.icon}</span>
                           {item.label}
                         </a>
                       ) : (
-                        <Link key={item.href} href={item.href} onClick={() => setExtraOpen(false)}
+                        <Link key={item.href} href={item.href} onClick={() => setHelpOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap">
                           <span className="material-symbols-outlined text-base text-gray-400">{item.icon}</span>
                           {item.label}
@@ -209,6 +232,20 @@ export function Header() {
 
             {profile ? (
               <>
+                {/* Messaggi */}
+                <Link href="/messaggi"
+                  className="relative p-2 rounded-xl hover:bg-gray-50 transition-colors text-gray-500"
+                  aria-label={`Messaggi${unreadMessages > 0 ? ` (${unreadMessages})` : ''}`}>
+                  <span className="material-symbols-outlined text-xl">
+                    {unreadMessages > 0 ? 'mark_email_unread' : 'mail'}
+                  </span>
+                  {unreadMessages > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                      {unreadMessages > 9 ? '9+' : unreadMessages}
+                    </span>
+                  )}
+                </Link>
+
                 {/* Bell notifiche */}
                 <Link href="/notifiche"
                   className="relative p-2 rounded-xl hover:bg-gray-50 transition-colors text-gray-500"
@@ -253,6 +290,7 @@ export function Header() {
                         {[
                           { href: `/profilo/${profile.id}`, icon: 'person',    label: 'Il mio profilo' },
                           { href: '/area-personale',        icon: 'dashboard', label: 'Area personale' },
+                          { href: '/crew?tab=mie',          icon: 'group',     label: 'Le mie Crew' },
                         ].map(item => (
                           <Link key={item.href} href={item.href} onClick={() => setUserOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
@@ -260,22 +298,6 @@ export function Header() {
                             {item.label}
                           </Link>
                         ))}
-                        <Link href="/messaggi" onClick={() => setUserOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                          <span className="material-symbols-outlined text-base text-gray-400">mail</span>
-                          Messaggi
-                          {unreadMessages > 0 && (
-                            <span className="ml-auto bg-primary text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full">{unreadMessages}</span>
-                          )}
-                        </Link>
-                        <Link href="/notifiche" onClick={() => setUserOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                          <span className="material-symbols-outlined text-base text-gray-400">notifications</span>
-                          Notifiche
-                          {unreadNotifications > 0 && (
-                            <span className="ml-auto bg-primary text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full">{unreadNotifications}</span>
-                          )}
-                        </Link>
                         <hr className="my-1 border-gray-100" />
                         <button onClick={handleLogout}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
@@ -347,29 +369,30 @@ export function Header() {
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-colors',
-                    link.help
-                      ? isActive(link.href)
-                        ? 'bg-gray-100 text-gray-700'
-                        : 'text-gray-500 hover:bg-gray-50'
-                      : isActive(link.href)
-                        ? 'bg-orange-50 text-primary'
-                        : 'text-gray-700 hover:bg-gray-50'
+                    isActive(link.href) ? 'bg-orange-50 text-primary' : 'text-gray-700 hover:bg-gray-50'
                   )}>
-                  <span className={cn(
-                    'material-symbols-outlined text-base',
-                    link.help ? 'text-gray-400' : 'text-gray-400'
-                  )}>{link.icon}</span>
+                  <span className="material-symbols-outlined text-base text-gray-400">{link.icon}</span>
                   {link.label}
+                </Link>
+              ))}
+              {proposeLinks.map(item => (
+                <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-colors',
+                    isActive(item.href) ? 'bg-orange-50 text-primary' : 'text-gray-700 hover:bg-gray-50'
+                  )}>
+                  <span className="material-symbols-outlined text-base text-gray-400">{item.icon}</span>
+                  {item.label}
                 </Link>
               ))}
             </div>
 
             <div className="border-t border-gray-100 mx-4" />
 
-            {/* Extra */}
+            {/* Aiuto */}
             <div className="px-4 pt-3 pb-2 flex flex-col gap-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3 mb-1">Extra</p>
-              {extraLinks.map(item =>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3 mb-1">Aiuto</p>
+              {helpLinks.map(item =>
                 item.external ? (
                   <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer"
                     onClick={() => setMobileOpen(false)}
@@ -407,25 +430,10 @@ export function Header() {
                     <span className="material-symbols-outlined text-base text-gray-400">dashboard</span>
                     Area personale
                   </Link>
-                  <Link href="/messaggi" onClick={() => setMobileOpen(false)}
+                  <Link href="/crew?tab=mie" onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-                    <span className="material-symbols-outlined text-base text-gray-400">mail</span>
-                    Messaggi
-                    {unreadMessages > 0 && (
-                      <span className="ml-auto bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full">{unreadMessages}</span>
-                    )}
-                  </Link>
-                  <Link href="/notifiche" onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-                    <span className="material-symbols-outlined text-base text-gray-400">
-                      {unreadNotifications > 0 ? 'notifications_active' : 'notifications'}
-                    </span>
-                    Notifiche
-                    {unreadNotifications > 0 && (
-                      <span className="ml-auto bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                      </span>
-                    )}
+                    <span className="material-symbols-outlined text-base text-gray-400">group</span>
+                    Le mie Crew
                   </Link>
                   <button onClick={handleLogout}
                     className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors text-left">

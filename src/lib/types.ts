@@ -190,6 +190,7 @@ export interface Series {
   location_public?: boolean
   tags?: string[]
   upcoming_runs?: Run[]
+  crew_id?: string | null
 }
 
 export interface Momento {
@@ -327,6 +328,8 @@ export interface Crew {
   crew_type: CrewType
   visibility: CrewVisibility
   whatsapp_group_link: string | null
+  city: string | null
+  zone: string | null
   created_at: string
 }
 

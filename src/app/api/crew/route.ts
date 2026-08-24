@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const body = await request.json()
-  const { name, description, crew_type, visibility, whatsapp_group_link } = body
+  const { name, description, crew_type, visibility, whatsapp_group_link, city, zone } = body
 
   if (!name || !crew_type) {
     return NextResponse.json({ error: 'Nome e tipo sono obbligatori' }, { status: 400 })
@@ -23,7 +23,14 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabase
     .from('crews')
-    .insert({ name, slug, description, crew_type, visibility: visibility ?? 'public', whatsapp_group_link, owner_id: user.id })
+    .insert({
+      name, slug, description, crew_type,
+      visibility: visibility ?? 'public',
+      whatsapp_group_link,
+      city: city || null,
+      zone: zone || null,
+      owner_id: user.id,
+    })
     .select('id')
     .single()
 

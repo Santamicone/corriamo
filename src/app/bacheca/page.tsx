@@ -12,7 +12,7 @@ import { SpotRunsStrip } from '@/components/SpotRunsStrip'
 import { TAGS, getTag } from '@/lib/tags'
 import { computeCompatibility, type CompatibilityResult, type RunHistory } from '@/lib/compatibility'
 import type { Run, Series, Profile } from '@/lib/types'
-import { GaraCard } from '@/components/GaraCard'
+import { getCompagniMatches, CompagniBlockCompact } from '@/components/CompagniBlock'
 import { GeolocCityDetector } from '@/components/GeolocCityDetector'
 import { GeoDismissButton } from '@/components/GeoDismissButton'
 import type { Metadata } from 'next'
@@ -31,7 +31,6 @@ export const metadata: Metadata = {
 
 /* ─── Tipi ─── */
 interface SearchParams {
-  tab?:           string
   city?:          string
   level?:         string
   q?:             string
@@ -39,8 +38,6 @@ interface SearchParams {
   to?:            string   // YYYY-MM-DD
   tag?:           string   // singolo tag id
   view?:          'lista' | 'mappa'
-  race_distance?: string
-  looking_for?:   string
   all_cities?:    string   // bypass del filtro città automatico dal profilo
   welcome?:       string   // '1' → primo accesso dopo registrazione
   geo?:           string   // '1' → città rilevata da geolocalizzazione
@@ -96,7 +93,6 @@ function fmtDateIt(str: string) {
 ───────────────────────────────────────── */
 export default async function BachecaPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams
-  const tab = params.tab ?? 'corse'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -104,7 +100,6 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
   const view = params.view === 'mappa' ? 'mappa' : 'lista'
   let runs: Run[] = []
   let series: Series[] = []
-  let gare: Run[] = []
   let geoFallbackUsed = false   // true se city dà 0 risultati e si usa geo_county
   const pageLimit = parseLimit(params.limit)
   let hasMore = false           // true se esistono altri risultati oltre il limite
@@ -135,25 +130,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     : null
   const filterCity = params.city || autoCity || undefined
 
-  if (tab === 'gare') {
-    let query = supabase
-      .from('runs')
-      .select('*, organizer:profiles!runs_organizer_id_fkey(*)')
-      .eq('status', 'aperta')
-      .eq('type', 'gara')
-      .gte('date', params.from ?? today)
-      .order('date', { ascending: true })
-
-    if (filterCity)           query = query.ilike('city', `%${filterCity}%`)
-    if (params.q)             query = query.or(buildSearchOr(params.q))
-    if (params.race_distance) query = query.eq('race_distance', params.race_distance)
-    if (params.looking_for)   query = query.contains('looking_for', [params.looking_for])
-
-    // Un risultato in più del limite per sapere se mostrare "Mostra altri"
-    const { data } = await query.limit(pageLimit + 1)
-    gare = (data || []) as unknown as Run[]
-    if (gare.length > pageLimit) { hasMore = true; gare = gare.slice(0, pageLimit) }
-  } else if (tab === 'corse') {
+  {
     // Base query — se c'è un `from` esplicito lo usa, altrimenti mostra da oggi
     let query = supabase
       .from('runs')
@@ -304,13 +281,18 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     }
   }
 
-  const hasFilters    = !!(params.q || filterCity || params.level || params.from || params.to || params.tag || params.race_distance || params.looking_for)
+  const hasFilters    = !!(params.q || filterCity || params.level || params.from || params.to || params.tag)
   const hasDateFilter = !!(params.from || params.to)
   const activeTag     = params.tag ? getTag(params.tag) : null
-  const count = tab === 'corse' ? runs.length + series.length : gare.length
+  const count = runs.length + series.length
 
   // Chips — calcolate sulla data italiana (il server Vercel è in UTC)
   const chips = getChipRanges(parseISO(todayItaly()))
+
+  // Runner compatibili — blocco compatto sotto le corse, solo vista lista
+  const compagniMatches = userProfile && view === 'lista'
+    ? await getCompagniMatches(supabase, userProfile, 6)
+    : null
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -326,30 +308,19 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
-                  {tab === 'corse' ? 'Chi corre oggi?' : 'Compagni di gara'}
+                  Chi corre oggi?
                 </h1>
                 <p className="mt-2 text-lg text-gray-500">
-                  {tab === 'corse'
-                    ? 'Corse singole e serie ricorrenti vicino a te, al ritmo giusto.'
-                    : 'Runner che cercano pacer, compagni o supporter per una gara.'}
+                  Corse singole e serie ricorrenti vicino a te, al ritmo giusto.
                 </p>
               </div>
-              {tab === 'corse' && (
-                <Link
-                  href="/nuova-corsa"
-                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200 shrink-0"
-                >
-                  <span className="material-symbols-outlined text-lg">add</span>
-                  Proponi una corsa
-                </Link>
-              )}
-              {tab === 'gare' && (
-                <Link href="/gare"
-                  className="inline-flex items-center gap-2 border border-indigo-200 text-indigo-700 bg-indigo-50 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-indigo-100 transition-colors shrink-0">
-                  <span className="material-symbols-outlined text-base">open_in_new</span>
-                  Vai alla pagina gare
-                </Link>
-              )}
+              <Link
+                href="/nuova-corsa"
+                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors shadow-sm shadow-orange-200 shrink-0"
+              >
+                <span className="material-symbols-outlined text-lg">add</span>
+                Proponi una corsa
+              </Link>
             </div>
           </PageContainer>
         </div>
@@ -372,53 +343,32 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             </div>
           )}
 
-          {/* Tabs + view toggle */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-full w-fit">
+          {/* View toggle Lista / Mappa */}
+          <div className="flex items-center justify-end flex-wrap gap-3">
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
               {[
-                { value: 'corse', label: 'Corse',  icon: 'directions_run' },
-                { value: 'gare',  label: 'Gare',   icon: 'emoji_events' },
-              ].map(t => (
+                { value: 'lista', icon: 'view_list',    label: 'Lista' },
+                { value: 'mappa', icon: 'map',          label: 'Mappa' },
+              ].map(v => (
                 <Link
-                  key={t.value}
-                  href={buildUrl({ tab: t.value, q: params.q, city: params.city, all_cities: params.all_cities }, {})}
-                  className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-                    tab === t.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  key={v.value}
+                  href={buildUrl(params, { view: v.value as 'lista' | 'mappa' })}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    view === v.value
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
+                  title={v.label}
                 >
-                  <span className="material-symbols-outlined text-base">{t.icon}</span>
-                  {t.label}
+                  <span className="material-symbols-outlined text-base">{v.icon}</span>
+                  <span className="hidden sm:inline">{v.label}</span>
                 </Link>
               ))}
             </div>
-
-            {/* View toggle Lista / Mappa — solo tab corse */}
-            {(tab === 'corse') && (
-              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-                {[
-                  { value: 'lista', icon: 'view_list',    label: 'Lista' },
-                  { value: 'mappa', icon: 'map',          label: 'Mappa' },
-                ].map(v => (
-                  <Link
-                    key={v.value}
-                    href={buildUrl(params, { view: v.value as 'lista' | 'mappa' })}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                      view === v.value
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                    title={v.label}
-                  >
-                    <span className="material-symbols-outlined text-base">{v.icon}</span>
-                    <span className="hidden sm:inline">{v.label}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Filter bar */}
-          <FilterBar tab={tab} current={params} chips={chips} showDateFilter={tab === 'corse'} showTagFilter={tab === 'corse'} showGareFilter={tab === 'gare'} />
+          <FilterBar current={params} chips={chips} />
 
           {/* Pill tag attivo */}
           {activeTag && (
@@ -464,7 +414,7 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
           )}
 
           {/* Pill filtro data attivo */}
-          {hasDateFilter && tab === 'corse' && (
+          {hasDateFilter && (
             <ActiveDatePill params={params} />
           )}
 
@@ -473,77 +423,52 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             <p className="text-sm text-gray-400 -mt-2">
               {hasFilters
                 ? `${count}${hasMore ? '+' : ''} risultat${count === 1 && !hasMore ? 'o' : 'i'} trovati`
-                : `${count}${hasMore ? '+' : ''} ${
-                    tab === 'corse'
-                      ? (count === 1 && !hasMore ? 'proposta disponibile' : 'proposte disponibili')
-                      : (count === 1 && !hasMore ? 'post pubblicato' : 'post pubblicati')
-                  }`}
+                : `${count}${hasMore ? '+' : ''} ${count === 1 && !hasMore ? 'proposta disponibile' : 'proposte disponibili'}`}
             </p>
           )}
 
           {/* Contenuto principale */}
-          {tab === 'corse' ? (
-            runs.length === 0 && series.length === 0 ? (
-              <EmptyState tab="corse" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} userCity={filterCity ?? undefined} isLoggedIn={!!user} geoCity={params.geo === '1' ? params.city : undefined} geoCounty={params.geo_county} />
-            ) : view === 'mappa' ? (
-              <div className="flex flex-col gap-3">
-                <RunMapWrapper runs={runs} height="520px" />
-                {series.length > 0 && (
-                  <p className="flex items-center gap-1.5 text-xs text-gray-400">
-                    <span className="material-symbols-outlined text-sm text-purple-400">event_repeat</span>
-                    {series.length === 1
-                      ? '1 serie ricorrente non mostrata sulla mappa — passa alla vista Lista per vederla.'
-                      : `${series.length} serie ricorrenti non mostrate sulla mappa — passa alla vista Lista per vederle.`}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-8">
-                {/* Corse singole */}
-                {runs.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {runs.map(run => <RunCard key={run.id} run={run} />)}
-                  </div>
-                )}
-                {hasMore && (
-                  <ShowMoreButton href={buildUrl(params, { limit: String(pageLimit + PAGE_SIZE) })} />
-                )}
-                {/* Serie ricorrenti — sotto le corse */}
-                {series.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="material-symbols-outlined text-purple-500 text-xl">event_repeat</span>
-                      <h2 className="text-base font-extrabold text-gray-800">Serie ricorrenti</h2>
-                      <span className="text-xs text-gray-400">({series.length})</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                      {series.map(s => <SeriesCard key={s.id} series={s} />)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
+          {runs.length === 0 && series.length === 0 ? (
+            <EmptyState hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} userCity={filterCity ?? undefined} isLoggedIn={!!user} geoCity={params.geo === '1' ? params.city : undefined} geoCounty={params.geo_county} />
+          ) : view === 'mappa' ? (
+            <div className="flex flex-col gap-3">
+              <RunMapWrapper runs={runs} height="520px" />
+              {series.length > 0 && (
+                <p className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <span className="material-symbols-outlined text-sm text-purple-400">event_repeat</span>
+                  {series.length === 1
+                    ? '1 serie ricorrente non mostrata sulla mappa — passa alla vista Lista per vederla.'
+                    : `${series.length} serie ricorrenti non mostrate sulla mappa — passa alla vista Lista per vederle.`}
+                </p>
+              )}
+            </div>
           ) : (
-            /* Tab Gare — sola visualizzazione */
-            gare.length > 0 ? (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3">
-                  <span className="material-symbols-outlined text-indigo-400 text-lg shrink-0">info</span>
-                  <p className="text-sm text-indigo-700">
-                    Vuoi cercare compagni per la tua gara?{' '}
-                    <a href="/gare" className="font-semibold underline hover:text-indigo-900">Vai alla pagina Gare</a> per pubblicare un post.
-                  </p>
-                </div>
+            <div className="flex flex-col gap-8">
+              {/* Corse singole */}
+              {runs.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {gare.map(g => <GaraCard key={g.id} run={g} />)}
+                  {runs.map(run => <RunCard key={run.id} run={run} />)}
                 </div>
-                {hasMore && (
-                  <ShowMoreButton href={buildUrl(params, { limit: String(pageLimit + PAGE_SIZE) })} />
-                )}
-              </div>
-            ) : (
-              <EmptyState tab="gare" hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} />
-            )
+              )}
+              {hasMore && (
+                <ShowMoreButton href={buildUrl(params, { limit: String(pageLimit + PAGE_SIZE) })} />
+              )}
+              {/* Serie ricorrenti — sotto le corse */}
+              {series.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="material-symbols-outlined text-purple-500 text-xl">event_repeat</span>
+                    <h2 className="text-base font-extrabold text-gray-800">Serie ricorrenti</h2>
+                    <span className="text-xs text-gray-400">({series.length})</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {series.map(s => <SeriesCard key={s.id} series={s} />)}
+                  </div>
+                </div>
+              )}
+              {/* Runner come te — sotto le corse e le serie */}
+              {compagniMatches && <CompagniBlockCompact matches={compagniMatches} />}
+            </div>
           )}
           {/* Geolocalizzazione automatica — solo utenti anonimi */}
           {!user && params.geo !== '1' && (
@@ -563,19 +488,17 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
 type ChipRanges = ReturnType<typeof getChipRanges>
 
 function FilterBar({
-  tab, current, chips, showDateFilter, showTagFilter, showGareFilter,
+  current, chips,
 }: {
-  tab: string
   current: SearchParams
   chips: ChipRanges
-  showDateFilter: boolean
-  showTagFilter?: boolean
-  showGareFilter?: boolean
 }) {
+  const showDateFilter = true
+  const showTagFilter  = true
   const hasTextFilters = !!(current.q || current.city || current.level)
   const hasDateFilter  = !!(current.from || current.to)
   const hasAnyFilter   = hasTextFilters || hasDateFilter
-  const hasAdvancedFilters = hasDateFilter || !!(current.tag || current.race_distance || current.looking_for)
+  const hasAdvancedFilters = hasDateFilter || !!current.tag
 
   // Determina quale chip è attiva
   const activeChip = Object.entries(chips).find(
@@ -594,15 +517,12 @@ function FilterBar({
 
       {/* ── Riga 1: testo + città + livello ── */}
       <form method="GET" action="/bacheca" className="flex flex-wrap gap-3 items-end p-4 border-b border-gray-50">
-        <input type="hidden" name="tab" value={tab} />
         {/* Preserva tutti gli altri filtri attivi nel form testo */}
-        {current.from          && <input type="hidden" name="from"          value={current.from} />}
-        {current.to            && <input type="hidden" name="to"            value={current.to} />}
-        {current.tag           && <input type="hidden" name="tag"           value={current.tag} />}
-        {current.view          && <input type="hidden" name="view"          value={current.view} />}
-        {current.race_distance && <input type="hidden" name="race_distance" value={current.race_distance} />}
-        {current.looking_for   && <input type="hidden" name="looking_for"   value={current.looking_for} />}
-        {current.all_cities    && <input type="hidden" name="all_cities"    value={current.all_cities} />}
+        {current.from       && <input type="hidden" name="from"       value={current.from} />}
+        {current.to         && <input type="hidden" name="to"         value={current.to} />}
+        {current.tag        && <input type="hidden" name="tag"        value={current.tag} />}
+        {current.view       && <input type="hidden" name="view"       value={current.view} />}
+        {current.all_cities && <input type="hidden" name="all_cities" value={current.all_cities} />}
 
         <div className="flex flex-col gap-1.5 min-w-[150px] flex-1">
           <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cerca</label>
@@ -635,7 +555,7 @@ function FilterBar({
         </button>
 
         {hasAnyFilter && (
-          <a href={`/bacheca?tab=${tab}`}
+          <a href="/bacheca"
             className="h-10 px-4 border border-gray-200 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1">
             <span className="material-symbols-outlined text-base">close</span>
             Rimuovi tutti
@@ -643,8 +563,7 @@ function FilterBar({
         )}
       </form>
 
-      {/* ── Righe 2-4: filtri avanzati, espandibili ── */}
-      {(showDateFilter || showGareFilter || showTagFilter) && (
+      {/* ── Righe 2-3: filtri avanzati, espandibili ── */}
       <details className="group" open={hasAdvancedFilters}>
         <summary className="list-none flex items-center gap-2 px-4 py-2.5 border-b border-gray-50 cursor-pointer select-none text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
           <span className="material-symbols-outlined text-base transition-transform group-open:rotate-180">expand_more</span>
@@ -654,7 +573,7 @@ function FilterBar({
           )}
         </summary>
 
-      {/* ── Riga 2: filtro data (solo tab corse) ── */}
+      {/* ── Riga 2: filtro data ── */}
       {showDateFilter && (
         <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
 
@@ -689,7 +608,6 @@ function FilterBar({
 
           {/* Range personalizzato */}
           <form method="GET" action="/bacheca" className="flex items-center gap-2 flex-wrap">
-            <input type="hidden" name="tab"   value={tab} />
             {current.q          && <input type="hidden" name="q"          value={current.q} />}
             {current.city       && <input type="hidden" name="city"       value={current.city} />}
             {current.level      && <input type="hidden" name="level"      value={current.level} />}
@@ -723,67 +641,7 @@ function FilterBar({
         </div>
       )}
 
-      {/* ── Riga 3: filtri gare ── */}
-      {showGareFilter && (
-        <div className="px-4 pb-3 flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Distanza</span>
-            <div className="flex gap-2 flex-wrap">
-              {[
-                { value: '5k',  label: '5K' },
-                { value: '10k', label: '10K' },
-                { value: '21k', label: 'Mezza' },
-                { value: '42k', label: 'Maratona' },
-              ].map(d => {
-                const isActive = current.race_distance === d.value
-                return (
-                  <Link key={d.value}
-                    href={isActive
-                      ? buildUrl({ ...current, race_distance: undefined }, {})
-                      : buildUrl(current, { race_distance: d.value })}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                      isActive
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 bg-white'
-                    }`}
-                  >
-                    {d.label}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cerco</span>
-            <div className="flex gap-2 flex-wrap">
-              {[
-                { value: 'pacer',     label: 'Pacer',     icon: 'speed' },
-                { value: 'compagno',  label: 'Compagno',  icon: 'group' },
-                { value: 'supporter', label: 'Supporter', icon: 'volunteer_activism' },
-              ].map(lf => {
-                const isActive = current.looking_for === lf.value
-                return (
-                  <Link key={lf.value}
-                    href={isActive
-                      ? buildUrl({ ...current, looking_for: undefined }, {})
-                      : buildUrl(current, { looking_for: lf.value })}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                      isActive
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 bg-white'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-sm">{lf.icon}</span>
-                    {lf.label}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Riga 4: tag chips ── */}
+      {/* ── Riga 3: tag chips ── */}
       {showTagFilter && (
         <div className="px-4 pb-3 flex flex-col gap-2.5">
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
@@ -813,7 +671,6 @@ function FilterBar({
         </div>
       )}
       </details>
-      )}
     </div>
   )
 }
@@ -872,8 +729,8 @@ function ActiveDatePill({ params }: { params: SearchParams }) {
 /* ═══════════════════════════════════════
    EMPTY STATE
 ═══════════════════════════════════════ */
-function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLoggedIn, geoCity, geoCounty }: {
-  tab: string; hasFilters: boolean; hasDateFilter: boolean; params: SearchParams
+function EmptyState({ hasFilters, hasDateFilter, params, userCity, isLoggedIn, geoCity, geoCounty }: {
+  hasFilters: boolean; hasDateFilter: boolean; params: SearchParams
   userCity?: string; isLoggedIn?: boolean; geoCity?: string; geoCounty?: string
 }) {
   const dateHint = hasDateFilter && (
@@ -886,28 +743,22 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLogged
     </a>
   )
 
-  const noFilterMessage = tab === 'gare'
-    ? 'Sii il primo a cercare compagni per una gara.'
-    : geoCity && geoCounty
-      ? `Nessuna corsa trovata né a ${geoCity} né nei dintorni (${geoCounty}). Sii il primo!`
-      : geoCity
-        ? `Nessuna corsa trovata vicino a ${geoCity}. Sii il primo a proporne una!`
-        : userCity
-          ? `Non ci sono ancora corse a ${userCity}. Sii il primo a proporne una!`
-          : 'Sii il primo a proporre un appuntamento nella tua città.'
+  const noFilterMessage = geoCity && geoCounty
+    ? `Nessuna corsa trovata né a ${geoCity} né nei dintorni (${geoCounty}). Sii il primo!`
+    : geoCity
+      ? `Nessuna corsa trovata vicino a ${geoCity}. Sii il primo a proporne una!`
+      : userCity
+        ? `Non ci sono ancora corse a ${userCity}. Sii il primo a proporne una!`
+        : 'Sii il primo a proporre un appuntamento nella tua città.'
 
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-white rounded-3xl border border-gray-100">
       <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center">
-        <span className="material-symbols-outlined text-3xl text-gray-300">
-          {tab === 'gare' ? 'emoji_events' : 'directions_run'}
-        </span>
+        <span className="material-symbols-outlined text-3xl text-gray-300">directions_run</span>
       </div>
       <div className="flex flex-col items-center gap-1">
         <p className="text-lg font-bold text-gray-900">
-          {hasFilters
-            ? (tab === 'gare' ? 'Nessun post trovato' : 'Nessuna corsa trovata')
-            : (tab === 'gare' ? 'Ancora nessun post' : 'Ancora nessuna corsa')}
+          {hasFilters ? 'Nessuna corsa trovata' : 'Ancora nessuna corsa'}
         </p>
         <p className="text-sm text-gray-500 max-w-xs">
           {hasDateFilter
@@ -918,7 +769,7 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLogged
         </p>
         {dateHint}
       </div>
-      {tab === 'corse' && isLoggedIn && (
+      {isLoggedIn ? (
         <div className="flex flex-col items-center gap-2 mt-1">
           <Link href="/nuova-corsa"
             className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors">
@@ -933,19 +784,11 @@ function EmptyState({ tab, hasFilters, hasDateFilter, params, userCity, isLogged
             </Link>
           )}
         </div>
-      )}
-      {tab === 'corse' && !isLoggedIn && (
+      ) : (
         <Link href="/registrati"
           className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-primary-hover transition-colors mt-1">
           <span className="material-symbols-outlined text-lg">person_add</span>
           Registrati e proponi una corsa
-        </Link>
-      )}
-      {tab === 'gare' && (
-        <Link href="/gare"
-          className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-indigo-700 transition-colors mt-1">
-          <span className="material-symbols-outlined text-lg">emoji_events</span>
-          Vai alla pagina Gare
         </Link>
       )}
     </div>
