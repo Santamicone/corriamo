@@ -68,10 +68,12 @@ const navLinks = [
   { href: '/tools',   label: 'Strumenti',       icon: 'calculate' },
 ]
 
-/* CTA "+ Proponi una corsa" — apre la scelta tra corsa programmata e corsa adesso */
+/* CTA "+ Proponi una corsa" — apre la scelta tra corsa programmata e corsa adesso.
+   Le label sono esplicite (non solo "Corsa programmata/adesso") perché nel menu
+   mobile compaiono senza il contesto del bottone "+ Proponi una corsa" del desktop. */
 const proposeLinks = [
-  { href: '/nuova-corsa',      label: 'Corsa programmata', icon: 'event',        external: false },
-  { href: '/nuova-corsa-spot', label: '⚡ Corsa adesso',    icon: 'bolt',         external: false },
+  { href: '/nuova-corsa',      label: 'Programma una corsa',       icon: 'event', external: false },
+  { href: '/nuova-corsa-spot', label: 'Proponi una corsa adesso',  icon: 'bolt',  external: false },
 ]
 
 /* Menu "? Aiuto" — Come funziona + rimando al magazine editoriale */
