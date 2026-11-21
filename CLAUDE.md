@@ -11,7 +11,7 @@
 - **Branch attivo:** `main`. **Workflow: push diretto su `main`** (deciso il 23/08/2026 — non più feature branch + PR, salvo diversa indicazione esplicita).
 - **Stack:** Next.js 16.2.7 App Router · TypeScript · Tailwind v4 · Supabase · Vercel
 - **Calendario gare:** doc completa in `docs/CALENDARIO-GARE.md` (catalogo `races`, import `npm run import:aims` + `npm run seed:circuits`, moderazione).
-- **Integrazione Strava:** doc completa in `docs/STRAVA.md` (OAuth per utente, webhook sync, feed crew private + profilo pubblico, `npm run strava:webhook`).
+- **Integrazione Strava:** RIMOSSA il 21/11/2026 (policy API Strava): vedi `docs/STRAVA.md` per motivi e procedura di chiusura. Non reintrodurre dati Strava visibili ad altri utenti.
 
 ## Convenzioni obbligatorie
 

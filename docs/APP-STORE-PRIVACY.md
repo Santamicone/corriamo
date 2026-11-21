@@ -63,6 +63,8 @@ dichiarare **Coarse Location**, collegata all'utente, per App Functionality.
 **sito**, non dall'app. Se in futuro l'app lo offrirà, o se vuoi essere cautelativo perché lo stesso
 account contiene quei dati, dichiara **Fitness** come dato *facoltativo*.
 
+> ⚠️ **Aggiornamento 21/11/2026:** l'integrazione Strava è stata staccata dal sito (vedi `docs/STRAVA.md`). Dopo aver applicato `supabase/strava-detach.sql` **non si raccolgono più dati Fitness**: la voce Fitness in App Store Connect si potrà togliere e Strava non è più un sub-responsabile. Non toccarla finché i dati non sono stati cancellati; le frasi di Privacy/Termini vanno riviste da una persona (riga "Strava (facoltativo)" e sub-responsabili in `src/app/privacy`, pagina `/elimina-account`).
+
 **Nota C (email di riepilogo).** Il digest settimanale delle corse vicine è una comunicazione del
 servizio con disattivazione dalle preferenze. Se lo consideri promozionale, aggiungi per *Email
 Address* anche la finalità **Developer's Advertising or Marketing**. **Deciso il 21/11/2026: lo

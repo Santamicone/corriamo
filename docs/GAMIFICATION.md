@@ -5,6 +5,8 @@
 > (schema DB) e a `docs/STRAVA.md` (auto-conferma presenze, da cui questo sistema
 > eredita i segnali verificati).
 >
+> ⚠️ **21/11/2026:** l'auto-conferma da Strava è stata **rimossa** (integrazione staccata, vedi `docs/STRAVA.md`): restano solo le conferme manuali (`check_ins`/`run_confirmations` manuali). I riferimenti a `source='strava'` qui sotto sono storici.
+>
 > **Stato implementazione.** La **Fase 1** (§7, "Runner ispirati") è realizzata in
 > variante *"RPC al volo"*: le funzioni `crew_impact_stats` / `user_impact_stats`
 > in `supabase/community-impact.sql` calcolano i contatori a load pagina dai

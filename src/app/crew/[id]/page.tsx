@@ -10,7 +10,7 @@ import type { Crew, CrewMember, Run } from '@/lib/types'
 import { RunCard } from '@/components/RunCard'
 import { CrewFeed } from '@/components/CrewFeed'
 import { buildCrewFeed } from '@/lib/crewFeed'
-import type { FeedActivity, FeedMember } from '@/lib/crewFeed'
+import type { FeedMember } from '@/lib/crewFeed'
 import { CrewBoard } from '@/components/CrewBoard'
 import { CrewMemberList } from '@/components/CrewMemberList'
 import { CrewEmptyState } from '@/components/CrewEmptyState'
@@ -95,25 +95,6 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
       .limit(1)
       .maybeSingle()
     latestBoardMessageAt = lastMsg?.created_at ?? null
-  }
-
-  // Feed attività Strava degli atleti della crew — mostrato su tutte le crew,
-  // a chiunque visiti la pagina. La RLS su strava_activities filtra per viewer:
-  //  · anon / non-membri → solo atleti con strava_public_profile = true;
-  //  · membri di una crew privata → anche gli atleti che condividono col feed
-  //    (strava_share_activities = true).
-  let activities = null
-  if (members && members.length > 0) {
-    const memberIds = members.map((m) => m.user_id)
-    const { data } = await supabase
-      .from('strava_activities')
-      .select('*, user:profiles!user_id(id, full_name, avatar_url)')
-      .in('user_id', memberIds)
-      // Finestra 30gg (limit ampio) per alimentare feed unificato + insight
-      .gte('start_date', new Date(Date.now() - 30 * 86_400_000).toISOString())
-      .order('start_date', { ascending: false })
-      .limit(40)
-    activities = data
   }
 
   // Corse pubbliche future (a tutti) + corse effettuate + bacheca + statistiche
@@ -201,15 +182,10 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   // Mostra un empty-state curato invece di lasciare la colonna spoglia.
   const noRuns = !nextRun && restPublicRuns.length === 0 && restCrewRuns.length === 0 && (pastRuns?.length ?? 0) === 0
 
-  // Feed unificato: attività Strava + nuovi membri + insight (assemblato lato TS).
-  // In bacheca mostriamo al massimo 10 allenamenti; l'elenco completo, organizzato
-  // per atleta e con statistiche, vive in /crew/[id]/allenamenti.
+  // Feed della crew: nuovi ingressi (assemblato lato TS).
   const feed = buildCrewFeed({
-    activities: (activities ?? []) as unknown as FeedActivity[],
     members: (members ?? []) as unknown as FeedMember[],
-    maxActivities: 10,
   })
-  const hasActivities = (activities?.length ?? 0) > 0
 
   return (
     <>
@@ -450,14 +426,10 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* Feed unificato: attività Strava, nuovi membri, insight di gruppo.
+          {/* Feed: nuovi ingressi nella crew.
               Se la crew è vuota l'empty-state sopra basta: evita il doppio riquadro. */}
           {(feed.length > 0 || (isMember && !noRuns)) && (
-            <CrewFeed
-              items={feed}
-              isMember={!!isMember}
-              seeAllHref={hasActivities ? `/crew/${crew.slug ?? crew.id}/allenamenti` : undefined}
-            />
+            <CrewFeed items={feed} isMember={!!isMember} />
           )}
 
           </div>

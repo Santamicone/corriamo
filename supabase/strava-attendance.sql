@@ -1,6 +1,9 @@
 -- ============================================================
--- STRAVA — auto-conferma presenze + affidabilità partecipante (#32)
--- Eseguire dopo: reliability.sql (#18) e strava.sql (#29)
+-- AFFIDABILITÀ PARTECIPANTE (attendance_score) + origine conferme (#32)
+-- Eseguire dopo: reliability.sql (#18). NON dipende più da strava.sql.
+-- ⚠️ La parte "auto-conferma da Strava" descritta qui sotto NON è più attiva
+-- (integrazione staccata, vedi strava-detach.sql): resta l'attendance_score
+-- calcolato sulle conferme manuali.
 --
 -- Quando un'attività Strava di un utente combacia (orario/distanza/posizione)
 -- con una corsa a cui ha partecipato, il backend inserisce automaticamente una
@@ -14,11 +17,10 @@ ALTER TABLE public.run_confirmations
   ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'manual'
     CHECK (source IN ('manual', 'strava'));
 
--- 2. Coordinate di partenza dell'attività (corroborazione posizione;
---    NULL se l'utente ha privacy zone / dati nascosti su Strava)
-ALTER TABLE public.strava_activities
-  ADD COLUMN IF NOT EXISTS start_lat numeric,
-  ADD COLUMN IF NOT EXISTS start_lng numeric;
+-- 2. (RIMOSSO, 21/11/2026) Le colonne start_lat/start_lng su strava_activities
+--    non vanno più create: l'integrazione Strava è stata staccata (vedi
+--    strava-detach.sql). La conferma 'strava' non viene più generata; resta
+--    solo la conferma manuale, e la colonna `source` serve per l'audit.
 
 -- 3. Affidabilità come PARTECIPANTE (si presenta alle corse a cui si iscrive)
 ALTER TABLE public.profiles
