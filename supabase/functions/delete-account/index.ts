@@ -6,13 +6,13 @@
 //
 // Tutto ciò che è collegato all'utente sparisce con lui perché le tabelle sono
 // legate a `profiles` con ON DELETE CASCADE (corse, partecipazioni, messaggi,
-// recensioni, momenti, crew possedute, Strava, token push…). La funzione si
+// recensioni, momenti, crew possedute, token push…). La funzione si
 // occupa di ciò che la cascata NON copre o copre male:
 //   - rifiuta gli admin e chi possiede crew con altri membri attivi;
 //   - avvisa gli iscritti alle corse future (le notifiche NON sono legate alla
 //     corsa, altrimenti sparirebbero insieme alla corsa);
-//   - cancella i file dallo Storage (avatars, momenti, crew-covers);
-//   - prova a revocare l'accesso a Strava.
+//   - cancella i file dallo Storage (avatars, momenti, crew-covers).
+// (L'integrazione Strava è stata rimossa il 21/11/2026: niente più revoca token.)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
@@ -86,19 +86,6 @@ Deno.serve(async (req) => {
   await removeAll('avatars', uid)
   await removeAll('momenti', uid)
   for (const crewId of soloCrewIds) await removeAll('crew-covers', crewId)
-
-  // ── Strava: revoca (best effort, il token potrebbe essere scaduto) ──
-  try {
-    const { data: conn } = await admin.from('strava_connections').select('access_token').eq('user_id', uid).maybeSingle()
-    if (conn?.access_token) {
-      await fetch('https://www.strava.com/oauth/deauthorize', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${conn.access_token}` },
-      })
-    }
-  } catch (e) {
-    console.error('[delete-account] strava', e)
-  }
 
   // ── Avvisa gli iscritti alle corse future (approvati e in attesa) ──
   try {
