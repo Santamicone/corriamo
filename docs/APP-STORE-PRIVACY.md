@@ -10,7 +10,7 @@
 | Dato | Da dove nasce | Obbligatorio | Visibile ad altri utenti | Dove va |
 |---|---|---|---|---|
 | Email | Registrazione | Sì | No | Supabase (autenticazione) |
-| Password | Registrazione | Sì | No | Supabase (solo hash, mai in chiaro) |
+| Password | Registrazione | Sì | No | Supabase (solo hash, mai in chiaro). Assente per chi accede con Google/Facebook |
 | Nome e cognome | Registrazione | Sì | Sì | Supabase |
 | Città | Registrazione / Profilo | No | Sì | Supabase |
 | Età, livello, bio, "perché corri", personal best, link Strava/Garmin/Instagram | Profilo | No | Sì (profilo) | Supabase |

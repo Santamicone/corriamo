@@ -27,7 +27,7 @@ export default function PrivacyPage() {
 
           <Section title="2. Dati raccolti">
             <ul className="list-disc pl-5 flex flex-col gap-1.5">
-              <li><strong>Dati di registrazione:</strong> indirizzo email, nome e cognome</li>
+              <li><strong>Dati di registrazione:</strong> indirizzo email, nome e cognome. Se accedi con Google o Facebook riceviamo da loro nome, indirizzo email e l&apos;indirizzo della foto del tuo account (che non usiamo né mostriamo agli altri); non accediamo ad amici, contatti o altri dati e non pubblichiamo nulla per tuo conto</li>
               <li><strong>Dati di profilo (facoltativi):</strong> città, livello di corsa, età, foto profilo, link Strava/Garmin/Instagram, personal best, bio, motivazioni per cui corri</li>
               <li><strong>Dati sulle corse:</strong> luogo di ritrovo (con le sue coordinate geografiche, ricavate dall&apos;indirizzo che scrivi), data, orario e descrizione delle corse che crei o a cui partecipi; richieste di partecipazione, presenze e recensioni</li>
               <li><strong>Messaggi:</strong> contenuto delle chat delle corse e delle crew a cui partecipi</li>
@@ -62,6 +62,7 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-5 flex flex-col gap-1.5">
               <li><strong>Supabase</strong> (database e autenticazione) — USA, conforme GDPR</li>
               <li><strong>Vercel</strong> (hosting) — USA, conforme GDPR</li>
+              <li><strong>Google</strong> e <strong>Meta (Facebook)</strong> (solo se scegli di accedere con il loro account) — gestiscono la tua autenticazione secondo le proprie informative e ricevono l&apos;informazione che hai effettuato l&apos;accesso a Vieni a correre?</li>
               <li><strong>Expo</strong> (inoltro delle notifiche push all&apos;app) — riceve il codice del dispositivo e il testo della notifica</li>
               <li><strong>Resend</strong> (invio delle email) — riceve il tuo indirizzo email e il contenuto del messaggio</li>
               <li><strong>OpenStreetMap Nominatim</strong> (ricerca delle coordinate dei luoghi di ritrovo) — riceve soltanto l&apos;indirizzo che scrivi, non i tuoi dati personali</li>
