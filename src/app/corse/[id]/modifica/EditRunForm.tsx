@@ -191,31 +191,9 @@ export function EditRunForm({ run, approvedCount }: Props) {
 
     if (updateErr) { setError(updateErr.message); setLoading(false); return }
 
-    // Notifica partecipanti se cambiamenti importanti
-    if (hasImportantChanges() && approvedCount > 0) {
-      const { data: parts } = await supabase
-        .from('participations')
-        .select('user_id')
-        .eq('run_id', run.id)
-        .in('status', ['approvata', 'in_attesa'])
-
-      if (parts && parts.length > 0) {
-        const notifications = parts
-          .filter(p => p.user_id !== run.organizer_id)
-          .map(p => ({
-            user_id:  p.user_id,
-            type:     'corsa_modificata' as const,
-            title:    `"${form.title}" è stata modificata`,
-            body:     'L\'organizzatore ha aggiornato data, luogo o dettagli. Controlla le novità.',
-            run_id:   run.id,
-            actor_id: run.organizer_id,
-            read:     false,
-          }))
-        if (notifications.length > 0) {
-          await supabase.from('notifications').insert(notifications)
-        }
-      }
-    }
+    // Le notifiche "corsa modificata" ai partecipanti le crea il trigger DB
+    // `on_run_modified` (supabase/run-notifications.sql, SQL #44): da client
+    // l'INSERT su `notifications` è bloccato dalla policy "No direct insert".
 
     router.push(`/corse/${run.id}`)
     router.refresh()

@@ -224,6 +224,7 @@ export type NotificationType =
   | 'corsa_annullata'
   | 'corsa_modificata'
   | 'presenza_confermata'
+  | 'chat_corsa'
 
 export interface Notification {
   id: string

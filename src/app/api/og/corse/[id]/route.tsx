@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
 import { LEVEL_LABELS } from '@/lib/utils'
+import { fetchApprovedCounts } from '@/lib/runCounts'
 import { format, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
 
@@ -111,11 +112,8 @@ export async function GET(
     .single()
 
   // Conteggio iscritti approvati (leva sociale nello snippet)
-  const { count: approvedCount } = await supabase
-    .from('participations')
-    .select('id', { count: 'exact', head: true })
-    .eq('run_id', id)
-    .eq('status', 'approvata')
+  // (il client è anonimo: la RLS di participations darebbe sempre 0, serve la funzione)
+  const approvedCount = (await fetchApprovedCounts(supabase, [id])).get(id) ?? 0
 
   // Fallback se la corsa non esiste
   const title       = run?.title ?? 'Una corsa ti aspetta'

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { fetchApprovedCounts } from '@/lib/runCounts'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { PageContainer } from '@/components/PageContainer'
@@ -184,12 +185,10 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
       runs = runs.map(r => ({ ...r, my_participation: partMap.get(r.id) ?? null })) as Run[]
     }
 
-    // Conteggio partecipanti approvati — limitato alle sole corse visibili
+    // Conteggio partecipanti approvati — limitato alle sole corse visibili.
+    // Via funzione SECURITY DEFINER: la RLS mostrerebbe solo le righe proprie.
     if (runIds.length > 0) {
-      const { data: counts } = await supabase
-        .from('participations').select('run_id').eq('status', 'approvata').in('run_id', runIds)
-      const countMap = new Map<string, number>()
-      counts?.forEach(c => countMap.set(c.run_id, (countMap.get(c.run_id) ?? 0) + 1))
+      const countMap = await fetchApprovedCounts(supabase, runIds)
       runs = runs.map(r => ({ ...r, participants_count: countMap.get(r.id) ?? 0 })) as Run[]
     }
 

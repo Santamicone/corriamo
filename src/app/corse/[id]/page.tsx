@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { fetchApprovedCounts } from '@/lib/runCounts'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { PageContainer } from '@/components/PageContainer'
@@ -101,9 +102,8 @@ export default async function CorsaDetailPage({
   // ── Share landing (visitatori da link condiviso) ──
   // Carichiamo il minimo indispensabile e mostriamo la landing pulita
   if (isShareView && !user) {
-    const { data: parts } = await supabase
-      .from('participations').select('id').eq('run_id', id).eq('status', 'approvata')
-    return <ShareLanding run={typedRun as Run & { tags?: string[] }} approvedCount={parts?.length ?? 0} />
+    const counts = await fetchApprovedCounts(supabase, [id])
+    return <ShareLanding run={typedRun as Run & { tags?: string[] }} approvedCount={counts.get(id) ?? 0} />
   }
 
   const { data: participations } = await supabase
@@ -111,6 +111,9 @@ export default async function CorsaDetailPage({
     .eq('run_id', id).order('created_at')
 
   const approved = participations?.filter(p => p.status === 'approvata') ?? []
+  // La RLS mostra a un non-organizzatore solo la sua riga: il numero vero viene da
+  // una funzione SECURITY DEFINER (SQL #45). `approved` resta la lista visibile.
+  const approvedTotal = Math.max((await fetchApprovedCounts(supabase, [id])).get(id) ?? 0, approved.length)
   const pending  = participations?.filter(p => p.status === 'in_attesa') ?? []
 
   const myParticipation = user
@@ -362,7 +365,7 @@ export default async function CorsaDetailPage({
                   <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Chi corre</h2>
                   {typedRun.max_participants && (
                     <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full font-medium">
-                      {approved.length}/{typedRun.max_participants} posti
+                      {approvedTotal}/{typedRun.max_participants} posti
                     </span>
                   )}
                 </div>
@@ -453,7 +456,7 @@ export default async function CorsaDetailPage({
                   userId={user?.id ?? null}
                   myParticipation={myParticipation as Participation | null}
                   myInterest={myInterest}
-                  isFull={typedRun.max_participants !== null && approved.length >= typedRun.max_participants}
+                  isFull={typedRun.max_participants !== null && approvedTotal >= typedRun.max_participants}
                 />
               )}
 
@@ -490,7 +493,7 @@ export default async function CorsaDetailPage({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900">Bacheca del gruppo</p>
                     <p className="text-xs text-gray-400">
-                      {approved.length + 1} runner · {isPast ? 'storico disponibile' : 'coordinarsi prima della corsa'}
+                      {approvedTotal + 1} runner · {isPast ? 'storico disponibile' : 'coordinarsi prima della corsa'}
                     </p>
                   </div>
                   <span className="material-symbols-outlined text-gray-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all text-xl">

@@ -1,6 +1,8 @@
 # PROJECT_STATUS.md — Vieni a correre?
 
 > Documento di stato del progetto per il ripristino del contesto in una nuova sessione Claude Code.  
+> Aggiornato al: **novembre 2026** (stato al 06/11) — nasce l'**app mobile nativa** (repo separato privato `Santamicone/vieniacorrere-app`, Expo/React Native, stesso Supabase). Lato backend di questo repo: **push notification** (SQL **#41** `push-tokens.sql` ✅ applicato in produzione + Edge Function `send-push` ✅ pubblicata + cron `push-due-every-5min` ✅ attivo), **blocco utenti** (SQL **#42** `user-blocks.sql` ⏳ da applicare), **avviso email allo staff per ogni segnalazione** (SQL **#43** `report-alerts.sql` + Edge Function `notify-report` ⏳ da applicare/pubblicare), **eliminazione account** (Edge Function `delete-account` ⏳ da pubblicare) e nuova pagina pubblica **`/elimina-account`** (richiesta da Google Play, ⏳ da pubblicare). Il template email *Reset Password* contiene ora il codice `{{ .Token }}` per il recupero password dell'app (⏳ da incollare nel Dashboard). Bozza schede privacy e note per gli store in **`docs/APP-STORE-PRIVACY.md`**. Dettagli nelle sezioni 4, 6 e 9.
+>
 > Aggiornato al: **luglio 2026** — nuova **Integrazione Strava** (SQL #29–#31, in produzione): connessione OAuth per utente + **sincronizzazione automatica delle corse** via webhook, con **feed attività per le crew private** e opzione di visibilità **sul profilo pubblico** (opt-in). Backfill degli ultimi 30 giorni al primo collegamento. Card di collegamento in `/profilo/modifica` con due toggle indipendenti (crew / profilo pubblico). Dati mostrati: distanza, passo, tempo, dislivello, **frequenza cardiaca media**, link all'attività su Strava. Documentazione completa in **`docs/STRAVA.md`**.
 >
 > Aggiornato al: **luglio 2026** — allineamento stato reale: il ramo di sviluppo è stato **mergiato su `main`** (che ora è il branch attivo e gira in produzione) e le migrazioni **#27 `races-moderation.sql` e #28 `admin.sql` risultano APPLICATE in produzione** (verificate via query read-only sul DB: `profiles.is_admin`, `races.status`, `user_moderation`, `admin_actions`, `reports`, `admin_recovery_codes`, `runs.hidden_by_admin`, `profiles.moderation_status` tutte presenti). Completati anche: voce **Strumenti** nel menu Extra dell'Header e ripristino GPX Firenze (maratona completa).
@@ -120,6 +122,11 @@ STRAVA_WEBHOOK_VERIFY_TOKEN → ... ← stringa scelta da noi; deve combaciare t
 | 38 | `supabase/add-location-public-series.sql` | ✅ | Colonna `location_public boolean` su `series` (fix bug: mancava, creazione serie falliva) |
 | 39 | `supabase/add-series-status.sql` | ✅ | Colonna `status text` (`attiva`\|`in_pausa`) su `series` — pausa serie senza eliminarla |
 | 40 | `supabase/add-series-coorganizer.sql` | ✅ | Colonna `co_organizer_id uuid` su `series` + policy update estesa al co-organizzatore |
+| 41 | `supabase/push-tokens.sql` | ✅ (06/11/2026) | **Push dell'app mobile.** Tabella `push_tokens` (RLS: select/delete solo propri), RPC `register_push_token()` (SECURITY DEFINER: riassegna il token se lo stesso telefono cambia account), colonne `profiles.push_enabled` e `notifications.push_sent`, trigger `trg_push_immediate` (AFTER INSERT su `notifications` per i tipi con push e `show_after` già passato, chiama `send-push`), job pg_cron `push-due-every-5min` (promemoria con `show_after` scaduto, finestra 12 h). Richiede **Vault** con secret `push_function_secret`. Rollback: `push-tokens-rollback.sql`. Verificato end-to-end sul cron (risposta 200 della funzione); il trigger immediato e la consegna reale si provano con build + telefono. |
+| 42 | `supabase/user-blocks.sql` | ✅ applicato (21/11/2026) | **Blocco utenti** dell'app: tabella `user_blocks(blocker_id, blocked_id)` con RLS (ognuno vede/crea/toglie solo i propri blocchi). Il filtro è applicato dall'app (bacheca, chat, richieste, notifiche): NON ci sono policy sulle altre tabelle. Rollback: `user-blocks-rollback.sql`. |
+| 43 | `supabase/report-alerts.sql` | ✅ applicato (21/11/2026; invio email reale non ancora provato) | **Avviso staff sulle segnalazioni**: trigger `trg_report_alert` su `reports` → Edge Function `notify-report` (email via Resend a `STAFF_ALERT_EMAIL`, impostato su info@vieniacorrere.it). Riusa il secret Vault `push_function_secret`. Rollback: `report-alerts-rollback.sql`. |
+| 44 | `supabase/run-notifications.sql` | ✅ applicato e provato su iPhone (21/11/2026: modifica corsa, push chat, anti-spam; `send-push` ripubblicata) | **Fix notifiche**: (A) trigger `on_run_modified` su `runs` → `corsa_modificata` ai partecipanti (prima l'INSERT da client era bloccato da "No direct insert"; tolto da `EditRunForm` e dall'app); (B) trigger `on_run_chat_message` su `run_chat` → nuovo tipo `chat_corsa` con anti-spam (una notifica per corsa ogni 10 min, i messaggi successivi aggiornano la stessa → una sola push); `call_send_push()` ridefinita con `'chat_corsa'`; (C) `run_confirmations.user_id` default `auth.uid()`. Dopo: `supabase functions deploy send-push --project-ref wshjtgtmxbxhpdqtxpiq --no-verify-jwt --use-api`. Rollback: `run-notifications-rollback.sql`. |
+| 45 | `supabase/run-counts-reminders.sql` | ✅ applicato (21/11/2026; `send-immediate` ripubblicata, cron verificato: 200 `{"ok":true,"processed":0,...}`; invio reale di un promemoria non ancora provato) | **(A)** funzione `run_participant_counts(uuid[])` SECURITY DEFINER: numero di approvati per corsa (la RLS di `participations` nasconde le righe altrui → conteggi sbagliati per i non-organizzatori, sempre 0 per anon: landing condivisione e immagine OG). Usata da bacheca, dettaglio, landing, OG del sito e dall'app (`fetchApprovedCounts`, con ripiego sul conteggio diretto se la funzione manca). **(B)** cron `email-reminders-every-15min` → `send-immediate` `{"mode":"due"}` con header `x-push-secret` (Vault `push_function_secret`). La nuova `send-immediate` ignora le notifiche con `show_after` futuro (prima l'email `promemoria_corsa` partiva subito all'approvazione) e va pubblicata **prima** con `--no-verify-jwt --use-api` (si autentica col segreto o con la service role key del trigger). Rollback: `run-counts-reminders-rollback.sql`. Resta aperto: i nomi di "Chi ci sarà" restano visibili solo a organizzatore e partecipante (scelta di privacy da confermare); promemoria calcolato con `(date+time)::timestamptz` in UTC → arriva 1–2 h dopo le 24 h esatte |
 
 ### Schema tabelle aggiornato
 
@@ -133,7 +140,8 @@ profiles         id, full_name, city, level, pace_min, pace_max, bio,
                  strava_share_activities boolean (feed crew, default true),
                  strava_public_profile boolean (profilo pubblico, default false),
                  attendance_score numeric(5,2), attendance_eligible numeric(6,2),
-                 attendance_confirmed numeric(6,2)  (presenze partecipante)
+                 attendance_confirmed numeric(6,2)  (presenze partecipante),
+                 push_enabled boolean default true  (SQL #41 — interruttore push dell'app)
 
 runs             id, organizer_id, series_id, title, description, date, time,
                  location, city, lat, lng, distance_km, pace_target, level,
@@ -163,7 +171,8 @@ messages         id, run_id, sender_id, recipient_id, body, read_at
 reviews          id, run_id, reviewer_id, reviewed_id, rating (1-5), body,
                  UNIQUE(run_id, reviewer_id)
 
-notifications    id, user_id, type, title, body, run_id, actor_id, read, show_after
+notifications    id, user_id, type, title, body, run_id, actor_id, read, show_after,
+                 email_sent, push_sent boolean  (SQL #41 — push già inviata)
 
 momenti          id, run_id, author_id, photo_url, body, UNIQUE(run_id, author_id)
 
@@ -206,6 +215,13 @@ strava_activities   id, user_id, strava_activity_id (UNIQUE), name, distance_m,
                     activity_type ('Run'|'TrailRun'), start_date,
                     avg_pace_s_per_km, avg_heartrate_bpm, start_lat, start_lng, created_at
                     — feed calcolato a runtime (nessuna crew_id)
+
+push_tokens      id, user_id, token (UNIQUE, ExponentPushToken[…]), platform (ios|android),
+                 device_name, created_at, updated_at
+                 — SQL #41; si scrive SOLO via RPC register_push_token(); RLS select/delete propri
+
+user_blocks      blocker_id, blocked_id, created_at — PK(blocker_id, blocked_id)
+                 — SQL #42 ⏳; RLS: ognuno vede/crea/toglie solo i propri blocchi
 ```
 
 ### Storage bucket
@@ -213,7 +229,25 @@ strava_activities   id, user_id, strava_activity_id (UNIQUE), name, distance_m,
 - `momenti` — foto post-run
 - `crew-covers` — immagine di testata delle crew (scrittura ristretta agli owner/admin della crew)
 
+### Edge Functions, job pianificati e segreti
+Cartella `supabase/functions/`. Deploy con la CLI: `supabase functions deploy <nome> --project-ref wshjtgtmxbxhpdqtxpiq --use-api` (opzione `--use-api` = niente Docker; metti sempre `--project-ref` **in mezzo** ai flag, mai in fondo attaccato a un altro flag).
+
+| Funzione | Stato | Chiamata da | Verifica JWT | Note |
+|---|---|---|---|---|
+| `send-immediate` | ✅ | trigger `trg_email_immediate` | — | Email immediate (Resend) per approvata/annullata/modificata/promemoria |
+| `send-digest` | ✅ | cron `email-digest-every-30min` (job 1) | — | Digest di richieste/messaggi non letti |
+| `send-weekly-digest` | ✅ | cron `weekly-digest-monday` (job 3) | — | Digest settimanale geolocalizzato |
+| `send-push` | ✅ (06/11/2026) | trigger `trg_push_immediate` + cron `push-due-every-5min` (job 4) | **no** (`--no-verify-jwt`, si autentica con header `x-push-secret`) | Invia via Expo Push API, elimina i token `DeviceNotRegistered`. Tipi con push: richiesta_approvata/rifiutata, nuova_richiesta, corsa_annullata/modificata, promemoria_corsa, crew_join_request, crew_request_approved, crew_new_run, nuovo_messaggio. Esclusi broadcast staff e altre crew |
+| `notify-report` | ✅ (21/11/2026) | trigger `trg_report_alert` (SQL #43) | **no** (`x-push-secret`) | Email allo staff per ogni segnalazione |
+| `delete-account` | ✅ (21/11/2026; mai provata) | app mobile (`supabase.functions.invoke`) | **sì** (nessun `--no-verify-jwt`) | Elimina l'account di chi chiama. Rifiuta gli admin e chi possiede crew con altri membri attivi; scrive notifiche di annullamento **senza `run_id`** agli iscritti alle corse future (con `run_id` sparirebbero in cascata con la corsa); pulisce Storage (`avatars`, `momenti`, `crew-covers`); prova a revocare Strava; poi `auth.admin.deleteUser` (la cascata FK elimina il resto) |
+
+**Segreti.** Vault database: `push_function_secret` (letto dai trigger/cron). Secret delle funzioni: `PUSH_FUNCTION_SECRET` (**stesso valore** del Vault; verifica con `supabase secrets list`: l'impronta sha256 deve coincidere), `RESEND_API_KEY`, `STAFF_ALERT_EMAIL` (per `notify-report`), `EXPO_ACCESS_TOKEN` (facoltativo). **Non incollare mai il valore del segreto in chat/log:** se succede, rigenerarlo e aggiornare entrambi i posti (`vault.update_secret(...)` + `supabase secrets set`).
+
+**Job pg_cron attivi:** `email-digest-every-30min` (id 1), `weekly-digest-monday` (id 3), `push-due-every-5min` (id 4). Diagnostica: `cron.job_run_details` (esecuzioni) e `net._http_response` (risposte HTTP delle funzioni; filtrare per contenuto, es. `like '%processed%'` per le push).
+
 ### Configurazione Dashboard Supabase (manuale)
+- **Authentication → Email Templates → Reset Password:** usare `supabase/email-templates/reset-password.html` (contiene il codice `{{ .Token }}` per il recupero password dell'app mobile, oltre al pulsante per il sito) — ✅ incollato (21/11/2026); Redirect URLs verificati.
+- **Authentication → URL Configuration → Redirect URLs:** controllare che includa `https://app.vieniacorrere.it/**` (il link di conferma email dalla registrazione in app atterra su `/login`). Il vecchio `DASHBOARD-CONFIG.md` parla ancora di `corriamo.vercel.app`.
 - **Authentication → URL Configuration:** Site URL = `https://vieniacorrere.it`
 - **Authentication → MFA:** abilitare **TOTP** (necessario per la sezione admin — gate AAL2 su `/admin`)
 - **Database → Replication (via SQL):** Abilitare Realtime con:
@@ -323,6 +357,7 @@ src/
 │   │   ├── [slug]/page.tsx           Scheda gara + JSON-LD SportsEvent + "Chi ci va?"
 │   │   ├── proponi/                  Form segnalazione gara (auth → source='utente'/pending)
 │   │   └── modera/                   Moderazione admin (profiles.is_admin): Approva/Rifiuta
+│   ├── elimina-account/page.tsx      Pagina pubblica statica "Come eliminare l'account" (app o email, cosa si cancella) — URL per Google Play; ⏳ da pubblicare
 │   ├── api/og/corse/[id]/route.tsx
 │   ├── api/unsubscribe/route.ts      Unsubscribe email notifiche via token
 │   ├── api/tools/scheda-ritmi/route.ts  POST: invia scheda zone di passo via email (auth + ricalcolo server-side)
@@ -596,6 +631,17 @@ src/
 - [x] **Auto-conferma presenze** (SQL #32): il matcher puro `activityMatchesRun` (tempo −15/+45min, distanza ±20%, guardia posizione 2km) incrocia le attività con le corse partecipate; `autoConfirmAttendance()` inserisce `run_confirmations(source='strava')` + notifica. Alimenta reliability organizzatore **e** `attendance_score` partecipante. Badge **"Si presenta"** (≥1) / **"Sempre presente"** (≥3, ≥80%) nel profilo. Chiamato da webhook + backfill.
 - ✅ **SQL #29 `strava.sql`, #30 `strava-public-profile.sql`, #31 `strava-heartrate.sql` applicati in produzione; webhook registrato; 3 env `STRAVA_*` su Vercel** · #32 `strava-attendance.sql` ⏳ da applicare
 
+### App mobile (repo separato `vieniacorrere-app`) — in sviluppo, non ancora pubblicata
+> Expo SDK 57 + Expo Router + NativeWind, stesso progetto Supabase (nessun cambio schema salvo SQL #41–#43). Repo privato: https://github.com/Santamicone/vieniacorrere-app · progetto EAS `vieniacorrere` (bundle id `it.vieniacorrere.app`). Build di sviluppo iOS con EAS; push solo su telefono reale; account Apple Developer attivo, Android/Firebase da fare.
+- [x] Auth email/password (registrazione con nome e città, recupero password con **codice** via email, eliminazione account), tab Bacheca · Crew · Le mie corse · Notifiche · Profilo
+- [x] Bacheca con filtri, dettaglio corsa, partecipa/annulla/"Mi interessa", crea/modifica/annulla corsa (singola), gestione richieste dell'organizzatore
+- [x] Chat della corsa (Realtime), ritrovo a schermo colorato + check-in, conferma presenza, notifiche in-app con badge, **push** (permesso dopo la prima richiesta di partecipazione, interruttore nel Profilo)
+- [x] Profilo completo (foto: personaggi/colori/galleria su `avatars`), segnala corsa/messaggio, blocca utenti, privacy/termini/supporto, elimina account
+- [x] **Crew** (scritta il 21/11/2026, commit app `8049588`, **provata su iPhone il 21/11/2026: funziona**; chat corsa ritestata): tab Le mie / Scopri con ricerca (nome, città, zona), scheda crew (identità, statistiche, prossima uscita con **"Ci sono"** via RPC `crew_confirm_attendance`, bacheca del coach — la scrivono owner/admin —, corse programmate/effettuate, membri), **chat della crew** (`crew_chat`, Realtime, segnala/blocca, admin possono eliminare), **richieste di ingresso** (chiedi/ritira, owner/admin accettano o rifiutano), esci dalla crew. Query verificate in sola lettura sul DB reale. Chat corsa e chat crew condividono `ChatView` (**ritestare la chat corsa**). NON in app: creare/modificare/eliminare crew, link di invito, aggiungere/rimuovere membri (→ sito, link dalla schermata Gestisci), feed Strava, corse solo-crew da creare, push per la chat crew e per le notifiche crew (le notifiche `crew_*` non hanno `crew_id`: non aprono la crew). Le segnalazioni su `crew_chat` arrivano allo staff ma l'admin web non sa nasconderle (`ALLOWED` in `api/admin/content/hide`)
+- [ ] Mancano: serie ricorrenti e corsa spot, profili pubblici degli altri runner, recensioni/momenti, mappa
+- ⚠️ Tutto scritto e verificato con `tsc` + query in sola lettura sul DB reale. **Collaudo su iPhone (21/11/2026, build dev con push), OK:** login, creazione corsa, richiesta di partecipazione da un secondo account (notifica in-app + **push reale**), approvazione, chat in tempo reale. **Non ancora provati:** ritrovo/check-in (finestra −60/+30 min), conferma presenza, modifica/annulla, segnala/blocca, registrazione e reset password dall'app, foto profilo, elimina account (solo con account usa-e-getta). Nota: i messaggi di chat NON generano notifiche (manca trigger DB, vedi bug (d))
+- Dati noti ereditati dal sito: i conteggi "N partecipanti" per i non-organizzatori sono parziali (RLS `participations` mostra solo la propria riga; serve una funzione SECURITY DEFINER per i conteggi, vedi SQL #37 `run_going_roster`)
+
 ### UX
 - [x] Design system Tailwind v4: palette arancio/verde, Plus Jakarta Sans
 - [x] Homepage: hero video/img + "Perché Vieni a correre?" con foto fondatori
@@ -699,6 +745,15 @@ pagina lista/scheda con SEO, tool "gara ideale", ponte community via `runs.race_
 - **Backfill storico più profondo**: oggi 30 giorni al primo collegamento; valutare finestra maggiore o import on-demand
 - **Dati aggiuntivi**: cadenza, kudos, scarpe, split per km, mappa percorso (polyline) — alcuni richiedono colonne nuove e/o la chiamata di dettaglio per attività
 
+### App mobile — passaggi aperti (aggiornato 21/11/2026)
+> ✅ **Collaudo su iPhone chiuso il 21/11/2026 (dichiarato "funziona tutto")**: login, creazione/modifica corsa, richieste, push reali, chat, ritrovo, Crew, segnala (+ email staff), blocca, foto profilo, registrazione/reset password, elimina account (account usa-e-getta). Restano da fare i punti 2, 3 (Android), 5 qui sotto e le funzioni di Fase 4.
+
+1. ✅ Fatto il 21/11/2026: SQL #42 e #43 applicati, `delete-account` e `notify-report` pubblicate, `STAFF_ALERT_EMAIL` impostato, template *Reset Password* incollato. Resta da **provare** con un **account usa-e-getta** (l'eliminazione è irreversibile: mai con l'account principale) e da verificare l'email di una segnalazione reale.
+2. **Pubblicare il sito** (push su `main` → Vercel) per mettere online `/elimina-account`; aggiornare Privacy (token push, coordinate luoghi, sub-responsabili Expo/Resend/Nominatim/Strava, eliminazione dall'app, età minima, "analisi aggregata" senza strumenti) e Termini (la sez. 6 promette la cancellazione dal profilo web: **non esiste**, aggiungere il pulsante o correggere). Dettaglio in `docs/APP-STORE-PRIVACY.md`.
+3. Provare le **push** con la nuova build iOS (trigger immediato + consegna reale); `aps-environment` oggi `development`, da verificare nella build di produzione. Android: progetto Firebase + `google-services.json` + credenziali FCM v1 su EAS.
+4. **Bug/limiti del sito emersi dal lavoro sull'app** (da valutare): (a) le notifiche `corsa_modificata` che `EditRunForm` inserisce da client probabilmente falliscono per la policy "No direct insert" su `notifications` (fix pulito: trigger DB su UPDATE di `runs`); (b) il prompt "La corsa si è svolta?" fa upsert su `run_confirmations` senza `user_id` (colonna NOT NULL senza default nello SQL del repo); (c) l'email `promemoria_corsa` sembra partire all'INSERT anziché a `show_after`; (d) nessuna notifica per i messaggi di `run_chat`; (e) i conteggi partecipanti per i non-organizzatori (RLS).
+5. Account demo per i revisori Apple, screenshot e testi degli store, build di produzione, TestFlight / test interno Google Play.
+
 ### Bassa priorità / idee future
 12. **GPS condiviso durante la corsa** — tracker posizione in tempo reale per il gruppo
 13. **Backfill coordinate corse esistenti** — geocodificare le corse create prima della mappa
@@ -736,3 +791,5 @@ npm run build # verifica prima di push
 | Produzione | https://www.vieniacorrere.it |
 | Supabase Dashboard | https://supabase.com/dashboard/project/wshjtgtmxbxhpdqtxpiq |
 | Vercel Dashboard | https://vercel.com/santamicone/corriamo |
+| App mobile (repo privato) | https://github.com/Santamicone/vieniacorrere-app |
+| Progetto EAS (build app) | https://expo.dev/accounts/vieniacorrere/projects/vieniacorrere |

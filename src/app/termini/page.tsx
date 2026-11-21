@@ -16,7 +16,7 @@ export default function TerminiPage() {
       <main className="flex-1">
        <PageContainer width="form" className="py-12">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Termini di Servizio</h1>
-        <p className="text-sm text-gray-400 mb-10">Ultimo aggiornamento: giugno 2026</p>
+        <p className="text-sm text-gray-400 mb-10">Ultimo aggiornamento: novembre 2026</p>
 
         <div className="flex flex-col gap-8 text-sm text-gray-600 leading-relaxed">
 
@@ -25,11 +25,12 @@ export default function TerminiPage() {
           </Section>
 
           <Section title="2. Il servizio">
-            <p>Vieni a correre? è una piattaforma gratuita che consente ai runner di organizzare, trovare e partecipare a corse e allenamenti. Non siamo organizzatori delle corse: il rapporto è esclusivamente tra i runner che utilizzano la piattaforma.</p>
+            <p>Vieni a correre? è una piattaforma gratuita, disponibile come sito e come app mobile, che consente ai runner di organizzare, trovare e partecipare a corse e allenamenti. Non siamo organizzatori delle corse: il rapporto è esclusivamente tra i runner che utilizzano la piattaforma.</p>
           </Section>
 
           <Section title="3. Responsabilità dell'utente">
             <ul className="list-disc pl-5 flex flex-col gap-1.5">
+              <li>Per registrarti devi avere almeno 14 anni</li>
               <li>Le informazioni che inserisci (nome, luogo di ritrovo, orari) devono essere accurate e aggiornate</li>
               <li>Sei responsabile della sicurezza della tua password e del tuo account</li>
               <li>Non puoi usare la piattaforma per scopi commerciali, spam o attività illegali</li>
@@ -38,7 +39,8 @@ export default function TerminiPage() {
           </Section>
 
           <Section title="4. Contenuti">
-            <p>I contenuti che pubblichi (titoli corse, descrizioni, messaggi) rimangono di tua proprietà. Ci concedi una licenza per mostrarli agli altri utenti nell&apos;ambito del servizio. Non pubblicare contenuti offensivi, discriminatori o che violino diritti altrui.</p>
+            <p>I contenuti che pubblichi (titoli corse, descrizioni, messaggi) rimangono di tua proprietà. Ci concedi una licenza per mostrarli agli altri utenti nell&apos;ambito del servizio. Non pubblicare contenuti offensivi, discriminatori, molesti, minacciosi o illeciti, né che violino diritti altrui.</p>
+            <p>Puoi <strong>segnalare</strong> corse, messaggi e profili dal sito e dall&apos;app, e <strong>bloccare</strong> gli utenti con cui non vuoi interagire. Esaminiamo le segnalazioni, rimuoviamo i contenuti che violano questi termini e possiamo sospendere o bloccare gli account responsabili. Per qualsiasi problema puoi scrivere a <a href="mailto:info@vieniacorrere.it" className="text-primary hover:underline">info@vieniacorrere.it</a>.</p>
           </Section>
 
           <Section title="5. Limitazione di responsabilità">
@@ -46,7 +48,7 @@ export default function TerminiPage() {
           </Section>
 
           <Section title="6. Sospensione e cancellazione">
-            <p>Ci riserviamo il diritto di sospendere o cancellare account che violino i presenti termini, previo avviso ove possibile. Puoi cancellare il tuo account in qualsiasi momento dalla pagina del profilo.</p>
+            <p>Ci riserviamo il diritto di sospendere o cancellare account che violino i presenti termini, previo avviso ove possibile. Puoi cancellare il tuo account in qualsiasi momento dall&apos;app (Profilo → Elimina account) o seguendo le istruzioni su <a href="/elimina-account" className="text-primary hover:underline">/elimina-account</a>.</p>
           </Section>
 
           <Section title="7. Modifiche">

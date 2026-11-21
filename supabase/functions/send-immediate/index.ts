@@ -78,25 +78,11 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
   }
 }
 
-// ── Handler principale ────────────────────────────────────────────────────────
-Deno.serve(async (req) => {
-  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
-
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const supabaseUrl    = Deno.env.get('SUPABASE_URL')!
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey)
-
-  let notificationId: string
-  try {
-    const body = await req.json()
-    notificationId = body.notification_id
-    if (!notificationId) throw new Error('notification_id mancante')
-  } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 400 })
-  }
-
-  try {
+// ── Invio dell'email per UNA notifica ─────────────────────────────────────────
+// Ritorna un esito testuale ('sent' = email partita); gli errori vengono lanciati.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function processOne(supabase: any, serviceRoleKey: string, notificationId: string): Promise<string> {
+  {
     // Carica notifica + utente + actor + run
     const { data: notif, error: ne } = await supabase
       .from('notifications')
@@ -110,7 +96,12 @@ Deno.serve(async (req) => {
       .single()
 
     if (ne || !notif) throw new Error(`Notifica non trovata: ${ne?.message}`)
-    if (notif.email_sent) return new Response('already_sent', { status: 200 })
+    if (notif.email_sent) return 'already_sent'
+
+    // I promemoria hanno show_after nel futuro (24h prima della corsa): l'email
+    // parte solo quando scade, ci pensa il cron (SQL #45, modalità "due").
+    // Senza questo controllo partiva subito, al momento dell'approvazione.
+    if (notif.show_after && new Date(notif.show_after) > new Date()) return 'not_due_yet'
 
     const user     = notif.user as { id: string; full_name: string; email_prefs: Record<string, boolean> }
     const actor    = notif.actor as { full_name: string } | null
@@ -126,7 +117,7 @@ Deno.serve(async (req) => {
     }
     const prefKey = needsPref[notif.type]
     if (prefKey && !prefs[prefKey]) {
-      return new Response('email_disabled_by_user', { status: 200 })
+      return 'email_disabled_by_user'
     }
 
     // Recupera email utente da auth.users
@@ -196,7 +187,7 @@ Deno.serve(async (req) => {
       `, unsubUrl)
 
     } else {
-      return new Response('type_not_handled', { status: 200 })
+      return 'type_not_handled'
     }
 
     await sendEmail(toEmail, subject, html)
@@ -206,8 +197,83 @@ Deno.serve(async (req) => {
       .update({ email_sent: true })
       .eq('id', notificationId)
 
-    return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    return 'sent'
+  }
+}
 
+// ── Handler principale ────────────────────────────────────────────────────────
+// Chiamata da:
+//   - trigger trg_email_immediate (SQL email-triggers.sql) → { "notification_id": "<uuid>" }
+//     con "Authorization: Bearer <service role key>"
+//   - cron email-reminders-every-15min (SQL #45)           → { "mode": "due" }
+//     con l'header "x-push-secret"
+// Pubblicare con --no-verify-jwt: l'autenticazione la fa questa funzione (sotto).
+const DUE_WINDOW_HOURS = 12   // mai email di promemoria scaduti da più di così
+const DUE_BATCH        = 100
+
+Deno.serve(async (req) => {
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
+
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabaseUrl    = Deno.env.get('SUPABASE_URL')!
+
+  // Autenticazione: il segreto condiviso (cron) oppure la service role key (trigger)
+  const secret = Deno.env.get('PUSH_FUNCTION_SECRET')
+  const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+  const authorized =
+    (!!secret && req.headers.get('x-push-secret') === secret) ||
+    (!!serviceRoleKey && bearer === serviceRoleKey)
+  if (!authorized) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 })
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+  let body: { notification_id?: string; mode?: string }
+  try {
+    body = await req.json()
+  } catch (e) {
+    return new Response(JSON.stringify({ error: String(e) }), { status: 400 })
+  }
+
+  // Promemoria scaduti e non ancora inviati (cron ogni 15 minuti)
+  if (body.mode === 'due') {
+    const now   = new Date()
+    const since = new Date(now.getTime() - DUE_WINDOW_HOURS * 3_600_000)
+    const { data: due, error } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('type', 'promemoria_corsa')
+      .eq('email_sent', false)
+      .lte('show_after', now.toISOString())
+      .gt('show_after', since.toISOString())
+      .order('show_after', { ascending: true })
+      .limit(DUE_BATCH)
+    if (error) {
+      console.error('[send-immediate] due', error)
+      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    }
+
+    let sent = 0, skipped = 0, failed = 0
+    for (const n of due ?? []) {
+      try {
+        const outcome = await processOne(supabase, serviceRoleKey, n.id as string)
+        if (outcome === 'sent') sent++; else skipped++
+      } catch (err) {
+        failed++
+        console.error('[send-immediate] due item', n.id, err)
+      }
+    }
+    return new Response(JSON.stringify({ ok: true, processed: (due ?? []).length, sent, skipped, failed }), { status: 200 })
+  }
+
+  const notificationId = body.notification_id
+  if (!notificationId) {
+    return new Response(JSON.stringify({ error: 'notification_id mancante' }), { status: 400 })
+  }
+
+  try {
+    const outcome = await processOne(supabase, serviceRoleKey, notificationId)
+    if (outcome === 'sent') return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    return new Response(outcome, { status: 200 })
   } catch (err) {
     console.error('[send-immediate]', err)
     return new Response(JSON.stringify({ error: String(err) }), { status: 500 })
