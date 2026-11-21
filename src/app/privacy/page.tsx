@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <div className="prose prose-gray max-w-none text-gray-600 text-sm leading-relaxed flex flex-col gap-8">
 
           <Section title="1. Titolare del trattamento">
-            <p>Il titolare del trattamento dei dati è il gestore di <strong>Vieni a correre?</strong> (vieniacorrere.it). Per qualsiasi richiesta relativa ai dati personali puoi scrivere a: <a href="mailto:privacy@vieniacorrere.it" className="text-primary hover:underline">privacy@vieniacorrere.it</a></p>
+            <p>Il titolare del trattamento dei dati è il gestore di <strong>Vieni a correre?</strong> (vieniacorrere.it). Per qualsiasi richiesta relativa ai dati personali puoi scrivere a: <a href="mailto:info@vieniacorrere.it" className="text-primary hover:underline">info@vieniacorrere.it</a></p>
             <p>Questa informativa vale per il sito e per l&apos;app mobile.</p>
           </Section>
 
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="5. Conservazione dei dati">
-            <p>I dati vengono conservati per tutta la durata dell&apos;account. Puoi eliminarlo in qualsiasi momento dall&apos;app (Profilo → Elimina account): l&apos;account e i dati collegati vengono cancellati subito. In alternativa scrivi a privacy@vieniacorrere.it e li cancelliamo entro 30 giorni dalla richiesta; le istruzioni sono anche su <a href="/elimina-account" className="text-primary hover:underline">/elimina-account</a>. I log tecnici sono conservati per 90 giorni.</p>
+            <p>I dati vengono conservati per tutta la durata dell&apos;account. Puoi eliminarlo in qualsiasi momento dall&apos;app (Profilo → Elimina account): l&apos;account e i dati collegati vengono cancellati subito. In alternativa scrivi a info@vieniacorrere.it e li cancelliamo entro 30 giorni dalla richiesta; le istruzioni sono anche su <a href="/elimina-account" className="text-primary hover:underline">/elimina-account</a>. I log tecnici sono conservati per 90 giorni.</p>
           </Section>
 
           <Section title="6. Condivisione con terze parti">
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="7. I tuoi diritti">
-            <p>Hai diritto di: accedere ai tuoi dati, correggerli, cancellarli, limitarne il trattamento, portarli in altro formato. Puoi esercitare questi diritti scrivendo a <a href="mailto:privacy@vieniacorrere.it" className="text-primary hover:underline">privacy@vieniacorrere.it</a>. Puoi correggere i dati del profilo e cancellare l&apos;account anche direttamente dall&apos;app.</p>
+            <p>Hai diritto di: accedere ai tuoi dati, correggerli, cancellarli, limitarne il trattamento, portarli in altro formato. Puoi esercitare questi diritti scrivendo a <a href="mailto:info@vieniacorrere.it" className="text-primary hover:underline">info@vieniacorrere.it</a>. Puoi correggere i dati del profilo e cancellare l&apos;account anche direttamente dall&apos;app.</p>
           </Section>
 
           <Section title="8. Cookie">
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="9. Età minima">
-            <p>Per registrarti devi avere almeno <strong>14 anni</strong>. Non raccogliamo consapevolmente dati di persone più giovani: se veniamo a saperlo, eliminiamo l&apos;account. Se pensi che sia successo, scrivi a <a href="mailto:privacy@vieniacorrere.it" className="text-primary hover:underline">privacy@vieniacorrere.it</a>.</p>
+            <p>Per registrarti devi avere almeno <strong>14 anni</strong>. Non raccogliamo consapevolmente dati di persone più giovani: se veniamo a saperlo, eliminiamo l&apos;account. Se pensi che sia successo, scrivi a <a href="mailto:info@vieniacorrere.it" className="text-primary hover:underline">info@vieniacorrere.it</a>.</p>
           </Section>
 
         </div>

@@ -32,7 +32,7 @@ export default function EliminaAccountPage() {
 
           <Section title="Senza l'app (entro 30 giorni)">
             <p>
-              Scrivi a <a href="mailto:privacy@vieniacorrere.it?subject=Eliminazione%20account" className="text-primary hover:underline">privacy@vieniacorrere.it</a> con
+              Scrivi a <a href="mailto:info@vieniacorrere.it?subject=Eliminazione%20account" className="text-primary hover:underline">info@vieniacorrere.it</a> con
               oggetto <strong>&quot;Eliminazione account&quot;</strong>, dall&apos;indirizzo email con cui sei registrato. Cancelliamo l&apos;account e i dati collegati entro 30 giorni dalla richiesta.
             </p>
           </Section>
