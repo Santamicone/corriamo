@@ -23,6 +23,7 @@ export function Footer() {
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
             {[
               { href: '/bacheca',  label: 'Bacheca' },
+              { href: '/app',      label: "Scarica l'app" },
               { href: '/privacy',  label: 'Privacy Policy' },
               { href: '/termini',  label: 'Termini di Servizio' },
               { href: 'mailto:info@vieniacorrere.it', label: 'Contatti' },

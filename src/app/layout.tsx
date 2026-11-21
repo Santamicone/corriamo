@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { InstallPrompt } from '@/components/InstallPrompt'
+import { APP_STORE_ID } from '@/lib/appStore'
 
 const SITE_URL = 'https://www.vieniacorrere.it' // sito editoriale (magazine)
 const APP_URL = 'https://app.vieniacorrere.it' // questa web-app / PWA
@@ -45,11 +45,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: APP_URL,
   },
-  appleWebApp: {
-    capable: true,
-    title: SITE_NAME,
-    statusBarStyle: 'default',
-  },
+  // Smart App Banner di Safari iOS: propone l'app nativa (non più l'installazione come web app)
+  itunes: { appId: APP_STORE_ID },
   icons: {
     icon: [
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -93,7 +90,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-background flex flex-col">
         {children}
-        <InstallPrompt />
       </body>
     </html>
   )

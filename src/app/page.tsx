@@ -92,6 +92,11 @@ function HeroSection() {
               <span className="material-symbols-filled text-red-400 text-base shrink-0 mt-0.5">favorite</span>
               <span>Niente classifiche, nessuna competizione. Solo appuntamenti chiari per correre insieme.</span>
             </div>
+
+            <Link href="/app" className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+              <span className="material-symbols-outlined text-lg">smartphone</span>
+              Scarica l&apos;app per iPhone
+            </Link>
           </div>
 
           {/* Card corsa */}

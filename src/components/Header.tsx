@@ -79,6 +79,7 @@ const proposeLinks = [
 /* Menu "? Aiuto" — Come funziona + rimando al magazine editoriale */
 const helpLinks = [
   { href: '/come-funziona',               label: 'Come funziona', icon: 'help_outline', external: false },
+  { href: '/app',                         label: "Scarica l'app", icon: 'smartphone',   external: false },
   { href: 'https://www.vieniacorrere.it', label: 'VaC Magazine',  icon: 'open_in_new',  external: true  },
 ]
 
