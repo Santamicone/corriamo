@@ -45,7 +45,7 @@ export default function EliminaAccountPage() {
               <li>Il tuo profilo: nome, email, città, età, foto, bio, personal best e link.</li>
               <li>Le corse e le serie che hai organizzato, con i relativi momenti. Gli iscritti alle corse future ricevono un avviso di annullamento.</li>
               <li>Le tue richieste e partecipazioni, i messaggi, le recensioni e i momenti (foto) che hai pubblicato.</li>
-              <li>Le tue preferenze, i dispositivi registrati per le notifiche e, se l&apos;avevi collegato, il collegamento con Strava e le attività importate.</li>
+              <li>Le tue preferenze, i dispositivi registrati per le notifiche e le richieste &quot;Avvisami&quot; sulle crew.</li>
             </ul>
           </Section>
 
@@ -60,7 +60,6 @@ export default function EliminaAccountPage() {
             <ul className="list-disc pl-5 flex flex-col gap-1.5">
               <li>L&apos;eliminazione è <strong>definitiva</strong>: non possiamo recuperare i dati.</li>
               <li>Se sei proprietario di una <strong>crew con altri membri</strong>, trasferiscila o eliminala prima: l&apos;app non ti permette di procedere finché è così.</li>
-              <li>Se hai collegato <strong>Strava</strong>, revoca anche l&apos;accesso dalle impostazioni di Strava.</li>
             </ul>
           </Section>
 

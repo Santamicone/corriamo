@@ -4,14 +4,18 @@
 > sono dichiarazioni del titolare del trattamento: leggi ogni riga e correggi ciò che non corrisponde
 > alla realtà. Compilata il 06/11/2026 sulla base del codice dell'app mobile (`vieniacorrere-app`)
 > e dello schema del database. Le righe marcate **DA DECIDERE** richiedono una tua scelta.
+>
+> **Aggiornata il 22/11/2026 per la versione 1.1.0:** accesso con Apple/Google/Facebook, mappa delle crew e
+> "Avvisami"; **Fitness rimosso** (Strava staccato e dati cancellati con SQL #47, confermato applicato).
 
 ## 1. Inventario: cosa raccoglie davvero l'app
 
 | Dato | Da dove nasce | Obbligatorio | Visibile ad altri utenti | Dove va |
 |---|---|---|---|---|
-| Email | Registrazione | Sì | No | Supabase (autenticazione) |
+| Email | Registrazione, o accesso con Apple/Google/Facebook | Sì | No | Supabase (autenticazione). Con "Nascondi la mia email" di Apple è un indirizzo di inoltro `@privaterelay.appleid.com` |
 | Password | Registrazione | Sì | No | Supabase (solo hash, mai in chiaro). Assente per chi accede con Google/Facebook |
-| Nome e cognome | Registrazione | Sì | Sì | Supabase |
+| Nome e cognome | Registrazione, o accesso con Apple (solo se l'utente lo condivide)/Google/Facebook | Sì | Sì | Supabase |
+| Foto dell'account Google/Facebook | Accesso con Google/Facebook | No | No | Riceviamo il link, non lo usiamo né lo mostriamo |
 | Città | Registrazione / Profilo | No | Sì | Supabase |
 | Età, livello, bio, "perché corri", personal best, link Strava/Garmin/Instagram | Profilo | No | Sì (profilo) | Supabase |
 | Foto profilo | Profilo (galleria del telefono) | No | Sì | Supabase Storage |
@@ -22,6 +26,7 @@
 | Presenza ("Sono qui", conferma della corsa) | Ritrovo | — | Ai partecipanti (conteggio) | Supabase |
 | Token per le notifiche push | Permesso notifiche | No | No | Supabase; relay tramite Expo Push Service (Apple/Google) |
 | Identificativo utente | Account | Sì | No | Supabase |
+| "Avvisami" su una crew non ancora presente | Scheda informativa | No | No (agli altri solo il numero, da 5 persone in su) | Supabase (`crew_interests`) |
 
 **Cosa l'app NON fa:** non legge la posizione GPS del telefono, non usa fotocamera né microfono, non
 legge i contatti, non include SDK di analisi, pubblicità o rilevazione crash, non mostra pubblicità,
@@ -51,7 +56,7 @@ Per ogni dato qui sotto la risposta è: *raccolto*, *collegato all'identità del
 | Location | Precise Location | No (nessun accesso al GPS) | — |
 | Usage Data | Other Usage Data | **Consigliato** — i punteggi di affidabilità/presenza derivano dall'attività dell'utente | App Functionality |
 | Usage Data | Product Interaction / Advertising Data | No | — |
-| Health & Fitness | Fitness | **Sì, facoltativo** (deciso il 21/11/2026) — vedi nota B | App Functionality |
+| Health & Fitness | Fitness | **No dalla 1.1** (era facoltativo): **da togliere in App Store Connect** — vedi nota B | — |
 | Diagnostics | Crash / Performance / Other | No (nessun SDK) | — |
 | Sensitive Info, Financial Info, Contacts, Browsing History, Search History, Purchases | — | No | — |
 
@@ -63,12 +68,16 @@ dichiarare **Coarse Location**, collegata all'utente, per App Functionality.
 **sito**, non dall'app. Se in futuro l'app lo offrirà, o se vuoi essere cautelativo perché lo stesso
 account contiene quei dati, dichiara **Fitness** come dato *facoltativo*.
 
-> ⚠️ **Aggiornamento 21/11/2026:** l'integrazione Strava è stata staccata dal sito (vedi `docs/STRAVA.md`). Dopo aver applicato `supabase/strava-detach.sql` **non si raccolgono più dati Fitness**: la voce Fitness in App Store Connect si potrà togliere e Strava non è più un sub-responsabile. Non toccarla finché i dati non sono stati cancellati; le frasi di Privacy/Termini vanno riviste da una persona (riga "Strava (facoltativo)" e sub-responsabili in `src/app/privacy`, pagina `/elimina-account`).
+> ✅ **Aggiornamento 22/11/2026:** l'integrazione Strava è stata staccata dal sito (vedi `docs/STRAVA.md`) e i dati sono stati cancellati (SQL #47 applicato). **Non si raccolgono più dati Fitness**: in App Store Connect e in Play Console la voce Fitness va **tolta** quando si invia la 1.1 (i dati dichiarati devono corrispondere a ciò che l'app fa nella versione inviata). Le righe su Strava sono state tolte da `src/app/privacy` e `src/app/elimina-account`; il campo "Profilo Strava" del profilo resta un semplice link scelto dall'utente.
 
 **Nota C (email di riepilogo).** Il digest settimanale delle corse vicine è una comunicazione del
 servizio con disattivazione dalle preferenze. Se lo consideri promozionale, aggiungi per *Email
 Address* anche la finalità **Developer's Advertising or Marketing**. **Deciso il 21/11/2026: lo
 trattiamo come comunicazione di servizio, NON marketing** (nessuna finalità aggiuntiva).
+
+**Accesso con Apple, Google e Facebook (1.1).** Non cambiano le categorie dichiarate: nome ed email erano già "Contact Info". Apple e Google/Facebook ricevono solo l'informazione che l'utente ha effettuato l'accesso. L'app non legge amici, contatti o altri dati degli account e non pubblica nulla per conto dell'utente. Offrendo accessi di terze parti, l'app offre anche "Accedi con Apple" (linea guida 4.8).
+
+**Mappa delle crew e "Avvisami" (1.1).** La mappa non usa la posizione del telefono. I pin sono arrotondati e le schede informative contengono dati pubblici di organizzazioni, non di persone. "Avvisami" salva solo l'identificativo dell'utente e la crew scelta: rientra in *User ID* e in *Other User Content* già dichiarati, per App Functionality.
 
 **Eliminazione dati:** l'utente può eliminare account e dati **dall'app** (Profilo → Elimina account) e
 dalla pagina `https://app.vieniacorrere.it/elimina-account`.
@@ -85,7 +94,7 @@ dalla pagina `https://app.vieniacorrere.it/elimina-account`.
 | Messages | Other in-app messages | Sì | No | No | Funzionalità dell'app |
 | App activity | Other user-generated content | Sì | No | No | Funzionalità dell'app |
 | Device or other IDs | Device or other IDs | Sì (token push) | No | Sì | Funzionalità dell'app |
-| Health and fitness | Fitness info | **Sì, facoltativo** (deciso il 21/11/2026, nota B) | No | Sì | Funzionalità dell'app |
+| Health and fitness | Fitness info | **No dalla 1.1**: da togliere in Play Console (nota B) | — | — | — |
 
 - **"Condiviso"**: *No*. Supabase, Expo, Resend e Vercel agiscono come fornitori per tuo conto e, per le regole di Google, non contano come condivisione. OpenStreetMap Nominatim riceve solo l'indirizzo dei luoghi di ritrovo scritto dall'utente.
 - **Dati cifrati in transito**: *Sì* (HTTPS).
@@ -113,17 +122,19 @@ dalla pagina `https://app.vieniacorrere.it/elimina-account`.
 ## 6. Note per i revisori Apple (da incollare in "App Review Information")
 
 > Vieni a correre? è una community di runner: si propongono corse, si chiede di partecipare e si
-> chatta con il gruppo di una corsa. Per usarla serve un account (email e password); allego un
-> account di prova.
+> chatta con il gruppo di una corsa. Per usarla serve un account (email e password, oppure Accedi con
+> Apple, Google o Facebook); allego un account di prova.
 >
-> **Account di prova:** `<EMAIL DEMO>` / `<PASSWORD DEMO>`
+> **Account di prova:** quello già salvato nella scheda dell'app in App Store Connect (`info@vieniacorrere.it`; la password sta solo lì).
 >
 > **Contenuti degli utenti — come li gestiamo:**
 > - *Segnalare*: nel dettaglio di una corsa "Segnala questa corsa"; nella chat, pressione lunga su un messaggio altrui → "Segnala messaggio". Le segnalazioni arrivano via email al nostro staff e si gestiscono entro 24 ore dalla sezione amministrazione.
 > - *Bloccare*: "Blocca l'organizzatore" nel dettaglio corsa, o pressione lunga su un messaggio → "Blocca". L'elenco è in Profilo → Utenti bloccati.
-> - *Eliminare l'account*: Profilo → Elimina account (richiede la password).
+> - *Eliminare l'account*: Profilo → Elimina account (richiede la password; chi è entrato con Apple, Google o Facebook scrive ELIMINA e, con Apple, ripete l'accesso per revocare il collegamento).
 > - I Termini vietano contenuti offensivi, discriminatori o illeciti; lo staff può sospendere o bannare gli account.
 > - Supporto: info@vieniacorrere.it.
+>
+> **Mappa delle crew** (tab Crew → Mappa): non usa la posizione del dispositivo. I pin grigi sono schede informative di running club, create dalla redazione da informazioni già pubbliche; non hanno membri né chat e hanno il link per segnalare errori o chiedere la rimozione.
 >
 > **Permessi:** foto (solo per scegliere l'immagine del profilo, con il selettore di sistema) e notifiche. L'app non usa la posizione del dispositivo, non ha acquisti né pubblicità.
 
@@ -133,7 +144,7 @@ dalla pagina `https://app.vieniacorrere.it/elimina-account`.
 
 **Privacy Policy** (`src/app/privacy/page.tsx`, ultimo aggiornamento "giugno 2026"):
 - Elenco dati: aggiungere i **token per le notifiche push**, le **coordinate dei luoghi di ritrovo** e i dati di **segnalazioni e blocchi**.
-- Sub-responsabili: oggi solo Supabase e Vercel. Aggiungere **Expo** (relay delle push), **Resend** (email), **OpenStreetMap Nominatim** (ricerca indirizzi) e, per chi la usa, **Strava**.
+- Sub-responsabili: oggi solo Supabase e Vercel. Aggiungere **Expo** (relay delle push), **Resend** (email), **OpenStreetMap Nominatim** (ricerca indirizzi) e, per chi accede con il loro account, **Apple, Google e Meta**. (**Strava** tolto il 22/11/2026.)
 - Sezione 5/7: citare che l'account si elimina **anche dall'app** (Profilo → Elimina account) e dalla pagina `/elimina-account`.
 - Sezione 3: parla di "analisi aggregata dell'utilizzo": se non c'è alcuno strumento di analisi, conviene chiarirlo o toglierla, per coerenza con la scheda privacy.
 - **Età minima**: né la Privacy né i Termini indicano un'età minima per registrarsi. Gli store la chiedono: fai valutare quale indicare (per il consenso digitale in Italia la soglia è 14 anni).

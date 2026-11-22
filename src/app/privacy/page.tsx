@@ -27,13 +27,14 @@ export default function PrivacyPage() {
 
           <Section title="2. Dati raccolti">
             <ul className="list-disc pl-5 flex flex-col gap-1.5">
-              <li><strong>Dati di registrazione:</strong> indirizzo email, nome e cognome. Se accedi con Google o Facebook riceviamo da loro nome, indirizzo email e l&apos;indirizzo della foto del tuo account (che non usiamo né mostriamo agli altri); non accediamo ad amici, contatti o altri dati e non pubblichiamo nulla per tuo conto</li>
+              <li><strong>Dati di registrazione:</strong> indirizzo email, nome e cognome. Se accedi con Google o Facebook riceviamo da loro nome, indirizzo email e l&apos;indirizzo della foto del tuo account (che non usiamo né mostriamo agli altri); non accediamo ad amici, contatti o altri dati e non pubblichiamo nulla per tuo conto. Se accedi con Apple riceviamo il nome (solo se scegli di condividerlo) e l&apos;indirizzo email, anche quello di inoltro che Apple ti permette di usare al posto del tuo</li>
               <li><strong>Dati di profilo (facoltativi):</strong> città, livello di corsa, età, foto profilo, link Strava/Garmin/Instagram, personal best, bio, motivazioni per cui corri</li>
               <li><strong>Dati sulle corse:</strong> luogo di ritrovo (con le sue coordinate geografiche, ricavate dall&apos;indirizzo che scrivi), data, orario e descrizione delle corse che crei o a cui partecipi; richieste di partecipazione, presenze e recensioni</li>
               <li><strong>Messaggi:</strong> contenuto delle chat delle corse e delle crew a cui partecipi</li>
               <li><strong>Segnalazioni e blocchi:</strong> le segnalazioni che invii e gli utenti che blocchi (i blocchi sono visibili solo a te)</li>
               <li><strong>Notifiche push (app):</strong> il codice identificativo del dispositivo, se attivi le notifiche, per poterle inviare</li>
-              <li><strong>Strava (facoltativo):</strong> se colleghi il tuo account, distanza, passo, durata, dislivello e frequenza cardiaca delle attività importate; sono visibili agli altri solo se scegli di renderle pubbliche sul profilo o di condividerle con le tue crew private</li>
+              <li><strong>Crew non ancora presenti (&quot;Avvisami&quot;):</strong> se chiedi di essere avvisato quando una crew arriva su Vieni a correre?, salviamo solo il tuo identificativo e la crew scelta; agli altri mostriamo al massimo il numero di persone in attesa, mai chi sono</li>
+              <li><strong>Schede informative delle crew:</strong> per i running club che non sono ancora su Vieni a correre pubblichiamo informazioni già pubbliche dell&apos;organizzazione (nome, città, luogo e orari di ritrovo, sito, Instagram, logo). Non contengono dati di singole persone; l&apos;eventuale email di contatto dell&apos;organizzazione non viene pubblicata. Per correggerle o farle rimuovere scrivi a info@vieniacorrere.it</li>
               <li><strong>Dati tecnici:</strong> indirizzo IP, tipo di browser, log di accesso (raccolti automaticamente da Vercel e Supabase)</li>
             </ul>
             <p>L&apos;app non legge la posizione GPS del telefono e non usa fotocamera, microfono né rubrica. Per scegliere la foto del profilo usa il selettore di immagini del sistema.</p>
@@ -62,11 +63,10 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-5 flex flex-col gap-1.5">
               <li><strong>Supabase</strong> (database e autenticazione) — USA, conforme GDPR</li>
               <li><strong>Vercel</strong> (hosting) — USA, conforme GDPR</li>
-              <li><strong>Google</strong> e <strong>Meta (Facebook)</strong> (solo se scegli di accedere con il loro account) — gestiscono la tua autenticazione secondo le proprie informative e ricevono l&apos;informazione che hai effettuato l&apos;accesso a Vieni a correre?</li>
+              <li><strong>Apple</strong>, <strong>Google</strong> e <strong>Meta (Facebook)</strong> (solo se scegli di accedere con il loro account) — gestiscono la tua autenticazione secondo le proprie informative e ricevono l&apos;informazione che hai effettuato l&apos;accesso a Vieni a correre?</li>
               <li><strong>Expo</strong> (inoltro delle notifiche push all&apos;app) — riceve il codice del dispositivo e il testo della notifica</li>
               <li><strong>Resend</strong> (invio delle email) — riceve il tuo indirizzo email e il contenuto del messaggio</li>
               <li><strong>OpenStreetMap Nominatim</strong> (ricerca delle coordinate dei luoghi di ritrovo) — riceve soltanto l&apos;indirizzo che scrivi, non i tuoi dati personali</li>
-              <li><strong>Strava</strong> (solo se colleghi il tuo account)</li>
             </ul>
             <p>Alcune informazioni del profilo (nome, città, livello, corse organizzate) sono pubblicamente visibili agli altri utenti della piattaforma.</p>
           </Section>
