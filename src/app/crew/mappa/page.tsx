@@ -39,7 +39,7 @@ export default async function CrewMapPage() {
               <div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">Mappa delle crew</h1>
                 <p className="mt-2 text-lg text-gray-500">
-                  Running club e gruppi di corsa in Italia, con il loro ritrovo.
+                  Running club e gruppi di corsa in Italia.
                 </p>
               </div>
               <Link href="/crew/nuova"

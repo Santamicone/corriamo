@@ -71,7 +71,7 @@ export default async function CrewHubPage({ searchParams }: { searchParams: Prom
               <div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">Crew</h1>
                 <p className="mt-2 text-lg text-gray-500">
-                  Gruppi stabili di runner: allenamenti fissi, corse riservate, coordinamento facile.
+                  Correre in gruppo è la cosa più bella del mondo, cerca una crew, allaccia le scarpe e parti!
                 </p>
               </div>
               <Link href="/crew/nuova"
