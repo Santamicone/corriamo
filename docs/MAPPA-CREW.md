@@ -134,6 +134,8 @@ indice su `(lat, lng) where show_on_map`.
 > **Stato (22/11/2026):** il file `supabase/crew-directory.sql` realizza **solo il primo pezzo**:
 > colonne di fiducia/moderazione, `owner_id` nullable, `visibility='directory'`, `crew_contacts`,
 > `find_duplicate_crews`, trigger di protezione e `crews_in_bbox` con le schede informative.
+> **Aggiornamento (22/11/2026):** `crew_interests`, `crew_interest_count` e `crews_discover` (lista ordinata di §6.1)
+> sono in **SQL #51** (`supabase/crew-discover.sql`); claims, admin e verifica scalano a #52–#54.
 > `crew_interests`, `crew_suggestions` e le RPC `crew_*` qui sotto andranno in **file SQL successivi**
 > (numerati quando scritti, spostando in avanti claims/admin/verifica). Valori reali di
 > `moderation_status`: `published/pending/rejected/hidden`.

@@ -67,7 +67,23 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
   if (!crew) notFound()
 
   // Scheda informativa: nessun proprietario, nessun membro. Tutto il resto della pagina presuppone un gestore.
-  if (crew.owner_id === null) return <InformativeCrew crew={crew} />
+  if (crew.owner_id === null) {
+    // "Avvisami" (SQL #51): se la tabella non c'è ancora le query falliscono e la scheda si vede lo stesso
+    const [mine, count] = await Promise.all([
+      user
+        ? supabase.from('crew_interests').select('crew_id').eq('crew_id', crew.id).eq('user_id', user.id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase.rpc('crew_interest_count', { p_crew_id: crew.id }),
+    ])
+    return (
+      <InformativeCrew
+        crew={crew}
+        userId={user?.id ?? null}
+        interested={!!mine.data}
+        interestCount={typeof count.data === 'number' ? count.data : 0}
+      />
+    )
+  }
 
   const { data: members } = await supabase
     .from('crew_members')

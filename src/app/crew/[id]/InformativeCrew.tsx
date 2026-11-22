@@ -4,6 +4,7 @@ import { Footer } from '@/components/Footer'
 import { PageContainer } from '@/components/PageContainer'
 import { CREW_TYPE_LABELS } from '@/lib/types'
 import type { Crew } from '@/lib/types'
+import { NotifyMeButton } from './NotifyMeButton'
 
 const isHttp = (u: string | null | undefined): u is string => !!u && /^https?:\/\//i.test(u)
 
@@ -12,7 +13,15 @@ const isHttp = (u: string | null | undefined): u is string => !!u && /^https?:\/
  * Non ha membri, chat, bacheca né richieste di ingresso: nessuno le gestirebbe
  * (docs/MAPPA-CREW.md §2.4). Mostra solo dati pubblici e dice chiaramente cos'è.
  */
-export function InformativeCrew({ crew }: { crew: Crew }) {
+/** Il numero di persone in attesa compare solo da questa soglia (docs/MAPPA-CREW.md §2.5) */
+const INTEREST_THRESHOLD = 5
+
+export function InformativeCrew({ crew, userId, interested, interestCount }: {
+  crew: Crew
+  userId: string | null
+  interested: boolean
+  interestCount: number
+}) {
   const type = CREW_TYPE_LABELS[crew.crew_type]
   const where = [crew.city, crew.zone ? `(${crew.zone})` : ''].filter(Boolean).join(' ')
   const subject = encodeURIComponent(`Crew: ${crew.name}`)
@@ -89,7 +98,13 @@ export function InformativeCrew({ crew }: { crew: Crew }) {
                 Questa crew non è ancora su Vieni a correre: i dati sono pubblici e non confermati dalla crew,
                 e qui non si può chiedere di entrare. Per partecipare contatta direttamente la crew dai suoi canali.
               </p>
-              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              <div className="mt-3 flex flex-col gap-1.5">
+                <NotifyMeButton crewId={crew.id} userId={userId} initialInterested={interested} />
+                {interestCount >= INTEREST_THRESHOLD && (
+                  <p className="text-xs text-gray-400">{interestCount} runner stanno aspettando questa crew.</p>
+                )}
+              </div>
+              <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
                 <a className="text-[var(--color-primary)] hover:underline"
                   href={`mailto:info@vieniacorrere.it?subject=${subject}`}>
                   È la tua crew? Scrivici
