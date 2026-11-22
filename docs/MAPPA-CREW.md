@@ -32,6 +32,7 @@ importano** le crew).
 | **Comportamento dipende dal gestore** (22/11/2026) | In app e sito la scheda si comporta in base a *"ha un gestore?"* e al livello di fiducia, **non** a come è nata: crew create sul sito e crew rivendicate sono uguali (§2.4) |
 | **"Avvisami"** (22/11/2026) | Sulle schede informative l'utente può chiedere di essere avvisato quando la crew arriva su Vieni a correre (§2.5, tabella `crew_interests`) |
 | **Fase 2 divisa** (22/11/2026) | **2a** = directory + import/aggiunta da admin (riempie la mappa), **2b** = segnalazione utenti + rivendicazione (§10) |
+| **Suggerimenti di modifica** (22/11/2026) | Gli utenti registrati possono **suggerire modifiche** alla scheda (dati cambiati, link, "non più attiva"). **Nessuna modifica diretta**: decide sempre un umano (gestore della crew, poi admin). "Non più attiva" non nasconde subito: serve una soglia o una conferma (§5.6) |
 
 **Chiusi il 21/11/2026:** ruoli = i **tre attuali** `owner/admin/member` (un ruolo intermedio, es.
 "coach", si aggiungerà dopo con migrazione additiva); soglia gruppi informali = **3 uscite**
@@ -137,6 +138,9 @@ crews  + visibility check estesa: ('public','private','directory')   -- 'directo
        + source text default 'utente'  check in ('editoriale','utente')
        + created_by uuid references profiles       -- chi ha inserito/segnalato
        + schedule_text text                         -- giorni/orari in testo libero (facoltativo)
+       + activity_status text default 'active'  check in ('active','inactive')
+                                                    -- 'inactive' = non più attiva: fuori da mappa e liste, resta nello storico
+       + last_confirmed_at timestamptz              -- "Dati controllati il ..." (gestore o admin)
        + owner_id → NULLABLE
        trigger di creazione: aggiunge l'owner come membro SOLO se owner_id non è nullo
        trigger BEFORE UPDATE: trust_level, moderation_status, source, verified_* e il passaggio
@@ -148,6 +152,18 @@ crew_contacts   crew_id (PK→crews), email, origin ('pubblica'|'dichiarata'), c
 crew_interests  crew_id, user_id, created_at   PK(crew_id, user_id)
                 -- RLS: ognuno vede/inserisce/cancella solo le proprie righe
 
+crew_suggestions id, crew_id, user_id, kind ('field'|'links'|'inactive'|'other'),
+                field text, proposed_value text,        -- field: solo campi in whitelist (§5.6)
+                note text, evidence_url text,
+                status ('pending'|'accepted'|'rejected'|'expired') default 'pending',
+                reviewed_by, reviewed_at, review_note, created_at
+                -- RLS: l'utente vede/crea solo i propri; i gestori leggono TRAMITE RPC che NON
+                --   restituisce user_id (la RLS è per riga: niente accesso diretto alla tabella)
+                -- unique parziale: un solo suggerimento aperto per (crew_id, user_id, field)
+
+RPC crew_apply_suggestion(p_id)                -- SECURITY DEFINER: owner/admin della crew o admin AAL2;
+                                               --   applica SOLO i campi in whitelist, valida i link http(s)
+RPC crew_suggestions_for_manager(p_crew_id)    -- elenco senza l'identità di chi ha suggerito
 RPC find_duplicate_crews(p_name, p_city)       -- pg_trgm/ilike, sul modello di find_duplicate_races
 RPC crew_interest_count(p_crew_id)             -- SECURITY DEFINER, solo il numero
 ```
@@ -303,6 +319,46 @@ presenza (`run_confirmations`). La soglia si rivede dopo i primi casi reali.
 - **Rinnovo**: il job mensile segnala le verifiche in scadenza; il gestore riceve il
   promemoria e conferma i dati; un admin rinnova con un click.
 
+### 5.6 Suggerimenti di modifica degli utenti (22/11/2026)
+
+Pulsante **"Suggerisci una modifica"** nella scheda (sito; app dalla nuova versione). Solo
+**utenti registrati**.
+
+**Cosa si può suggerire**
+
+| Tipo | Contenuto |
+|---|---|
+| **Dati cambiati** (`field`) | un campo della whitelist + il nuovo valore: nome, descrizione, città, zona, ritrovo, giorni/orari (`schedule_text`), sito, Instagram. **Mai** il link WhatsApp (privato) |
+| **Link** (`links`) | sito/Instagram cambiato o non più valido (solo `http(s)`) |
+| **Non più attiva** (`inactive`) | nota facoltativa + link che lo dimostri |
+| **Altro** | testo libero; per abusi e contenuti scorretti resta la **segnalazione** (`reports`) |
+
+Telefoni e dati di persone **non si accettano** né nei campi né nelle note (§4.6).
+
+**Chi decide**
+- **Crew con un gestore:** owner/admin della crew ricevono la notifica e **accettano** (la modifica si
+  applica) o **rifiutano**. Dopo **14 giorni** senza risposta passa all'admin della piattaforma.
+- **Scheda informativa (senza gestore):** decide l'admin della piattaforma (`/admin/crew` → Suggerimenti).
+- L'admin della piattaforma può sempre intervenire. **Applicare è sempre un passo umano.**
+- Prima della Fase 3 (area gestione): il gestore riceve la notifica, ma a decidere è l'admin.
+
+**"Non più attiva"** non nasconde la scheda subito (una crew può essere in pausa o aggiornare poco i social):
+- le segnalazioni di **utenti diversi** si sommano; con **3** la scheda mostra *"Potrebbe non essere più
+  attiva"* e sale in cima alla coda dell'admin;
+- gestore o admin **conferma** → `activity_status='inactive'` (fuori da mappa e liste, resta nello storico);
+- il gestore **smentisce** → `last_confirmed_at = now()` ("Dati controllati il …") e le segnalazioni si chiudono.
+
+`last_confirmed_at` serve anche al **promemoria annuale** ai gestori e si lega al rinnovo della verifica (§5.5).
+
+**Protezioni:** solo registrati; limite giornaliero per utente; un solo suggerimento aperto per
+(crew, utente, campo); link solo `http(s)`; testi con lunghezza massima; i suggerimenti ignorati
+**scadono**; **l'identità di chi suggerisce la vede solo chi revisiona**, non la crew (evita ritorsioni);
+l'abuso del modulo si gestisce con la moderazione utenti esistente.
+
+**Notifiche:** nuovo tipo `crew_suggestion` per i gestori (va aggiunto a `send-push` solo se si vuole la
+push) e **email allo staff** per le schede senza gestore, sul modello di `notify-report`.
+**Compatibilità:** l'app 1.0.x deve tollerare un tipo di notifica sconosciuto (§8, punto 6).
+
 ---
 
 ## 6. Mappa, SEO e RPC
@@ -313,7 +369,9 @@ presenza (`run_confirmations`). La soglia si rivede dopo i primi casi reali.
 - **RPC `crews_in_bbox(min_lat, min_lng, max_lat, max_lng, ...)`**: restituisce solo campi
   pubblici (id, slug, nome, `trust_level`, **`has_manager`**, lat/lng arrotondati, city,
   `crew_type`, avatar). È **lo stesso contratto** per sito e app. Filtri su `show_on_map`,
-  `published`, `public` **o** `directory`.
+  `published`, `public` **o** `directory`, e (dalla Fase 2a) `activity_status = 'active'`: le crew
+  segnate "non più attive" escono da mappa e liste. È una modifica al **corpo** della funzione, la
+  firma e le colonne restituite non cambiano.
 - **Lista (sito e app):** ordinata per distanza/pertinenza, **mai per verifica**. Una sezione
   "Su Vieni a correre" (gestite: si può chiedere di entrare) e una "Nella tua zona" (informative),
   oppure un filtro: la separazione è funzionale, non un ranking. *(Proposta, da confermare: §11.)*
@@ -395,6 +453,10 @@ Stesso Supabase; l'app **non si aggiorna in tempo reale** (review store) → reg
    tolleri un tipo di notifica sconosciuto** prima di inviarlo.
 7. **Premium (futuro):** acquisti **solo sul web**, l'app non li promuove — vendere abbonamenti
    dentro l'app attiverebbe le regole di in-app purchase di Apple/Google.
+8. **Suggerimenti di modifica (§5.6):** nell'app solo il **modulo** "Suggerisci una modifica" (tipo,
+   campo, nuovo valore, nota), che scrive in `crew_suggestions`; la revisione resta sul sito. Le crew
+   con `activity_status='inactive'` non arrivano all'app (la RPC le esclude). Se la scheda mostra
+   "Potrebbe non essere più attiva", l'app mostra la stessa nota.
 
 ### 8.1 Compatibilità con l'app già pubblicata (1.0.x) — verificata sul codice (22/11/2026)
 
@@ -414,6 +476,7 @@ Scopri le mostra tramite la RPC, con le quattro situazioni di §2.4.
 - Scheda informativa: link esterni, "Avvisami", "Rivendica sul sito", "Segnala"; **nascondere**
   "Chiedi di entrare" quando `has_manager` è falso.
 - Badge "verificata" e "corsa verificata".
+- Modulo "Suggerisci una modifica" (§5.6, §8 punto 8).
 
 ---
 
@@ -449,6 +512,11 @@ fonti esterne senza aver letto le loro condizioni d'uso, valutato **caso per cas
 - **Duplicati**: ricerca e "Unisci".
 - **Interessi**: per ogni scheda informativa il numero di "Avvisami" (anche sotto soglia), utile
   per contattare il club.
+- **Suggerimenti** (§5.6): coda dei suggerimenti di modifica (accetta/rifiuta con nota, applicazione
+  con `crew_apply_suggestion`), le crew con segnalazioni di "non più attiva" in evidenza e le schede
+  informative senza gestore (decide l'admin). Email allo staff per i nuovi suggerimenti su schede senza
+  gestore. Ogni azione in `admin_actions` (`crew.suggestion.accept`, `crew.suggestion.reject`,
+  `crew.deactivate`).
 - **Scadenze**: verifiche in scadenza, revoche.
 
 Ogni azione → `admin_actions`. Lo staff riceve già un'email per le segnalazioni
@@ -461,12 +529,12 @@ Ogni azione → `admin_actions`. Lo staff riceve già un'email per le segnalazio
 | # | Fase | Deliverable | SQL |
 |---|---|---|---|
 | 1 | **Mappa delle crew esistenti** | Colonne mappa + trigger arrotondamento + RPC `crews_in_bbox`; `/crew/mappa` con clustering; impostazioni "Mostra sulla mappa" e precisione pin; pagine città; invito agli owner | #49 |
-| 2a | **Directory e import admin** | `visibility='directory'`, `trust_level`/`moderation_status`/`source`, `owner_id` nullable (dopo audit), `crew_contacts`, `crew_interests` ("Avvisami"), `find_duplicate_crews`; **`/admin/crew` con Nuova crew e Importa**; schede informative sul sito. **Riempie la mappa** | #50 |
+| 2a | **Directory e import admin** | `visibility='directory'`, `trust_level`/`moderation_status`/`source`, `owner_id` nullable (dopo audit), `crew_contacts`, `crew_interests` ("Avvisami"), `find_duplicate_crews`; **`/admin/crew` con Nuova crew e Importa**; schede informative sul sito; **suggerimenti di modifica** (`crew_suggestions`, modulo per gli utenti, revisione dell'admin, "non più attiva", §5.6). **Riempie la mappa** | #50 |
 | 2b | **Segnalazione e rivendicazione** | `crew_claims`, OTP via email, `/crew/segnala`, "Questa è la mia crew", match duplicati in `/crew/nuova`, notifica a chi ha usato "Avvisami" | #51 |
-| 3 | **Area di gestione crew** | Layout `/crew/[id]/gestione`, sezioni §7, `crew_audit`, trasferimento proprietà, hardening ruoli | #52 |
+| 3 | **Area di gestione crew** | Layout `/crew/[id]/gestione`, sezioni §7, `crew_audit`, trasferimento proprietà, hardening ruoli, **revisione dei suggerimenti da parte del gestore** (sezione "Comunicazione" o dedicata) | #52 |
 | 4 | **Verifica e badge** | Richiesta, checklist admin, badge su scheda/pin/corse, `v_verified_runs`, rinnovo annuale, revoca | #53 |
 | 5 | **Premium** | *Lontano — non pianificato* | — |
-| App | **Nuova versione dell'app** | Mappa nativa, Scopri con le 4 situazioni, "Avvisami", badge (§8.2) | — |
+| App | **Nuova versione dell'app** | Mappa nativa, Scopri con le 4 situazioni, "Avvisami", badge, modulo "Suggerisci una modifica" (§8.2) | — |
 
 Ordine consigliato: 1 → 2a → 2b → 3 → 4. La **2a prima della 2b** perché senza schede la mappa
 è quasi vuota (oggi le crew esistenti sono poche e si attivano per opt-in) e così si può
@@ -500,6 +568,8 @@ l'SQL e aggiornare `PROJECT_STATUS.md` (convenzioni di `CLAUDE.md`).
 7. **Schede importate = `directory`**, comportamento in base a "ha un gestore" (§2.4, §8.1).
 8. **"Avvisami"** sulle schede informative (§2.5).
 9. **Fase 2 divisa** in 2a (directory + admin) e 2b (rivendicazione) (§10).
+10. **Suggerimenti di modifica** degli utenti alle schede, con revisione umana e percorso dedicato per
+    "non più attiva" (§5.6). Le proposte di §5.6 sono **adottate** e da rivedere dopo i primi casi reali.
 
 ### Domande aperte (con la proposta)
 | # | Domanda | Proposta |
@@ -512,3 +582,13 @@ l'SQL e aggiornare `PROJECT_STATUS.md` (convenzioni di `CLAUDE.md`).
 | f | Lista unica con sezioni o filtro? | Sezioni "Su Vieni a correre" / "Nella tua zona" |
 | g | Le schede informative sono indicizzabili (SEO)? | Sì le pagine città; la singola scheda informativa **noindex** finché non è rivendicata |
 | h | Dopo la rivendicazione la crew è subito "gestita" o serve un controllo? | Percorso A subito, percorso B dopo approvazione (come in §5.2) |
+
+**Suggerimenti di modifica (§5.6) — proposte adottate il 22/11/2026, da rivedere dopo i primi casi:**
+
+| # | Domanda | Scelta adottata |
+|---|---|---|
+| i | Per le crew con gestore decide prima il gestore o sempre l'admin? | **Prima il gestore**; dopo **14 giorni** senza risposta passa all'admin. Fino alla Fase 3 decide l'admin e il gestore è solo avvisato |
+| l | Soglia per "non più attiva" | **3 utenti diversi** per l'avviso pubblico; la conferma resta di gestore o admin |
+| m | L'identità di chi suggerisce è visibile al gestore? | **No**: la vede solo chi revisiona (admin) |
+| n | Chi può suggerire? | **Solo utenti registrati**, con limite giornaliero |
+| o | Campi suggeribili | Nome, descrizione, città, zona, ritrovo, giorni/orari, sito, Instagram. **Non** il link WhatsApp (privato) |
