@@ -11,6 +11,7 @@
 - **Branch attivo:** `main`. **Workflow: push diretto su `main`** (deciso il 23/08/2026 — non più feature branch + PR, salvo diversa indicazione esplicita).
 - **Stack:** Next.js 16.2.7 App Router · TypeScript · Tailwind v4 · Supabase · Vercel
 - **Calendario gare:** doc completa in `docs/CALENDARIO-GARE.md` (catalogo `races`, import `npm run import:aims` + `npm run seed:circuits`, moderazione).
+- **Mappa crew:** spec e stato in `docs/MAPPA-CREW.md`. Fasi 1, 2a-1 e 2a-2 fatte e applicate (SQL #49–#51: mappa, schede informative + admin `/admin/crew`, "Avvisami" + `crews_discover`); app 1.1.0 con mappa inviata ad Apple il 22/11/2026. **Sospesi:** rivendicazione, suggerimenti di modifica, area gestori, verifica (SQL #52 in poi).
 - **Integrazione Strava:** RIMOSSA il 21/11/2026 (policy API Strava): vedi `docs/STRAVA.md` per motivi e procedura di chiusura. Non reintrodurre dati Strava visibili ad altri utenti.
 
 ## Convenzioni obbligatorie

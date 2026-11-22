@@ -6,12 +6,27 @@ verificate possono organizzare **corse verificate**. Include il contratto per l'
 e l'**area di gestione web** per i gestori delle crew e per gli admin (che **aggiungono e
 importano** le crew).
 
-> Stato (22/11/2026): **Fase 1 scritta** nel branch `feat/mappa-crew` (SQL #49 `crew-map.sql` +
-> rollback, `/crew/mappa`, `/crew/citta/[city]`, sezione "Sulla mappa" in `/crew/[id]/modifica`,
-> sitemap) — **NON applicata** in produzione e non ancora su `main`. Le altre fasi sono solo
-> specifica; i loro SQL qui sotto sono bozze.
+> **Stato al 22/11/2026**
+>
+> | Fase | Stato | SQL |
+> |---|---|---|
+> | 1 — Mappa delle crew esistenti | ✅ fatta, applicata, su `main` | #49 |
+> | 2a-1 — Schede informative + area admin (`/admin/crew`, import) | ✅ fatta, applicata, su `main` | #50 |
+> | 2a-2 — "Avvisami" + lista ordinata (`crews_discover`) | ✅ fatta, applicata, su `main` | #51 |
+> | App 1.1.0 — mappa, Scopri a sezioni, scheda informativa, "Avvisami" | ✅ inviata ad Apple il 22/11/2026 (build 5) | — |
+> | 2a-2b — **Modifica admin delle schede informative** (`/admin/crew/[id]/modifica`, API `PATCH /api/admin/crew/[id]/modifica`: dati, email privata, posizione, "controllati oggi"; log `crew.update`; solo crew senza gestore, slug mai cambiato) | ✅ fatta il 22/11/2026, nessun SQL | — |
+> | 2a-3 — suggerimenti di modifica degli utenti (§5.6), fascia "Nuove crew", ordine §6.1 nella lista `/crew` del sito, invito agli owner ad attivare la mappa | ⏸ **sospesa** (decisione del 22/11/2026) | — |
+> | 2b — Segnalazione e **rivendicazione** (§5.2) | ⏸ **sospesa** | #52 previsto |
+> | 3 — Area di gestione crew | ⏸ sospesa | #53 previsto |
+> | 4 — Verifica e badge | ⏸ sospesa | #54 previsto |
+>
+> **Cosa manca per chiudere il cerchio:** oggi una scheda informativa **non può diventare una crew gestita**: non c'è
+> rivendicazione né un'azione admin per assegnare un proprietario; la scheda rimanda a una mail a
+> `info@vieniacorrere.it`. Per questo "Avvisami" per ora misura soltanto la domanda (l'admin la legge dal database)
+> e la notifica `crew_claimed` non è stata scritta. **Riprendere da §5.2 (rivendicazione) e dalle domande aperte di §11.**
+> Cronologia: Fase 1 scritta nel branch `feat/mappa-crew`; 2a nel branch `feat/crew-directory`; tutto è poi finito su `main`.
 > **Numeri SQL:** la prima versione riservava #47–#50, ma #47 è `strava-detach-fase2.sql` e
-> #48 è `oauth-profile-name.sql`. I numeri previsti ora sono **#49–#53** (§3, §10). Verificare
+> #48 è `oauth-profile-name.sql`. Usati finora: **#49** (mappa), **#50** (directory), **#51** (Avvisami + discover). Previsti **#52–#54** per rivendicazione, area gestori e verifica (§3, §10). Verificare
 > comunque l'ultimo numero usato in `PROJECT_STATUS.md` prima di scrivere ogni file.
 
 ---
@@ -180,7 +195,7 @@ RPC crew_interest_count(p_crew_id)             -- SECURITY DEFINER, solo il nume
 `crews_select` va esteso: oggi mostra le crew `public`; le schede `directory` si leggono **solo**
 tramite RPC/policy dedicate (sito, nuova app, admin). L'app 1.0.x non le vede mai (§8).
 
-### 3.3 SQL #51 — `crew-claims.sql` (Fase 2b)
+### 3.3 SQL #52 — `crew-claims.sql` (Fase 2b, ⏸ sospesa)
 
 ```
 crew_claims     id, crew_id, user_id, path ('A'|'B'),
@@ -194,7 +209,7 @@ crew_claims     id, crew_id, user_id, path ('A'|'B'),
 Alla conferma: `owner_id`, `crew_members(owner)`, `visibility='public'`, `trust_level='claimed'`,
 notifica agli utenti di `crew_interests` (nuovo tipo `crew_claimed`, §8.5).
 
-### 3.4 SQL #52 — `crew-admin.sql` (Fase 3, area gestori)
+### 3.4 SQL #53 — `crew-admin.sql` (Fase 3, area gestori, ⏸ sospesa)
 
 ```
 crew_audit      id, crew_id, actor_id, action, metadata jsonb, created_at
@@ -202,7 +217,7 @@ crew_audit      id, crew_id, actor_id, action, metadata jsonb, created_at
 RPC crew_transfer_ownership(p_crew_id, p_new_owner)   -- SECURITY DEFINER, §7.4
 ```
 
-### 3.5 SQL #53 — `crew-verification.sql` (Fase 4)
+### 3.5 SQL #54 — `crew-verification.sql` (Fase 4, ⏸ sospesa)
 
 ```
 crews  + verified_at timestamptz, verified_by uuid, verified_until date
@@ -584,13 +599,13 @@ Ogni azione → `admin_actions`. Lo staff riceve già un'email per le segnalazio
 
 | # | Fase | Deliverable | SQL |
 |---|---|---|---|
-| 1 | **Mappa delle crew esistenti** | Colonne mappa + trigger arrotondamento + RPC `crews_in_bbox`; `/crew/mappa` con clustering; impostazioni "Mostra sulla mappa" e precisione pin; pagine città; invito agli owner | #49 |
-| 2a | **Directory e import admin** | `visibility='directory'`, `trust_level`/`moderation_status`/`source`, `owner_id` nullable (dopo audit), `crew_contacts`, `crew_interests` ("Avvisami"), `find_duplicate_crews`; **`/admin/crew` con Nuova crew e Importa**; schede informative sul sito; **suggerimenti di modifica** (`crew_suggestions`, modulo per gli utenti, revisione dell'admin, "non più attiva", §5.6). **Riempie la mappa** | #50 |
-| 2b | **Segnalazione e rivendicazione** | `crew_claims`, OTP via email, `/crew/segnala`, "Questa è la mia crew", match duplicati in `/crew/nuova`, notifica a chi ha usato "Avvisami" | #51 |
-| 3 | **Area di gestione crew** | Layout `/crew/[id]/gestione`, sezioni §7, `crew_audit`, trasferimento proprietà, hardening ruoli, **revisione dei suggerimenti da parte del gestore** (sezione "Comunicazione" o dedicata) | #52 |
-| 4 | **Verifica e badge** | Richiesta, checklist admin, badge su scheda/pin/corse, `v_verified_runs`, rinnovo annuale, revoca | #53 |
+| 1 ✅ | **Mappa delle crew esistenti** | Colonne mappa + trigger arrotondamento + RPC `crews_in_bbox`; `/crew/mappa` con clustering; impostazioni "Mostra sulla mappa" e precisione pin; pagine città; invito agli owner | #49 |
+| 2a ✅ (parte 3 ⏸) | **Directory e import admin** | `visibility='directory'`, `trust_level`/`moderation_status`/`source`, `owner_id` nullable (dopo audit), `crew_contacts`, `crew_interests` ("Avvisami"), `find_duplicate_crews`; **`/admin/crew` con Nuova crew e Importa**; schede informative sul sito; **suggerimenti di modifica** (`crew_suggestions`, modulo per gli utenti, revisione dell'admin, "non più attiva", §5.6). **Riempie la mappa** | #50 |
+| 2b ⏸ | **Segnalazione e rivendicazione** | `crew_claims`, OTP via email, `/crew/segnala`, "Questa è la mia crew", match duplicati in `/crew/nuova`, notifica a chi ha usato "Avvisami" | #52 |
+| 3 ⏸ | **Area di gestione crew** | Layout `/crew/[id]/gestione`, sezioni §7, `crew_audit`, trasferimento proprietà, hardening ruoli, **revisione dei suggerimenti da parte del gestore** (sezione "Comunicazione" o dedicata) | #53 |
+| 4 ⏸ | **Verifica e badge** | Richiesta, checklist admin, badge su scheda/pin/corse, `v_verified_runs`, rinnovo annuale, revoca | #54 |
 | 5 | **Premium** | *Lontano — non pianificato* | — |
-| App | **Nuova versione dell'app** | Mappa nativa, Scopri con le 4 situazioni, "Avvisami", badge, modulo "Suggerisci una modifica" (§8.2) | — |
+| App ✅ (1.1.0) | **Nuova versione dell'app** | Mappa nativa, Scopri con le 4 situazioni, "Avvisami", badge, modulo "Suggerisci una modifica" (§8.2) | — |
 
 Ordine consigliato: 1 → 2a → 2b → 3 → 4. La **2a prima della 2b** perché senza schede la mappa
 è quasi vuota (oggi le crew esistenti sono poche e si attivano per opt-in) e così si può

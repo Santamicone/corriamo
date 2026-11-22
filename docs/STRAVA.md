@@ -42,19 +42,23 @@ reintroduzione: il documento può cambiare ("effective upon our posting").
 
 ## Procedura di chiusura (in ordine)
 
+> **Stato al 22/11/2026:** passi 1, 2, 3, 5 e 6 **fatti** (deploy il 21/11; token revocati; SQL #46 applicato il 21/11;
+> app 1.0.1 online e SQL #47 `strava-detach-fase2.sql` applicato il 22/11; `/privacy` e `/elimina-account` aggiornati,
+> "Fitness" tolto in App Store Connect). **Resta solo il passo 4**: eliminare l'app su strava.com e le env `STRAVA_*`.
+
 1. Deploy del sito con questo distacco (push su `main`, dopo ok).
 2. `npm run strava:detach` (dry-run: mostra connessioni/attività/subscription), poi
    `npm run strava:detach -- --apply` → revoca i token su Strava + elimina il webhook.
    Richiede in `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
    `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`.
-3. Applicare `supabase/strava-detach.sql` (SQL #46; rollback: `strava-detach-rollback.sql`,
+3. *(fatto)* Applicare `supabase/strava-detach.sql` (SQL #46; rollback: `strava-detach-rollback.sql`,
    che NON ripristina i dati).
-4. Eliminare l'app su https://www.strava.com/settings/api e le 3 env `STRAVA_*` da Vercel.
-5. **Dopo la nuova versione dell'app mobile** (che toglie la sezione "Corse recenti"
+4. **(DA FARE)** Eliminare l'app su https://www.strava.com/settings/api e le 3 env `STRAVA_*` da Vercel.
+5. *(fatto)* **Dopo la nuova versione dell'app mobile** (che toglie la sezione "Corse recenti"
    e il codice `strava_activities`) e dopo aver tolto il blocco "Strava: revoca" dall'Edge
    Function `delete-account`: eseguire la FASE 2 commentata in fondo a `strava-detach.sql`
    (DROP delle tabelle e delle colonne `strava_*` di `profiles`).
-6. Aggiornare Privacy/Termini (menzioni Strava) e la dichiarazione "Fitness" in App Store
+6. *(fatto il 22/11/2026; i testi legali vanno comunque riletti da chi segue la parte legale)* Aggiornare Privacy/Termini (menzioni Strava) e la dichiarazione "Fitness" in App Store
    Connect — vedi `docs/APP-STORE-PRIVACY.md`.
 
 ## Se in futuro si vuole reintrodurre Strava
