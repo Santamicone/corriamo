@@ -13,7 +13,15 @@
 //     corsa, altrimenti sparirebbero insieme alla corsa);
 //   - cancella i file dallo Storage (avatars, momenti, crew-covers).
 // (L'integrazione Strava è stata rimossa il 21/11/2026: niente più revoca token.)
+//
+// Accedi con Apple: chi è entrato con Apple deve vedere revocato il collegamento quando
+// elimina l'account (regola di Apple). L'app ripete l'accesso con Apple e manda
+// `{ appleAuthorizationCode }` nel corpo; qui il codice diventa un refresh token che si
+// revoca (best effort, DOPO l'eliminazione). Servono i secret APPLE_TEAM_ID, APPLE_KEY_ID,
+// APPLE_PRIVATE_KEY (contenuto del file .p8) e, se diverso, APPLE_CLIENT_ID (bundle id).
+// Se mancano, la revoca viene saltata e l'eliminazione va avanti.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { importPKCS8, SignJWT } from 'https://esm.sh/jose@5.9.6'
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false },
@@ -26,6 +34,51 @@ const CORS = {
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
+
+/** Revoca il collegamento "Accedi con Apple" a partire dal codice di autorizzazione dell'app. */
+async function revokeAppleAuthorization(authorizationCode: string): Promise<void> {
+  const teamId = Deno.env.get('APPLE_TEAM_ID')
+  const keyId = Deno.env.get('APPLE_KEY_ID')
+  const privateKey = Deno.env.get('APPLE_PRIVATE_KEY')
+  const clientId = Deno.env.get('APPLE_CLIENT_ID') ?? 'it.vieniacorrere.app'
+  if (!teamId || !keyId || !privateKey) {
+    console.warn('[delete-account] revoca Apple saltata: secret APPLE_* mancanti')
+    return
+  }
+
+  // Client secret = JWT firmato con la chiave .p8 (ES256), valido pochi minuti
+  const key = await importPKCS8(privateKey.replace(/\\n/g, '\n'), 'ES256')
+  const clientSecret = await new SignJWT({})
+    .setProtectedHeader({ alg: 'ES256', kid: keyId })
+    .setIssuer(teamId)
+    .setSubject(clientId)
+    .setAudience('https://appleid.apple.com')
+    .setIssuedAt()
+    .setExpirationTime('5m')
+    .sign(key)
+
+  const form = (fields: Record<string, string>) =>
+    new URLSearchParams({ client_id: clientId, client_secret: clientSecret, ...fields })
+
+  const tokenRes = await fetch('https://appleid.apple.com/auth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form({ code: authorizationCode, grant_type: 'authorization_code' }),
+  })
+  if (!tokenRes.ok) {
+    console.error('[delete-account] Apple token', tokenRes.status, await tokenRes.text())
+    return
+  }
+  const { refresh_token: refreshToken } = await tokenRes.json()
+  if (!refreshToken) return
+
+  const revokeRes = await fetch('https://appleid.apple.com/auth/revoke', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form({ token: refreshToken, token_type_hint: 'refresh_token' }),
+  })
+  if (!revokeRes.ok) console.error('[delete-account] Apple revoke', revokeRes.status, await revokeRes.text())
+}
 
 /** Data odierna (YYYY-MM-DD) in ora italiana. */
 function todayItaly(): string {
@@ -61,6 +114,13 @@ Deno.serve(async (req) => {
   const { data: auth, error: authError } = await admin.auth.getUser(jwt)
   if (authError || !auth.user) return json({ code: 'unauthenticated' }, 401)
   const uid = auth.user.id
+
+  // Codice Apple (solo per chi è entrato con Apple); un corpo assente o non valido va bene
+  let appleAuthorizationCode: string | null = null
+  try {
+    const body = await req.json()
+    if (typeof body?.appleAuthorizationCode === 'string') appleAuthorizationCode = body.appleAuthorizationCode
+  } catch { /* nessun corpo */ }
 
   // ── Guardia 1: gli admin non si eliminano da qui (per non chiudere fuori lo staff) ──
   const { data: profile } = await admin.from('profiles').select('is_admin').eq('id', uid).maybeSingle()
@@ -132,6 +192,15 @@ Deno.serve(async (req) => {
   if (deleteError) {
     console.error('[delete-account] deleteUser', deleteError)
     return json({ code: 'delete_failed' }, 500)
+  }
+
+  // ── Apple: revoca il collegamento (l'account non esiste più: un errore qui non blocca nulla) ──
+  if (appleAuthorizationCode) {
+    try {
+      await revokeAppleAuthorization(appleAuthorizationCode)
+    } catch (e) {
+      console.error('[delete-account] revoca Apple', e)
+    }
   }
 
   return json({ ok: true })
