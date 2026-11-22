@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 type Action = 'hide' | 'show' | 'deactivate' | 'activate'
 
 /** Azioni dell'admin su una scheda: nascondi/mostra e segna come non più attiva/attiva. */
-export function CrewRowActions({ id, hidden, inactive }: { id: string; hidden: boolean; inactive: boolean }) {
+export function CrewRowActions({ id, hidden, inactive, editable }: { id: string; hidden: boolean; inactive: boolean; editable: boolean }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -32,6 +33,9 @@ export function CrewRowActions({ id, hidden, inactive }: { id: string; hidden: b
   return (
     <div className="flex flex-col items-end gap-1 shrink-0">
       <div className="flex flex-wrap justify-end gap-1.5">
+        {editable && (
+          <Link href={`/admin/crew/${id}/modifica`} className={`${btn} inline-flex items-center`}>Modifica</Link>
+        )}
         <button className={btn} disabled={busy} onClick={() => run(hidden ? 'show' : 'hide')}>
           {hidden ? 'Mostra' : 'Nascondi'}
         </button>
