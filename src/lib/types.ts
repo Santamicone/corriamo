@@ -309,6 +309,8 @@ export interface RunConfirmation {
 
 export type CrewType = 'training_group' | 'running_club' | 'friends'
 export type CrewVisibility = 'public' | 'private'
+/** Precisione del pin in mappa (la sceglie il proprietario): vedi docs/MAPPA-CREW.md §4.2 */
+export type CrewPinPrecision = 'exact' | 'area' | 'city'
 export type CrewMemberRole = 'owner' | 'admin' | 'member'
 export type CrewMemberStatus = 'active' | 'pending' | 'rejected'
 export type RunVisibility = 'public' | 'crew_only' | 'invite_only'
@@ -327,6 +329,14 @@ export interface Crew {
   whatsapp_group_link: string | null
   city: string | null
   zone: string | null
+  // Mappa delle crew (SQL #49): opzionali finché lo SQL non è applicato in produzione
+  lat?: number | null
+  lng?: number | null
+  pin_precision?: CrewPinPrecision
+  show_on_map?: boolean
+  meeting_point?: string | null
+  website_url?: string | null
+  instagram_url?: string | null
   created_at: string
 }
 

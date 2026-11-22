@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { fetchCrewMapPoints, groupByCity } from '@/lib/crewMap'
 
 const BASE = 'https://app.vieniacorrere.it'
 
@@ -104,5 +105,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  return [...staticPages, ...runPages, ...seriesPages, ...garePages, ...profilePages]
+  // Mappa delle crew: la pagina generale e una pagina per ogni città con almeno una crew in mappa
+  // (elenco vuoto finché lo SQL #49 non è applicato o nessuna crew ha attivato la mappa)
+  const crewPoints = await fetchCrewMapPoints(supabase)
+  const crewMapPages: MetadataRoute.Sitemap = [
+    { url: `${BASE}/crew/mappa`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.7 },
+    ...groupByCity(crewPoints).map(c => ({
+      url: `${BASE}/crew/citta/${c.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    })),
+  ]
+
+  return [...staticPages, ...crewMapPages, ...runPages, ...seriesPages, ...garePages, ...profilePages]
 }

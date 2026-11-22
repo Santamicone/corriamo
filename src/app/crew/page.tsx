@@ -102,6 +102,13 @@ export default async function CrewHubPage({ searchParams }: { searchParams: Prom
                 {t.label}
               </Link>
             ))}
+            <Link
+              href="/crew/mappa"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-all text-gray-500 hover:text-gray-700"
+            >
+              <span className="material-symbols-outlined text-base">map</span>
+              Mappa
+            </Link>
           </div>
 
           {tab === 'scopri' ? (

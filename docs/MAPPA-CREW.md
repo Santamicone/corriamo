@@ -6,8 +6,10 @@ verificate possono organizzare **corse verificate**. Include il contratto per l'
 e l'**area di gestione web** per i gestori delle crew e per gli admin (che **aggiungono e
 importano** le crew).
 
-> Stato: **SOLO SPECIFICA (aggiornata il 22/11/2026)** — nessun codice e nessun SQL scritto o
-> applicato. Gli SQL qui sotto sono bozze.
+> Stato (22/11/2026): **Fase 1 scritta** nel branch `feat/mappa-crew` (SQL #49 `crew-map.sql` +
+> rollback, `/crew/mappa`, `/crew/citta/[city]`, sezione "Sulla mappa" in `/crew/[id]/modifica`,
+> sitemap) — **NON applicata** in produzione e non ancora su `main`. Le altre fasi sono solo
+> specifica; i loro SQL qui sotto sono bozze.
 > **Numeri SQL:** la prima versione riservava #47–#50, ma #47 è `strava-detach-fase2.sql` e
 > #48 è `oauth-profile-name.sql`. I numeri previsti ora sono **#49–#53** (§3, §10). Verificare
 > comunque l'ultimo numero usato in `PROJECT_STATUS.md` prima di scrivere ogni file.

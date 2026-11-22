@@ -28,6 +28,16 @@ export async function geocodeAddress(
   }
 }
 
+/**
+ * Solo la città (centro approssimativo). Prima la tabella locale delle principali città,
+ * poi Nominatim: serve per i pin "a livello di città" delle crew sulla mappa.
+ */
+export async function geocodeCity(city: string): Promise<GeoResult | null> {
+  const local = getCityFallback(city)
+  if (local) return { ...local, display_name: city }
+  return nominatimSearch(`${city}, Italia`)
+}
+
 async function nominatimSearch(query: string): Promise<GeoResult | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=it`

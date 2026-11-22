@@ -231,6 +231,44 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
                 {crew.description && (
                   <p className="text-gray-600 mt-2 text-sm leading-relaxed whitespace-pre-wrap">{crew.description}</p>
                 )}
+                {/* Ritrovo e link pubblici (SQL #49): compaiono solo se il proprietario li ha inseriti */}
+                {(crew.meeting_point || crew.website_url || crew.instagram_url) && (
+                  <ul className="mt-3 space-y-1.5 text-sm text-gray-600">
+                    {crew.meeting_point && (
+                      <li className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-base text-gray-400 mt-0.5">location_on</span>
+                        <span>
+                          Ritrovo: {crew.meeting_point}
+                          {crew.city ? `, ${crew.city}` : ''}
+                        </span>
+                      </li>
+                    )}
+                    {crew.website_url && /^https?:\/\//i.test(crew.website_url) && (
+                      <li className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-base text-gray-400">language</span>
+                        <a href={crew.website_url} target="_blank" rel="noopener noreferrer nofollow"
+                          className="text-[var(--color-primary)] hover:underline break-all">
+                          {crew.website_url.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')}
+                        </a>
+                      </li>
+                    )}
+                    {crew.instagram_url && /^https?:\/\//i.test(crew.instagram_url) && (
+                      <li className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-base text-gray-400">photo_camera</span>
+                        <a href={crew.instagram_url} target="_blank" rel="noopener noreferrer nofollow"
+                          className="text-[var(--color-primary)] hover:underline break-all">
+                          {crew.instagram_url.replace(/^https?:\/\/(www\.)?instagram\.com\//i, '@').replace(/\/$/, '')}
+                        </a>
+                      </li>
+                    )}
+                  </ul>
+                )}
+                {crew.show_on_map && crew.lat != null && (
+                  <Link href="/crew/mappa" className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-3">
+                    <span className="material-symbols-outlined text-sm">map</span>
+                    Vedi sulla mappa delle crew
+                  </Link>
+                )}
               </div>
               {canManage && (
                 <Link
