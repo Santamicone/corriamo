@@ -8,6 +8,7 @@ const NAV = [
   { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
   { href: '/admin/utenti', label: 'Utenti', icon: 'group' },
   { href: '/admin/gare', label: 'Gare', icon: 'flag' },
+  { href: '/admin/crew', label: 'Crew', icon: 'groups' },
   { href: '/admin/contenuti', label: 'Contenuti', icon: 'inventory_2' },
   { href: '/admin/segnalazioni', label: 'Segnalazioni', icon: 'report' },
   { href: '/admin/broadcast', label: 'Broadcast', icon: 'campaign' },

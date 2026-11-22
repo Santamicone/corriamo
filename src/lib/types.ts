@@ -322,7 +322,8 @@ export interface Crew {
   description: string | null
   avatar_url: string | null
   cover_url: string | null
-  owner_id: string
+  /** Nullo per le schede informative (importate dall'admin, senza gestore): SQL #50 */
+  owner_id: string | null
   owner?: Profile
   crew_type: CrewType
   visibility: CrewVisibility
@@ -337,6 +338,12 @@ export interface Crew {
   meeting_point?: string | null
   website_url?: string | null
   instagram_url?: string | null
+  // Schede informative e moderazione (SQL #50): opzionali finché lo SQL non è applicato
+  schedule_text?: string | null
+  trust_level?: 'unclaimed' | 'claimed' | 'verified'
+  source?: 'utente' | 'editoriale'
+  moderation_status?: 'published' | 'pending' | 'rejected' | 'hidden'
+  activity_status?: 'active' | 'inactive'
   created_at: string
 }
 

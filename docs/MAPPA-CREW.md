@@ -131,6 +131,13 @@ indice su `(lat, lng) where show_on_map`.
 
 ### 3.2 SQL #50 — `crew-directory.sql` (Fase 2a: schede non reclamate + admin)
 
+> **Stato (22/11/2026):** il file `supabase/crew-directory.sql` realizza **solo il primo pezzo**:
+> colonne di fiducia/moderazione, `owner_id` nullable, `visibility='directory'`, `crew_contacts`,
+> `find_duplicate_crews`, trigger di protezione e `crews_in_bbox` con le schede informative.
+> `crew_interests`, `crew_suggestions` e le RPC `crew_*` qui sotto andranno in **file SQL successivi**
+> (numerati quando scritti, spostando in avanti claims/admin/verifica). Valori reali di
+> `moderation_status`: `published/pending/rejected/hidden`.
+
 ```
 crews  + visibility check estesa: ('public','private','directory')   -- 'directory' = scheda informativa
        + moderation_status text default 'published'
@@ -531,7 +538,11 @@ Segue il flusso già usato per il calendario gare (`/api/calendario/importa/anal
 revisione → `/salva`; `find_duplicate_races`; `guardAdminApi`):
 
 1. **Nuova crew** (singola): nome, città, tipo, ritrovo, `schedule_text`, sito, Instagram,
-   descrizione breve, precisione pin, eventuale email pubblica (→ `crew_contacts`).
+   descrizione breve, precisione pin, eventuale email pubblica (→ `crew_contacts`) e **link del
+   logo** facoltativo (→ `avatar_url`, solo http/https, mostrato senza referrer).
+   Colonne del CSV (alias accettati): `name, city, zone, crew_type, meeting_point, schedule_text,
+   website_url, instagram_url, description, contact_email, avatar_url` (`logo`, `link_logo`,
+   `link_del_logo`…). Obbligatori: nome, città e almeno un link pubblico; numeri di telefono rifiutati.
 2. **Importa** (batch): CSV o tabella incollata → **analisi senza scrivere** (valida i campi,
    **geocoding** in blocco, controllo doppioni con `find_duplicate_crews`, segnala righe senza
    link pubblico) → anteprima modificabile → **salvataggio** come scheda non reclamata

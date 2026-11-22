@@ -20,6 +20,7 @@ import type { NextOutingRun, NextOutingParticipant } from '@/components/NextOuti
 import { AttendanceButton } from '@/components/AttendanceButton'
 import { BoardUnreadDot } from '@/components/board/BoardUnreadDot'
 import { JoinCrewButton } from './JoinCrewButton'
+import { InformativeCrew } from './InformativeCrew'
 import type { Metadata } from 'next'
 import { todayItaly, parseRunDateTime } from '@/lib/utils'
 
@@ -37,7 +38,7 @@ export async function generateMetadata(
   const supabase = await createClient()
   const { data } = await supabase
     .from('crews')
-    .select('name, description, slug, cover_url')
+    .select('name, description, slug, cover_url, owner_id')
     .eq(lookupColumn(id), id)
     .single()
   if (!data) return { title: 'Crew — Vieni a correre?' }
@@ -46,6 +47,8 @@ export async function generateMetadata(
     description: data.description ?? undefined,
     alternates: data.slug ? { canonical: `/crew/${data.slug}` } : undefined,
     openGraph: data.cover_url ? { images: [data.cover_url] } : undefined,
+    // Scheda informativa (senza proprietario): non indicizzata finché qualcuno non la rivendica (docs/MAPPA-CREW.md §11 g)
+    robots: data.owner_id === null ? { index: false, follow: true } : undefined,
   }
 }
 
@@ -62,6 +65,9 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
     .single() as { data: (Crew & { owner: { id: string; full_name: string; avatar_url: string | null; city: string | null } }) | null }
 
   if (!crew) notFound()
+
+  // Scheda informativa: nessun proprietario, nessun membro. Tutto il resto della pagina presuppone un gestore.
+  if (crew.owner_id === null) return <InformativeCrew crew={crew} />
 
   const { data: members } = await supabase
     .from('crew_members')
