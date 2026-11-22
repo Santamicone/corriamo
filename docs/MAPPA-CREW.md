@@ -383,6 +383,47 @@ push) e **email allo staff** per le schede senza gestore, sul modello di `notify
 - Le crew **esistenti** non compaiono finché l'owner non attiva `show_on_map` (opt-in):
   prevedere una **notifica/email agli owner** per invitarli ad attivarlo.
 
+### 6.1 Ordine di visualizzazione delle liste — **deciso nelle linee generali il 22/11/2026**; i dettagli (r, s, t) si rivedono con dati reali
+
+Vale per Scopri (`/crew`), le pagine città e la lista in app. Oggi `/crew` ordina per data di creazione
+(più recenti prima). Direzione indicata dal titolare: dare più visibilità alle **crew create dagli
+utenti con almeno 5 membri** (indicato prima 10, abbassato a 5 il 22/11/2026 perché 10 era troppo alto) e alle **crew create dall'admin**.
+
+**Principi (non cambiano):** la verifica **non** incide sull'ordine; niente ordine acquistabile (premium
+incluso); la regola è **deterministica e documentata**, non una scelta caso per caso.
+
+**Ordine, in questa sequenza**
+1. **Geografia prima di tutto:** se l'utente cerca una città/zona (o ha una città nel profilo), contano prima
+   le crew di quella città, poi le vicine. Una crew di 40 persone a 300 km serve meno di una di 6 sotto casa.
+2. **Poi, dentro lo stesso livello geografico: prima le gestite, poi le non gestite** (deciso il 22/11/2026):
+   - **Crew gestite** (hanno un proprietario: ci si può iscrivere):
+     - **A. In evidenza:** con **≥ 5 membri attivi**; vi rientrano anche le crew **gestite create dall'admin**.
+     - **B. Le altre crew gestite**, per attività (prossima uscita più vicina, poi le più recenti).
+   - **Crew non gestite** (schede informative, nessuno approva richieste):
+     - **C. Quelle create/importate dall'admin** (editoriali), prima;
+     - **D. Quelle segnalate dagli utenti**, dopo.
+   Le non gestite compaiono **sempre dopo** le gestite, in una sezione a parte ("Nella tua zona"), così chi cerca
+   un gruppo vede prima quelli a cui può unirsi.
+3. **Dentro ogni gruppo:** attività recente (uscite in programma o svolte negli ultimi 30 giorni), poi numero
+   di membri, poi nome. Nessun elemento casuale.
+
+**Come si conta "5 membri":** membri **attivi** (`crew_members.status='active'`), **proprietario compreso**
+(è il numero che si vede nella scheda: oggi "Atleti"),
+con profilo non sospeso o bannato. Serve una funzione di lettura (`crews_discover`, additiva) che restituisce
+la lista già ordinata con `member_count`, stesso contratto per sito e app.
+
+**Punti da decidere**
+| # | Punto | Proposta |
+|---|---|---|
+| p | "Create dall'admin": schede importate o crew gestite? | **Deciso il 22/11/2026: prima le gestite, poi le non gestite.** Le importate senza gestore stanno sempre dopo le gestite (gruppo C, in cima alle non gestite); le crew gestite create dall'admin entrano nel gruppo A |
+| q | Soglia di membri | **5** (deciso il 22/11/2026, abbassata da 10 perché troppo alta). Da rivedere con dati reali: più è bassa, più è facile salire con membri fittizi, quindi conta l'anti-abuso (r) |
+| r | Anti-abuso | Conteggio solo di membri attivi con profilo valido; l'admin vede in lista i salti anomali di membri in pochi giorni |
+| s | Etichetta "In evidenza" visibile? | No: l'ordine si spiega in una pagina informativa, senza badge |
+| t | Crew nuove | Una fascia "Nuove crew" (ultime 4 settimane) per non seppellirle, anche sotto soglia |
+
+*Nota:* "più membri" e "admin" sono un vantaggio di posizione diverso dalla verifica (§1: nessun vantaggio di
+ranking alla verifica). Se si volesse un giorno premiare anche altro, va scritto qui, non nel codice.
+
 ---
 
 ## 7. Area di gestione crew (web)
@@ -495,8 +536,10 @@ revisione → `/salva`; `find_duplicate_races`; `guardAdminApi`):
    **geocoding** in blocco, controllo doppioni con `find_duplicate_crews`, segnala righe senza
    link pubblico) → anteprima modificabile → **salvataggio** come scheda non reclamata
    (`source='editoriale'`, `visibility='directory'`, `trust_level='unclaimed'`).
-3. **Pubblicazione:** l'admin può salvare **già pubblicate** o **in attesa**
-   (`moderation_status`). *(Proposta, §11.)*
+3. **Pubblicazione (deciso il 22/11/2026):** le schede create o importate dall'admin vanno online
+   **subito**; resta l'opzione "salva in attesa" (`moderation_status`) per le revisioni. Import e
+   pubblicazione richiedono il **livello base** (`guardAdminApi(false)`, AAL1), come l'import del
+   calendario gare.
 4. **Modifica / nascondi / unisci / elimina** una scheda (l'eliminazione è un `hidden`, mai
    una cancellazione, per l'anti-riapparizione).
 5. Il parser è condiviso (`src/lib/crews/import.ts`) tra la pagina admin e lo script
@@ -570,8 +613,16 @@ l'SQL e aggiornare `PROJECT_STATUS.md` (convenzioni di `CLAUDE.md`).
 9. **Fase 2 divisa** in 2a (directory + admin) e 2b (rivendicazione) (§10).
 10. **Suggerimenti di modifica** degli utenti alle schede, con revisione umana e percorso dedicato per
     "non più attiva" (§5.6). Le proposte di §5.6 sono **adottate** e da rivedere dopo i primi casi reali.
+11. **Admin: aggiunta e import delle crew** (domande a–d, deciso il 22/11/2026): **(a)** le schede
+    dell'admin vanno online **subito**, con opzione "in attesa"; **(b)** import e pubblicazione col
+    **livello base** (AAL1), non AAL2; **(c)** formato: **CSV e tabella incollata** (da Excel si esporta in
+    CSV); l'import da URL non è previsto, eventuali fonti web si valutano caso per caso; **(d)** giorni e
+    orari delle uscite: sì, come testo libero facoltativo (`schedule_text`).
+12. **Ordine delle liste** (§6.1, 22/11/2026): geografia prima; poi **prima le crew gestite, poi le non
+    gestite**. Tra le gestite vengono prima quelle con **≥ 5 membri attivi** (anche se create dall'admin);
+    tra le non gestite prima le schede dell'admin, poi quelle segnalate dagli utenti. La verifica non incide.
 
-### Domande aperte (con la proposta)
+### Domande aperte (con la proposta) — **a–d decise il 22/11/2026** (decisione 11); **f** e l'ordine delle liste: §6.1
 | # | Domanda | Proposta |
 |---|---|---|
 | a | Le schede dell'admin vanno online **subito** o in attesa? | L'admin con MFA può pubblicare subito, con opzione "salva in attesa" |
