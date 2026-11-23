@@ -26,7 +26,7 @@ importano** le crew).
 > e la notifica `crew_claimed` non è stata scritta. **Riprendere da §5.2 (rivendicazione) e dalle domande aperte di §11.**
 > Cronologia: Fase 1 scritta nel branch `feat/mappa-crew`; 2a nel branch `feat/crew-directory`; tutto è poi finito su `main`.
 > **Numeri SQL:** la prima versione riservava #47–#50, ma #47 è `strava-detach-fase2.sql` e
-> #48 è `oauth-profile-name.sql`. Usati finora: **#49** (mappa), **#50** (directory), **#51** (Avvisami + discover). Previsti **#52–#54** per rivendicazione, area gestori e verifica (§3, §10). Verificare
+> #48 è `oauth-profile-name.sql`. Usati finora: **#49** (mappa), **#50** (directory), **#51** (Avvisami + discover). Previsti **#52–#54** per rivendicazione, area gestori e verifica (§3, §10) — ma **#52 è stato preso il 23/11/2026** da `admin-notifications.sql` (notifiche email agli admin): le fasi sospese scalano a **#53–#55** quando verranno scritte. Verificare
 > comunque l'ultimo numero usato in `PROJECT_STATUS.md` prima di scrivere ogni file.
 
 ---
