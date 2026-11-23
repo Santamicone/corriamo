@@ -111,7 +111,7 @@ export default async function AdminCrewPage({ searchParams }: { searchParams: Pr
                   <Link href={`/crew/${c.slug ?? c.id}`} className="font-extrabold text-gray-900 hover:underline">{c.name}</Link>
                   <p className="text-sm text-gray-500">{c.city ?? '—'}{c.zone ? ` (${c.zone})` : ''}</p>
                 </div>
-                <CrewRowActions id={c.id} hidden={hidden} inactive={inactive} editable={informative} />
+                <CrewRowActions id={c.id} name={c.name} hidden={hidden} inactive={inactive} editable={informative} />
               </div>
             )
           })}

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 type Action = 'hide' | 'show' | 'deactivate' | 'activate'
 
 /** Azioni dell'admin su una scheda: nascondi/mostra e segna come non più attiva/attiva. */
-export function CrewRowActions({ id, hidden, inactive, editable }: { id: string; hidden: boolean; inactive: boolean; editable: boolean }) {
+export function CrewRowActions({ id, name, hidden, inactive, editable }: { id: string; name: string; hidden: boolean; inactive: boolean; editable: boolean }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -28,7 +28,26 @@ export function CrewRowActions({ id, hidden, inactive, editable }: { id: string;
     router.refresh()
   }
 
-  const btn = 'px-3 py-1.5 rounded-full border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50'
+  /** Eliminazione definitiva, solo dopo conferma esplicita. */
+  const remove = async () => {
+    const ok = window.confirm(
+      `Eliminare definitivamente «${name}»?\n\n` +
+      'Non si può annullare: spariscono anche le richieste "Avvisami" e un nuovo import potrebbe ricrearla. ' +
+      'Per toglierla solo dalla vista usa "Nascondi".',
+    )
+    if (!ok) return
+    setBusy(true); setError('')
+    const res = await fetch(`/api/admin/crew/${id}`, { method: 'DELETE' })
+    setBusy(false)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'Eliminazione non riuscita')
+      return
+    }
+    router.refresh()
+  }
+
+  const btn ='px-3 py-1.5 rounded-full border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50'
 
   return (
     <div className="flex flex-col items-end gap-1 shrink-0">
@@ -42,6 +61,12 @@ export function CrewRowActions({ id, hidden, inactive, editable }: { id: string;
         <button className={btn} disabled={busy} onClick={() => run(inactive ? 'activate' : 'deactivate')}>
           {inactive ? 'Segna attiva' : 'Non più attiva'}
         </button>
+        {editable && (
+          <button className="px-3 py-1.5 rounded-full border border-red-200 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+            disabled={busy} onClick={remove}>
+            Elimina
+          </button>
+        )}
       </div>
       {error && <p className="text-[11px] text-red-600">{error}</p>}
     </div>

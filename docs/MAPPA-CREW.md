@@ -568,8 +568,13 @@ revisione → `/salva`; `find_duplicate_races`; `guardAdminApi`):
    **subito**; resta l'opzione "salva in attesa" (`moderation_status`) per le revisioni. Import e
    pubblicazione richiedono il **livello base** (`guardAdminApi(false)`, AAL1), come l'import del
    calendario gare.
-4. **Modifica / nascondi / unisci / elimina** una scheda (l'eliminazione è un `hidden`, mai
-   una cancellazione, per l'anti-riapparizione).
+4. **Modifica / nascondi / unisci / elimina** una scheda. **Aggiornato il 23/11/2026:** oltre a
+   "Nascondi" (`hidden`, che conserva la scheda e la riconosce come doppione negli import
+   successivi) c'è **"Elimina"**: cancellazione **definitiva** (`DELETE /api/admin/crew/[id]`,
+   conferma obbligatoria, log `crew.delete` con nome/slug/città), solo per le schede **senza
+   gestore**. Porta via anche le richieste "Avvisami" (`crew_interests`, in cascata) e un import
+   futuro può ricrearla: per una **richiesta di rimozione** di un'organizzazione resta valido
+   "Nascondi" (§4.6).
 5. Il parser è condiviso (`src/lib/crews/import.ts`) tra la pagina admin e lo script
    `npm run seed:crews` (utile in CI o per caricare un file curato a mano).
 
