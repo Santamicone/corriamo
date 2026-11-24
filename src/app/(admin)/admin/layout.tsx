@@ -9,6 +9,7 @@ const NAV = [
   { href: '/admin/utenti', label: 'Utenti', icon: 'group' },
   { href: '/admin/gare', label: 'Gare', icon: 'flag' },
   { href: '/admin/crew', label: 'Crew', icon: 'groups' },
+  { href: '/admin/proposte', label: 'Proposte', icon: 'volunteer_activism' },
   { href: '/admin/contenuti', label: 'Contenuti', icon: 'inventory_2' },
   { href: '/admin/segnalazioni', label: 'Segnalazioni', icon: 'report' },
   { href: '/admin/broadcast', label: 'Broadcast', icon: 'campaign' },

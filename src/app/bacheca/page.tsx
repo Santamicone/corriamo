@@ -18,6 +18,8 @@ import { GeolocCityDetector } from '@/components/GeolocCityDetector'
 import { GeoDismissButton } from '@/components/GeoDismissButton'
 import type { Metadata } from 'next'
 import { todayItaly } from '@/lib/utils'
+import { fetchProposals, type RunProposal } from '@/lib/proposals'
+import { ProposalsSection } from '@/components/ProposalCard'
 
 export const metadata: Metadata = {
   title: 'Trova una corsa vicino a te',
@@ -280,6 +282,19 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
     }
   }
 
+  // Proposte che cercano un organizzatore (SQL #53): solo in vista lista e senza ricerca testuale
+  // o tag, che non hanno senso su una proposta. Città, livello e date si applicano come alle corse.
+  let proposals: RunProposal[] = []
+  if (view === 'lista' && !params.q && !params.tag) {
+    proposals = (await fetchProposals(supabase, filterCity ?? null, 12)).filter(p =>
+      (!params.level || p.level === params.level || p.level === 'tutti') &&
+      (!params.from || p.target_date >= params.from) &&
+      (!params.to || p.target_date <= params.to),
+    ).slice(0, 6)
+  }
+  // Con poche corse reali le proposte vanno in alto (bacheca quasi vuota), altrimenti in fondo
+  const proposalsOnTop = runs.length < 5
+
   const hasFilters    = !!(params.q || filterCity || params.level || params.from || params.to || params.tag)
   const hasDateFilter = !!(params.from || params.to)
   const activeTag     = params.tag ? getTag(params.tag) : null
@@ -426,6 +441,9 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
             </p>
           )}
 
+          {/* Proposte da organizzare — in alto se le corse reali sono poche */}
+          {proposalsOnTop && <ProposalsSection proposals={proposals} city={filterCity} />}
+
           {/* Contenuto principale */}
           {runs.length === 0 && series.length === 0 ? (
             <EmptyState hasFilters={hasFilters} hasDateFilter={hasDateFilter} params={params} userCity={filterCity ?? undefined} isLoggedIn={!!user} geoCity={params.geo === '1' ? params.city : undefined} geoCounty={params.geo_county} />
@@ -465,6 +483,8 @@ export default async function BachecaPage({ searchParams }: { searchParams: Prom
                   </div>
                 </div>
               )}
+              {/* Proposte da organizzare — in fondo se ci sono già abbastanza corse */}
+              {!proposalsOnTop && <ProposalsSection proposals={proposals} city={filterCity} />}
               {/* Runner come te — sotto le corse e le serie */}
               {compagniMatches && <CompagniBlockCompact matches={compagniMatches} />}
             </div>

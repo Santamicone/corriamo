@@ -13,12 +13,12 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
 const DUE_WINDOW_HOURS = 12   // mai push per notifiche scadute da più di così
 const DUE_BATCH = 200
 
-// Tenere allineato con call_send_push() in supabase/push-tokens.sql
+// Tenere allineato con call_send_push() (ultima versione: supabase/run-proposals.sql, #53)
 const PUSH_TYPES = new Set([
   'richiesta_approvata', 'richiesta_rifiutata', 'nuova_richiesta',
   'corsa_annullata', 'corsa_modificata', 'promemoria_corsa',
   'crew_join_request', 'crew_request_approved', 'crew_new_run',
-  'nuovo_messaggio', 'chat_corsa',
+  'nuovo_messaggio', 'chat_corsa', 'proposta_adottata',
 ])
 
 const supabase = createClient(

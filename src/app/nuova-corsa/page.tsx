@@ -7,15 +7,21 @@ export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { Footer } from '@/components/Footer'
 import { PageContainer } from '@/components/PageContainer'
 import { NuovaCorsaForm } from './NuovaCorsaForm'
+import { fetchProposal } from '@/lib/proposals'
 
 export default async function NuovaCorsaPage(
-  { searchParams }: { searchParams: Promise<{ city?: string; pace?: string; level?: string; group?: string }> }
+  { searchParams }: { searchParams: Promise<{ city?: string; pace?: string; level?: string; group?: string; proposta?: string }> }
 ) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
   const sp = await searchParams
+  if (!user) redirect(sp.proposta ? `/login?next=${encodeURIComponent(`/nuova-corsa?proposta=${sp.proposta}`)}` : '/login')
+
+  // "La organizzo io" da una proposta (SQL #53): modulo precompilato, solo corsa singola e pubblica.
+  // Una proposta non più aperta rimanda alla sua pagina, che spiega cosa è successo.
+  const proposal = sp.proposta ? await fetchProposal(supabase, sp.proposta) : null
+  if (sp.proposta && proposal?.status !== 'aperta') redirect(proposal ? `/proposte/${proposal.id}` : '/bacheca')
+
   const validLevels = ['tutti', 'principiante', 'intermedio', 'avanzato']
   const prefill = {
     city:        sp.city ?? '',
@@ -50,16 +56,27 @@ export default async function NuovaCorsaPage(
             <span className="material-symbols-outlined text-sm">add_circle</span>
             Nuova proposta
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900">Proponi una corsa o una serie</h1>
-          <p className="mt-2 text-base text-gray-500">
-            Scegli se proporre un singolo appuntamento o una serie ricorrente. Poi dai ai runner le informazioni giuste: dove, quando, quanto e a che ritmo.
-          </p>
+          {proposal ? (
+            <>
+              <h1 className="text-3xl font-extrabold text-gray-900">Organizza «{proposal.title}»</h1>
+              <p className="mt-2 text-base text-gray-500">
+                Abbiamo compilato il modulo con i dati della proposta: scegli il punto di ritrovo, controlla data e orario e pubblica.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-extrabold text-gray-900">Proponi una corsa o una serie</h1>
+              <p className="mt-2 text-base text-gray-500">
+                Scegli se proporre un singolo appuntamento o una serie ricorrente. Poi dai ai runner le informazioni giuste: dove, quando, quanto e a che ritmo.
+              </p>
+            </>
+          )}
         </PageContainer>
       </div>
 
       <main className="flex-1">
         <PageContainer width="form" className="py-8">
-          <NuovaCorsaForm userId={user.id} userSeries={series ?? []} userCrews={crewOptions} prefill={prefill} />
+          <NuovaCorsaForm userId={user.id} userSeries={series ?? []} userCrews={crewOptions} prefill={prefill} proposal={proposal ?? undefined} />
         </PageContainer>
       </main>
       <Footer />

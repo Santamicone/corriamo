@@ -27,7 +27,12 @@ export async function proxy(request: NextRequest) {
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p))
 
   if (isProtected && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const loginUrl = new URL('/login', request.url)
+    // "La organizzo io" da una proposta (SQL #53): dopo il login si torna al modulo precompilato
+    if (request.nextUrl.pathname === '/nuova-corsa' && request.nextUrl.searchParams.get('proposta')) {
+      loginUrl.searchParams.set('next', `/nuova-corsa?proposta=${request.nextUrl.searchParams.get('proposta')}`)
+    }
+    return NextResponse.redirect(loginUrl)
   }
 
   // Utenti sospesi/bannati: bloccati sui percorsi di scrittura, rediretti alla

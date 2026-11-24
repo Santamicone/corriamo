@@ -8,6 +8,10 @@ import { TagPicker } from '@/components/ui/TagPicker'
 import { CoOrganizerPicker } from '@/components/CoOrganizerPicker'
 import { addWeeks, addDays, format, nextDay, parseISO, getDay } from 'date-fns'
 import { DAY_LABELS, cn, todayItaly } from '@/lib/utils'
+import {
+  adoptDateRange, adoptErrorMessage, hhmm, interestLabel, suggestedDistance,
+  type RunProposalDetail,
+} from '@/lib/proposals'
 
 const LocationPreviewMap = dynamic(() => import('@/components/LocationPreviewMap'), {
   ssr: false,
@@ -34,6 +38,8 @@ interface Props {
   userSeries: { id: string; title: string }[]
   userCrews?: CrewOption[]
   prefill?: Prefill
+  /** "La organizzo io" (SQL #53): precompila il modulo e pubblica con adopt_proposal */
+  proposal?: RunProposalDetail
 }
 
 const inputCls = "h-11 w-full px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
@@ -72,24 +78,32 @@ function generateDates(startDate: string, recurrenceDay: number, recurrenceType:
   return dates
 }
 
-export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: Props) {
+export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill, proposal }: Props) {
   const router = useRouter()
   const [tipo, setTipo]       = useState<TipoCorsa>('singola')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
   const [tags, setTags]       = useState<string[]>([])
   const [coOrganizer, setCoOrganizer] = useState<{ id: string; full_name: string; avatar_url: string | null } | null>(null)
+  // Da una proposta: solo corsa singola e pubblica, niente serie né crew (decisioni D8 e §5.4)
+  if (proposal) {
+    userCrews = []
+    userSeries = []
+  }
 
   const [form, setForm] = useState({
     // Campi comuni
-    title: '', description: '', location: '', city: prefill?.city ?? '',
-    distance_km: '', pace_target: prefill?.pace_target ?? '', level: prefill?.level || 'tutti',
+    title: proposal?.title ?? '', description: proposal?.description ?? '',
+    location: proposal?.zone ?? '', city: proposal?.city ?? prefill?.city ?? '',
+    distance_km: proposal ? suggestedDistance(proposal) : '',
+    pace_target: proposal ? (proposal.pace_target ?? '') : (prefill?.pace_target ?? ''),
+    level: proposal?.level ?? (prefill?.level || 'tutti'),
     max_participants: '', is_no_drop: false, series_id: '',
     location_public: true,
     run_visibility: 'public' as 'public' | 'crew_only',
     crew_id: '',
     // Campi corsa singola
-    date: '', time: '07:00',
+    date: proposal?.target_date ?? '', time: proposal ? hhmm(proposal.time_from) : '07:00',
     // Campi serie
     recurrence_type: 'settimanale', recurrence_day: '1',
     recurrence_time: '07:00', start_date: '',
@@ -132,6 +146,8 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
 
   const effectiveCoords = userDragged ? manualCoords : geoResult
   const today = todayItaly()
+  // Decisione Q1: da una proposta la data si sposta di ±2 giorni, mai nel passato
+  const dateRange = proposal ? adoptDateRange(proposal.target_date, today) : { min: today, max: undefined }
 
   /* ── Submit ── */
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,7 +158,33 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
     let coords = effectiveCoords
     if (!coords && form.location && form.city) coords = await geocodeAddress(form.location, form.city)
 
-    if (tipo === 'singola') {
+    if (proposal) {
+      /* ── Adozione di una proposta: RPC atomica (crea la corsa e avvisa gli interessati) ── */
+      const { data: runId, error: err } = await supabase.rpc('adopt_proposal', {
+        p_proposal_id: proposal.id,
+        p_run: {
+          title:            form.title,
+          description:      form.description || null,
+          date:             form.date,
+          time:             form.time,
+          location:         form.location,
+          city:             form.city,
+          distance_km:      form.distance_km ? parseFloat(form.distance_km) : null,
+          pace_target:      form.pace_target || null,
+          level:            form.level,
+          max_participants: form.max_participants ? parseInt(form.max_participants) : null,
+          is_no_drop:       form.is_no_drop,
+          location_public:  form.location_public,
+          tags,
+          lat:              coords?.lat ?? null,
+          lng:              coords?.lng ?? null,
+        },
+      })
+      if (err || !runId) { setError(adoptErrorMessage(err?.message)); setLoading(false); return }
+      router.push(`/corse/${runId}`)
+      router.refresh()
+
+    } else if (tipo === 'singola') {
       /* ── Corsa singola ── */
       const { data, error: err } = await supabase.from('runs').insert({
         organizer_id:     userId,
@@ -292,8 +334,24 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
         </div>
       )}
 
+      {/* ── Banner proposta adottata ── */}
+      {proposal && (
+        <div className="flex items-start gap-3 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3.5">
+          <span className="material-symbols-outlined text-primary shrink-0 mt-0.5">person_search</span>
+          <div>
+            <p className="text-sm font-bold text-gray-900">Stai organizzando una proposta di Vieni a correre</p>
+            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+              Scegli un punto di ritrovo preciso e un orario. La data si può spostare al massimo di due giorni.
+              {proposal.interest_count > 0
+                ? ` Quando pubblichi, avvisiamo chi era interessato (${interestLabel(proposal.interest_count)}).`
+                : ' Quando pubblichi, la corsa compare in bacheca come le altre.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Selettore tipo ── */}
-      <div className="bg-white rounded-3xl border border-gray-100 p-4">
+      {!proposal && <div className="bg-white rounded-3xl border border-gray-100 p-4">
         <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Tipo di proposta</p>
         <div className="grid grid-cols-2 gap-3">
           {([
@@ -329,7 +387,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* ── Dove e quando ── */}
       <FormSection title="Dove e quando">
@@ -421,7 +479,7 @@ export function NuovaCorsaForm({ userId, userSeries, userCrews = [], prefill }: 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div>
               <label className={labelCls}>Data *</label>
-              <input className={inputCls} type="date" min={today} value={form.date} onChange={set('date')} required />
+              <input className={inputCls} type="date" min={dateRange.min} max={dateRange.max} value={form.date} onChange={set('date')} required />
             </div>
             <div>
               <label className={labelCls}>Orario di partenza *</label>
