@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { subscribeWithAuth } from '@/lib/supabase/realtime'
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
@@ -61,7 +62,7 @@ export function RitrovoScreen({
   /* ── Realtime — check-in degli altri ── */
   useEffect(() => {
     const supabase = createClient()
-    const ch = supabase
+    return subscribeWithAuth(supabase, () => supabase
       .channel(`check-ins-${runId}`)
       .on('postgres_changes', {
         event:  'INSERT',
@@ -80,9 +81,7 @@ export function RitrovoScreen({
       }, (p) => {
         if ((p.old as { user_id: string }).user_id !== userId)
           setCount(c => Math.max(0, c - 1))
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
+      }))
   }, [runId, userId])
 
   /* ── Azioni ── */

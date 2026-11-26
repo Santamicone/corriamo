@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { subscribeWithAuth } from '@/lib/supabase/realtime'
 import { Avatar } from '@/components/ui/Avatar'
 import { BoardComposer } from './BoardComposer'
 import type { Profile } from '@/lib/types'
@@ -110,7 +111,7 @@ export function BoardWindow({
   useEffect(() => {
     const supabase = createClient()
 
-    const ch = supabase
+    return subscribeWithAuth(supabase, () => supabase
       .channel(`${config.channelPrefix}-${scopeId}`)
       .on('postgres_changes', {
         event:  'INSERT',
@@ -147,10 +148,7 @@ export function BoardWindow({
         const row = payload.new as { id: string; deleted_at?: string | null }
         if (!row.deleted_at) return
         setMessages(prev => prev.map(m => (m.id === row.id ? markDeleted({ ...m, deleted_at: row.deleted_at }) : m)))
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(ch) }
+      }))
   }, [scopeId, userId, config, prepend])
 
   /* ── Pubblica — insert + aggiunta immediata in cima ── */
@@ -249,7 +247,8 @@ export function BoardWindow({
                   {isDeleted ? (
                     <p className="flex items-center gap-1.5 text-sm italic text-gray-400 mt-1">
                       <span className="material-symbols-outlined text-base not-italic" aria-hidden="true">block</span>
-                      {msg.author_id === userId ? 'Hai eliminato questo messaggio' : 'Messaggio eliminato'}
+                      {/* Testo neutro: non sappiamo chi l'ha eliminato (autore, organizzatore o gestore) */}
+                      Messaggio eliminato
                     </p>
                   ) : (
                     <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap break-words leading-relaxed">

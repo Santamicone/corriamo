@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { subscribeWithAuth } from '@/lib/supabase/realtime'
 import { cn } from '@/lib/utils'
 import { Avatar } from './ui/Avatar'
 import type { Profile } from '@/lib/types'
@@ -22,11 +23,9 @@ function useUnreadMessages(userId: string | null) {
       setCount(c ?? 0)
     }
     fetch()
-    const ch = supabase
+    return subscribeWithAuth(supabase, () => supabase
       .channel('messages-badge')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `recipient_id=eq.${userId}` }, fetch)
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `recipient_id=eq.${userId}` }, fetch))
   }, [userId])
   return count
 }
@@ -47,11 +46,9 @@ function useUnreadNotifications(userId: string | null) {
       setCount(c ?? 0)
     }
     fetch()
-    const ch = supabase
+    return subscribeWithAuth(supabase, () => supabase
       .channel('notifications-badge')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetch)
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetch))
   }, [userId])
   return count
 }
