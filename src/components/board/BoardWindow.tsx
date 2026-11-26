@@ -15,11 +15,15 @@ export interface BoardMessage {
   author?: Profile | null
   body: string
   created_at: string
+  /** SQL #54: messaggio eliminato (il database ha già sostituito il testo originale). */
+  deleted_at?: string | null
 }
 
 export interface BoardConfig {
   /** Tabella Supabase: 'run_chat' | 'crew_chat'. */
   table: string
+  /** RPC di eliminazione (SQL #54): la riga resta e diventa "Messaggio eliminato". */
+  deleteRpc: 'delete_run_chat_message' | 'delete_crew_chat_message'
   /** Colonna di scope: 'run_id' | 'crew_id'. */
   scopeColumn: string
   /** Select con join autore, es. '*, author:profiles!run_chat_author_id_fkey(*)'. */
@@ -56,6 +60,11 @@ function formatWhen(iso: string): string {
   return `${day} alle ${time}`
 }
 
+/** Stato locale di un messaggio eliminato (il database fa lo stesso). */
+function markDeleted(msg: BoardMessage): BoardMessage {
+  return { ...msg, body: 'Messaggio eliminato', deleted_at: msg.deleted_at ?? new Date().toISOString() }
+}
+
 const URL_RE = /(https?:\/\/[^\s]+)/g
 
 /** Trasforma le URL http/https del testo in link cliccabili (client-side, nessun DB). */
@@ -84,6 +93,7 @@ export function BoardWindow({
 }: Props) {
   // Stato mantenuto con i più recenti in testa.
   const [messages, setMessages] = useState<BoardMessage[]>(initialMessages)
+  const [deleteError, setDeleteError] = useState('')
 
   const prepend = useCallback((msg: BoardMessage) => {
     setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [msg, ...prev]))
@@ -125,7 +135,18 @@ export function BoardWindow({
         table:  config.table,
         filter: `${config.scopeColumn}=eq.${scopeId}`,
       }, (payload) => {
+        // DELETE fisico: lo fanno ancora le app 1.0.x/1.1.x
         setMessages(prev => prev.filter(m => m.id !== (payload.old as { id: string }).id))
+      })
+      .on('postgres_changes', {
+        event:  'UPDATE',
+        schema: 'public',
+        table:  config.table,
+        filter: `${config.scopeColumn}=eq.${scopeId}`,
+      }, (payload) => {
+        const row = payload.new as { id: string; deleted_at?: string | null }
+        if (!row.deleted_at) return
+        setMessages(prev => prev.map(m => (m.id === row.id ? markDeleted({ ...m, deleted_at: row.deleted_at }) : m)))
       })
       .subscribe()
 
@@ -146,10 +167,18 @@ export function BoardWindow({
   }, [scopeId, userId, config, prepend])
 
   /* ── Elimina post (autore o moderatore) ── */
-  const handleDelete = async (id: string) => {
-    setMessages(prev => prev.filter(m => m.id !== id)) // rimozione ottimistica
+  const handleDelete = async (msg: BoardMessage) => {
+    if (!window.confirm('Eliminare il messaggio? Per tutti nella bacheca comparirà "Messaggio eliminato".')) return
+
+    setDeleteError('')
+    setMessages(prev => prev.map(m => (m.id === msg.id ? markDeleted(m) : m))) // aggiornamento ottimistico
     const supabase = createClient()
-    await supabase.from(config.table).delete().eq('id', id)
+    const { error } = await supabase.rpc(config.deleteRpc, { p_message_id: msg.id })
+    if (error) {
+      console.error(error)
+      setMessages(prev => prev.map(m => (m.id === msg.id ? msg : m)))
+      setDeleteError('Non è stato possibile eliminare il messaggio. Riprova.')
+    }
   }
 
   return (
@@ -176,6 +205,10 @@ export function BoardWindow({
       {/* Composer in alto */}
       <BoardComposer onSend={handleSend} placeholder={placeholder} />
 
+      {deleteError && (
+        <p role="alert" className="shrink-0 bg-red-50 px-4 py-2 text-xs text-red-600">{deleteError}</p>
+      )}
+
       {/* Post — più recenti in cima */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0 bg-gray-50/50">
 
@@ -190,7 +223,8 @@ export function BoardWindow({
         )}
 
         {messages.map((msg) => {
-          const canDelete = msg.author_id === userId || canModerate
+          const isDeleted = !!msg.deleted_at
+          const canDelete = !isDeleted && (msg.author_id === userId || canModerate)
           return (
             <article key={msg.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <div className="flex items-start gap-3">
@@ -212,14 +246,21 @@ export function BoardWindow({
                     )}
                     <span className="text-xs text-gray-400">· {formatWhen(msg.created_at)}</span>
                   </div>
-                  <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap break-words leading-relaxed">
-                    {linkify(msg.body)}
-                  </p>
+                  {isDeleted ? (
+                    <p className="flex items-center gap-1.5 text-sm italic text-gray-400 mt-1">
+                      <span className="material-symbols-outlined text-base not-italic" aria-hidden="true">block</span>
+                      {msg.author_id === userId ? 'Hai eliminato questo messaggio' : 'Messaggio eliminato'}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap break-words leading-relaxed">
+                      {linkify(msg.body)}
+                    </p>
+                  )}
                 </div>
 
                 {canDelete && (
                   <button
-                    onClick={() => handleDelete(msg.id)}
+                    onClick={() => handleDelete(msg)}
                     className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
                     aria-label="Elimina messaggio"
                   >

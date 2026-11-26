@@ -115,6 +115,7 @@ export default async function CrewChatPage({
           seenStorageKey={boardSeenKey('crew', crew.id)}
           config={{
             table: 'crew_chat',
+            deleteRpc: 'delete_crew_chat_message',
             scopeColumn: 'crew_id',
             authorSelect: '*, author:profiles!crew_chat_author_id_fkey(*)',
             channelPrefix: 'crew-board',

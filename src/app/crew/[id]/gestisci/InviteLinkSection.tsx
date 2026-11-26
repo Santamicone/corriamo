@@ -30,7 +30,7 @@ export function InviteLinkSection({ crewId }: { crewId: string }) {
     <div className="bg-white rounded-2xl p-6 shadow-sm">
       <h2 className="font-semibold text-gray-900 mb-1">Link di invito</h2>
       <p className="text-sm text-gray-500 mb-4">
-        Condividi questo link — chi lo apre entra direttamente nella crew.
+        Condividi questo link: chi lo apre può chiedere di entrare. La richiesta arriva qui e decidi tu se approvarla.
       </p>
 
       {!link ? (

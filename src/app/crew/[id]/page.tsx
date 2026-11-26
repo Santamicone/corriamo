@@ -94,6 +94,18 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
 
   const isMember = user && members?.some((m) => m.user_id === user.id)
 
+  // La lista sopra contiene solo i membri attivi: la mia eventuale richiesta va letta a parte
+  let myRequestStatus: 'pending' | 'rejected' | null = null
+  if (user && !isMember) {
+    const { data } = await supabase
+      .from('crew_members')
+      .select('status')
+      .eq('crew_id', crew.id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (data?.status === 'pending' || data?.status === 'rejected') myRequestStatus = data.status
+  }
+
   // Corse crew-only future (visibili solo ai membri)
   let crewRuns = null
   // Ultimo messaggio della bacheca crew → segnale "nuovi messaggi" (solo membri)
@@ -349,20 +361,30 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
           )}
 
           {/* Azione: entra / stato */}
-          {user && !isMember && (
+          {user && !isMember && !myRequestStatus && (
             <JoinCrewButton crewId={crew.id} />
           )}
           {!user && (
             <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
-              <p className="text-sm text-gray-600 mb-3">
-                <Link href="/login" className="text-[var(--color-primary)] font-semibold">Accedi</Link> per entrare in questa crew
+              <p className="text-sm text-gray-600">
+                <Link href={`/login?next=${encodeURIComponent(`/crew/${crew.slug ?? crew.id}`)}`}
+                  className="text-[var(--color-primary)] font-semibold">Accedi</Link>
+                {' '}o{' '}
+                <Link href={`/registrati?next=${encodeURIComponent(`/crew/${crew.slug ?? crew.id}`)}`}
+                  className="text-[var(--color-primary)] font-semibold">registrati</Link>
+                {' '}per chiedere di entrare in questa crew
               </p>
             </div>
           )}
-          {currentMember?.status === 'pending' && (
+          {myRequestStatus === 'pending' && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-sm text-yellow-800 flex items-center gap-2">
               <span className="material-symbols-outlined text-base">schedule</span>
               Richiesta di ingresso inviata — in attesa di approvazione.
+            </div>
+          )}
+          {myRequestStatus === 'rejected' && (
+            <div className="bg-gray-100 rounded-2xl p-4 text-sm text-gray-600">
+              La tua richiesta di ingresso non è stata accettata.
             </div>
           )}
 

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// GET /api/profiles/search?q=...&crew_id=...
-// Cerca runner per nome o email. Esclude chi è già membro della crew (active o pending).
+// GET /api/profiles/search?q=...
+// Cerca runner per nome (usata per scegliere i co-organizzatori). Esclude chi cerca.
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -10,32 +10,15 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q')?.trim() ?? ''
-  const crewId = searchParams.get('crew_id') ?? ''
 
   if (q.length < 2) return NextResponse.json([])
 
-  // Recupera ID già presenti nella crew (active o pending) — solo se la ricerca è per una crew
-  let excludeIds = [user.id]
-  if (crewId) {
-    const { data: existing } = await supabase
-      .from('crew_members')
-      .select('user_id')
-      .eq('crew_id', crewId)
-      .in('status', ['active', 'pending'])
-    excludeIds = [user.id, ...(existing?.map((m) => m.user_id) ?? [])]
-  }
-
-  let profilesQuery = supabase
+  const { data: profiles, error } = await supabase
     .from('profiles')
     .select('id, full_name, avatar_url, city')
     .ilike('full_name', `%${q}%`)
+    .neq('id', user.id)
     .limit(8)
-
-  if (excludeIds.length > 0) {
-    profilesQuery = profilesQuery.not('id', 'in', `(${excludeIds.join(',')})`)
-  }
-
-  const { data: profiles, error } = await profilesQuery
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

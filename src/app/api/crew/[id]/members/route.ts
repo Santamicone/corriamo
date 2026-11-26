@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// POST /api/crew/[id]/members — aggiunge un membro direttamente (owner/admin)
-// oppure crea una richiesta pending (utente qualsiasi)
+// POST /api/crew/[id]/members — richiesta di ingresso. Si chiede solo per se stessi e resta
+// in attesa: nessuno viene aggiunto direttamente (lo impone anche la RLS, SQL #55).
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
@@ -12,30 +12,10 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const { id: crewId } = await params
-  const body = await request.json()
-  const targetUserId: string = body.user_id ?? user.id
-
-  // Verifica se chi chiama è owner/admin
-  const { data: callerMember } = await supabase
-    .from('crew_members')
-    .select('role')
-    .eq('crew_id', crewId)
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .single()
-
-  const isAdmin = callerMember?.role === 'owner' || callerMember?.role === 'admin'
-
-  // Un utente normale può inserire solo se stesso
-  if (!isAdmin && targetUserId !== user.id) {
-    return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
-  }
-
-  const status = isAdmin ? 'active' : 'pending'
 
   const { error } = await supabase
     .from('crew_members')
-    .insert({ crew_id: crewId, user_id: targetUserId, role: 'member', status })
+    .insert({ crew_id: crewId, user_id: user.id, role: 'member', status: 'pending' })
 
   if (error) {
     if (error.code === '23505') {
@@ -44,7 +24,7 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ status }, { status: 201 })
+  return NextResponse.json({ status: 'pending' }, { status: 201 })
 }
 
 // PATCH /api/crew/[id]/members — approva/rifiuta richiesta o cambia ruolo

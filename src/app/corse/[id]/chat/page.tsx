@@ -107,9 +107,10 @@ export default async function RunChatPage({
           emptyText="Sii il primo a scrivere! Coordinarsi, condividere il percorso o motivarsi — questa bacheca è vostra."
           placeholder="Scrivi sulla bacheca della corsa…"
           initialMessages={messages}
-          canModerate={false}
+          canModerate={isOrganizer}
           config={{
             table: 'run_chat',
+            deleteRpc: 'delete_run_chat_message',
             scopeColumn: 'run_id',
             authorSelect: '*, author:profiles!run_chat_author_id_fkey(*)',
             channelPrefix: 'run-board',
