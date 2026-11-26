@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ImageField } from './ImageField'
 import { geocodeAddress, geocodeCity } from '@/lib/geocoding'
 import { PROPOSAL_KINDS, type ProposalKind } from '@/lib/proposals'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,21 @@ export function ProposalForm({ today }: { today: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [warnings, setWarnings] = useState<string[]>([])
+  const [image, setImage] = useState<Blob | null>(null)
+  // Indirizzo del file già caricato: dopo un avviso o un errore non si ricarica la stessa immagine
+  const uploaded = useRef<{ blob: Blob; url: string } | null>(null)
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!image) return null
+    if (uploaded.current?.blob === image) return uploaded.current.url
+    const body = new FormData()
+    body.append('file', image, 'proposta.jpg')
+    const res = await fetch('/api/admin/proposte/immagine', { method: 'POST', body })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.url) throw new Error(data.error ?? 'Immagine non caricata')
+    uploaded.current = { blob: image, url: data.url }
+    return data.url
+  }
 
   const set = (f: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(p => ({ ...p, [f]: e.target.value }))
@@ -51,10 +67,18 @@ export function ProposalForm({ today }: { today: string }) {
     const geo = form.zone.trim()
       ? await geocodeAddress(form.zone.trim(), form.city.trim())
       : await geocodeCity(form.city.trim())
+    let image_url: string | null
+    try {
+      image_url = await uploadImage()
+    } catch (e) {
+      setBusy(false)
+      setError(e instanceof Error ? e.message : 'Immagine non caricata')
+      return
+    }
     const res = await fetch('/api/admin/proposte', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, kind, lat: geo?.lat ?? null, lng: geo?.lng ?? null, force }),
+      body: JSON.stringify({ ...form, kind, image_url, lat: geo?.lat ?? null, lng: geo?.lng ?? null, force }),
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
@@ -138,6 +162,11 @@ export function ProposalForm({ today }: { today: string }) {
             placeholder="Facoltativa. Niente nomi di persone: è una proposta del servizio."
             className="w-full px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400" />
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <p className={labelCls}>Immagine</p>
+        <ImageField kind={kind} value={image} onChange={blob => { setImage(blob); setWarnings([]) }} />
       </div>
 
       {warnings.length > 0 && (

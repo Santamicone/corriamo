@@ -4,6 +4,7 @@ import { guardAdminApi } from '@/lib/admin/api-guard'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { logAdminAction } from '@/lib/admin/audit'
 import { PROPOSAL_KINDS, type ProposalKind } from '@/lib/proposals'
+import { proposalImageUrlPrefix } from '@/lib/proposalImages'
 import { todayItaly } from '@/lib/utils'
 
 export const runtime = 'nodejs'
@@ -57,6 +58,11 @@ export async function POST(request: Request) {
   if (distance_min_km != null && distance_max_km != null && distance_max_km < distance_min_km) {
     return invalid('La distanza massima è minore della minima')
   }
+  // Solo immagini caricate nel nostro bucket (POST /api/admin/proposte/immagine)
+  const image_url = str(body.image_url) || null
+  if (image_url && !image_url.startsWith(proposalImageUrlPrefix(process.env.NEXT_PUBLIC_SUPABASE_URL!))) {
+    return invalid('Immagine non valida')
+  }
 
   const svc = createServiceRoleClient()
 
@@ -91,6 +97,8 @@ export async function POST(request: Request) {
     description: str(body.description) || null,
     pace_target: str(body.pace_target) || null,
     distance_min_km, distance_max_km, lat, lng,
+    // La colonna si nomina solo se serve: senza immagine il modulo funziona anche prima dello SQL #56
+    ...(image_url ? { image_url } : {}),
     source: 'admin',
     created_by: guard.user.id,
   }).select('id').single()

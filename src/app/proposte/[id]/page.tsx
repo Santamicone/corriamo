@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { PageContainer } from '@/components/PageContainer'
+import { ProposalImage } from '@/components/ProposalImage'
 import { LEVEL_LABELS } from '@/lib/utils'
 import {
   PROPOSAL_KINDS, fetchProposal, formatDistanceRange, formatProposalDay, formatProposalPace, formatWindow,
@@ -45,21 +46,27 @@ export default async function PropostaPage({ params }: { params: Promise<{ id: s
             <Link href="/bacheca" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
               <span className="material-symbols-outlined text-base">arrow_back</span> Bacheca
             </Link>
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-700 px-3 py-1 text-xs font-bold">
-                <span className="material-symbols-outlined text-sm">person_search</span>
-                Proposta di Vieni a correre · cerca organizzatore
-              </span>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500">
-                <span className="material-symbols-outlined text-sm">{kind?.icon ?? 'directions_run'}</span>
-                {kind?.label}
-              </span>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+              <ProposalImage kind={p.kind} url={p.image_url}
+                className="aspect-[4/3] w-full rounded-3xl object-top sm:order-2 sm:aspect-square sm:w-56 sm:shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-700 px-3 py-1 text-xs font-bold">
+                    <span className="material-symbols-outlined text-sm">person_search</span>
+                    Proposta di Vieni a correre · cerca organizzatore
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500">
+                    <span className="material-symbols-outlined text-sm">{kind?.icon ?? 'directions_run'}</span>
+                    {kind?.label}
+                  </span>
+                </div>
+                <h1 className="text-3xl font-extrabold text-gray-900">{p.title}</h1>
+                <p className="mt-2 text-lg text-gray-600 first-letter:uppercase">
+                  {formatProposalDay(p.target_date)}, tra le {formatWindow(p).replace('–', ' e le ')}
+                </p>
+                <p className="text-gray-500">{p.city}{p.zone ? ` · zona ${p.zone}` : ''}</p>
+              </div>
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-900">{p.title}</h1>
-            <p className="mt-2 text-lg text-gray-600 first-letter:uppercase">
-              {formatProposalDay(p.target_date)}, tra le {formatWindow(p).replace('–', ' e le ')}
-            </p>
-            <p className="text-gray-500">{p.city}{p.zone ? ` · zona ${p.zone}` : ''}</p>
           </PageContainer>
         </div>
 

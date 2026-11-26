@@ -9,7 +9,7 @@ import { it } from 'date-fns/locale'
  */
 
 export type ProposalKind =
-  | 'principianti' | 'tranquilla' | 'aerobica' | 'veloce' | 'lungo' | 'trail' | 'rigenerante'
+  | 'principianti' | 'tranquilla' | 'aerobica' | 'veloce' | 'lungo' | 'trail' | 'rigenerante' | 'test_gara'
 export type ProposalStatus = 'aperta' | 'adottata' | 'scaduta' | 'ritirata'
 export type RunLevel = 'principiante' | 'intermedio' | 'avanzato' | 'tutti'
 
@@ -32,6 +32,8 @@ export interface RunProposal {
   expires_at: string
   interest_count: number
   i_am_interested: boolean
+  /** Immagine propria (SQL #56). Assente prima dello SQL, null se si usa il segnaposto */
+  image_url?: string | null
 }
 
 export interface RunProposalDetail extends RunProposal {
@@ -41,7 +43,7 @@ export interface RunProposalDetail extends RunProposal {
   adopted_by_name: string | null
 }
 
-/** Modelli: le 7 tipologie della strategia di seeding. Precompilano il modulo admin. */
+/** Modelli delle tipologie: precompilano il modulo admin. Allineati al CHECK del database (SQL #56) e all'app. */
 export const PROPOSAL_KINDS: Record<ProposalKind, {
   label: string; icon: string; title: string
   distance: [number, number]; pace: string | null; level: RunLevel; window: [string, string]
@@ -53,6 +55,12 @@ export const PROPOSAL_KINDS: Record<ProposalKind, {
   lungo:        { label: 'Lungo',               icon: 'route',           title: 'Un lungo in compagnia',    distance: [18, 30], pace: null,        level: 'intermedio',   window: ['08:00', '09:30'] },
   trail:        { label: 'Trail',               icon: 'landscape',       title: 'Trail in compagnia',       distance: [8, 20],  pace: null,        level: 'tutti',        window: ['08:00', '09:30'] },
   rigenerante:  { label: 'Rigenerante',         icon: 'wb_twilight',     title: "Corsa all'alba",           distance: [5, 12],  pace: null,        level: 'tutti',        window: ['06:30', '07:30'] },
+  test_gara:    { label: 'Test di gara',        icon: 'timer',           title: 'Test di gara insieme',     distance: [5, 10],  pace: null,        level: 'intermedio',   window: ['08:00', '09:30'] },
+}
+
+/** Immagine quadrata della proposta: quella caricata, altrimenti il segnaposto della tipologia in public/proposals/. */
+export function proposalPlaceholder(kind: ProposalKind): string {
+  return `/proposals/${kind in PROPOSAL_KINDS ? kind : 'tranquilla'}.jpg`
 }
 
 export const ADOPT_ERRORS: Record<string, string> = {

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ProposalImage } from '@/components/ProposalImage'
 import { LEVEL_LABELS } from '@/lib/utils'
 import {
   PROPOSAL_KINDS, formatDistanceRange, formatProposalDay, formatProposalPace, formatWindow, interestLabel,
@@ -28,12 +29,15 @@ export function ProposalCard({ proposal: p }: { proposal: RunProposal }) {
         </span>
       </div>
 
-      <div>
-        <h3 className="text-base font-extrabold text-gray-900 group-hover:text-primary transition-colors">{p.title}</h3>
-        <p className="text-sm text-gray-600 mt-0.5 first-letter:uppercase">
-          {formatProposalDay(p.target_date)} · {formatWindow(p)}
-        </p>
-        <p className="text-sm text-gray-500">{p.city}{p.zone ? ` · ${p.zone}` : ''}</p>
+      <div className="flex items-start gap-3">
+        <ProposalImage kind={p.kind} url={p.image_url} className="h-[72px] w-[72px] shrink-0 rounded-2xl" />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-extrabold text-gray-900 group-hover:text-primary transition-colors">{p.title}</h3>
+          <p className="text-sm text-gray-600 mt-0.5 first-letter:uppercase">
+            {formatProposalDay(p.target_date)} · {formatWindow(p)}
+          </p>
+          <p className="text-sm text-gray-500">{p.city}{p.zone ? ` · ${p.zone}` : ''}</p>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-1.5 text-xs">

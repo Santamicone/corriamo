@@ -3,6 +3,10 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { PageContainer } from '@/components/PageContainer'
+import { LatestSection } from '@/components/home/LatestSection'
+
+/** La home resta in cache e si rigenera al massimo ogni 5 minuti (corse e proposte). */
+export const revalidate = 300
 
 export default function HomePage() {
   return (
@@ -12,6 +16,7 @@ export default function HomePage() {
         <HeroSection />
         <ValuePropsStrip />
         <HowItWorksSection />
+        <LatestSection />
         <WhyUsSection />
         <WhyDifferentSection />
       </main>
