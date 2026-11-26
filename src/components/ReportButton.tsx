@@ -4,14 +4,16 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface Props {
-  entityTable: 'runs' | 'momenti' | 'reviews' | 'run_chat' | 'profiles'
+  entityTable: 'runs' | 'momenti' | 'reviews' | 'run_chat' | 'profiles' | 'crew_direct_messages'
   entityId: string
   reportedUserId?: string | null
   label?: string
+  /** Testo del contenuto segnalato: lo staff non può leggere i messaggi privati, quindi lo allega chi segnala. */
+  context?: string
 }
 
 /** Pulsante discreto per segnalare un contenuto o un utente allo staff. */
-export function ReportButton({ entityTable, entityId, reportedUserId, label = 'Segnala' }: Props) {
+export function ReportButton({ entityTable, entityId, reportedUserId, label = 'Segnala', context }: Props) {
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
@@ -25,7 +27,9 @@ export function ReportButton({ entityTable, entityId, reportedUserId, label = 'S
     if (!user) { setError('Devi accedere per segnalare.'); setBusy(false); return }
     const { error } = await supabase.from('reports').insert({
       reporter_id: user.id, entity_table: entityTable, entity_id: entityId,
-      reported_user_id: reportedUserId ?? null, reason: reason.trim(),
+      reported_user_id: reportedUserId ?? null, reason: context
+        ? `${reason.trim()}\n\nMessaggio segnalato: «${context.slice(0, 500)}»`
+        : reason.trim(),
     })
     if (error) { setError(error.message); setBusy(false); return }
     setDone(true); setOpen(false); setBusy(false)

@@ -98,6 +98,21 @@ export default async function GestisciCrewPage({ params }: { params: Promise<{ i
             </div>
           )}
 
+          {/* Messaggi privati ai membri (SQL #62) */}
+          <Link
+            href={`/crew/${crew.slug ?? id}/messaggi`}
+            className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-blue-500">mail</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900">Scrivi ai membri</p>
+              <p className="text-xs text-gray-400">Messaggi privati a una o più persone, anche con un allegato</p>
+            </div>
+            <span className="material-symbols-outlined text-gray-300">chevron_right</span>
+          </Link>
+
           {/* Link invito */}
           <InviteLinkSection crewId={id} />
 

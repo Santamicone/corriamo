@@ -13,7 +13,7 @@ const STATUS_TABS = [
 
 const ENTITY_LABEL: Record<string, string> = {
   runs: 'Corsa', momenti: 'Momento', reviews: 'Recensione',
-  run_chat: 'Messaggio chat', profiles: 'Profilo',
+  run_chat: 'Messaggio chat', profiles: 'Profilo', crew_direct_messages: 'Messaggio privato crew',
 }
 
 function entityHref(table: string, id: string): string | null {

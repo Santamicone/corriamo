@@ -223,6 +223,7 @@ export type NotificationType =
   | 'chat_corsa'
   | 'proposta_adottata'
   | 'sollecito_ritrovo' // SQL #58: chi organizza sollecita chi non è ancora arrivato al ritrovo
+  | 'messaggio_crew' // SQL #62: messaggio privato del gestore di una crew (o risposta di un membro)
 
 export interface Notification {
   id: string
@@ -232,6 +233,7 @@ export interface Notification {
   body: string | null
   run_id: string | null
   actor_id: string | null
+  crew_id?: string | null // SQL #62
   actor?: Profile
   read: boolean
   show_after: string

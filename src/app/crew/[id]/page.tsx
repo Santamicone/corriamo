@@ -342,6 +342,23 @@ export default async function CrewPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
 
+          {/* Messaggi privati del gestore (SQL #62) — riservati ai membri */}
+          {isMember && (
+            <Link
+              href={`/crew/${crew.slug ?? crew.id}/messaggi`}
+              className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-blue-500">mail</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900">{canManage ? 'Messaggi ai membri' : 'Messaggi dal gestore'}</p>
+                <p className="text-xs text-gray-400">{canManage ? 'Scrivi in privato a una o più persone' : 'Comunicazioni private di chi gestisce la crew'}</p>
+              </div>
+              <span className="material-symbols-outlined text-gray-300">chevron_right</span>
+            </Link>
+          )}
+
           {/* Chat privata della crew — riservata ai membri */}
           {isMember && (
             <Link

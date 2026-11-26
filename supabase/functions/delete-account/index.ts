@@ -11,7 +11,7 @@
 //   - rifiuta gli admin e chi possiede crew con altri membri attivi;
 //   - avvisa gli iscritti alle corse future (le notifiche NON sono legate alla
 //     corsa, altrimenti sparirebbero insieme alla corsa);
-//   - cancella i file dallo Storage (avatars, momenti, crew-covers).
+//   - cancella i file dallo Storage (avatars, momenti, crew-covers, crew-attachments).
 // (L'integrazione Strava è stata rimossa il 21/11/2026: niente più revoca token.)
 //
 // Accedi con Apple: chi è entrato con Apple deve vedere revocato il collegamento quando
@@ -146,6 +146,24 @@ Deno.serve(async (req) => {
   await removeAll('avatars', uid)
   await removeAll('momenti', uid)
   for (const crewId of soloCrewIds) await removeAll('crew-covers', crewId)
+
+  // Allegati dei messaggi privati della crew (SQL #62): le righe spariscono in cascata, i file no.
+  // Prima quelli inviati da questo utente (un file per invio, percorso salvato nella riga),
+  // poi le cartelle delle crew che spariscono con lui. Se la tabella non esiste ancora, si salta.
+  try {
+    const { data: sent } = await admin
+      .from('crew_direct_messages')
+      .select('attachment_path')
+      .eq('sender_id', uid)
+      .not('attachment_path', 'is', null)
+    const paths = [...new Set((sent ?? []).map((r) => r.attachment_path as string))]
+    for (let i = 0; i < paths.length; i += 100) {
+      await admin.storage.from('crew-attachments').remove(paths.slice(i, i + 100))
+    }
+  } catch (e) {
+    console.error('[delete-account] crew-attachments', e)
+  }
+  for (const crewId of soloCrewIds) await removeAll('crew-attachments', crewId)
 
   // ── Avvisa gli iscritti alle corse future (approvati e in attesa) ──
   try {
