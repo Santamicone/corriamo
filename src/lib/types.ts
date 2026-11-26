@@ -222,6 +222,7 @@ export type NotificationType =
   | 'presenza_confermata'
   | 'chat_corsa'
   | 'proposta_adottata'
+  | 'sollecito_ritrovo' // SQL #58: chi organizza sollecita chi non è ancora arrivato al ritrovo
 
 export interface Notification {
   id: string

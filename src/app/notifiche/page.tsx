@@ -27,6 +27,7 @@ const TYPE_CONFIG: Record<NotificationType, {
   presenza_confermata: { icon: 'where_to_vote',  iconClass: 'text-teal-600',  bgClass: 'bg-teal-50',    href: n => `/corse/${n.run_id}` },
   chat_corsa:          { icon: 'forum',         iconClass: 'text-blue-500',  bgClass: 'bg-blue-50',    href: n => `/corse/${n.run_id}/chat` },
   proposta_adottata:   { icon: 'volunteer_activism', iconClass: 'text-primary', bgClass: 'bg-orange-50', href: n => `/corse/${n.run_id}` },
+  sollecito_ritrovo:   { icon: 'directions_run', iconClass: 'text-primary', bgClass: 'bg-orange-50', href: n => `/corse/${n.run_id}/ritrovo` },
 }
 
 export default async function NotifichePage() {

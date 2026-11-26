@@ -13,13 +13,17 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
 const DUE_WINDOW_HOURS = 12   // mai push per notifiche scadute da più di così
 const DUE_BATCH = 200
 
-// Tenere allineato con call_send_push() (ultima versione: supabase/run-proposals.sql, #53)
+// Tenere allineato con call_send_push() (ultima versione: supabase/ritrovo-nudge.sql, #58)
 const PUSH_TYPES = new Set([
   'richiesta_approvata', 'richiesta_rifiutata', 'nuova_richiesta',
   'corsa_annullata', 'corsa_modificata', 'promemoria_corsa',
   'crew_join_request', 'crew_request_approved', 'crew_new_run',
-  'nuovo_messaggio', 'chat_corsa', 'proposta_adottata',
+  'nuovo_messaggio', 'chat_corsa', 'proposta_adottata', 'sollecito_ritrovo',
 ])
+
+// Push che hanno senso solo sul momento: oltre questo tempo non si inviano più (né il cron le
+// ritenta), e Expo/Apple le scartano se il telefono non è raggiungibile
+const SHORT_LIVED_SECONDS: Record<string, number> = { sollecito_ritrovo: 15 * 60 }
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -56,6 +60,8 @@ async function processOne(id: string): Promise<number> {
     return 0
   }
   if (!PUSH_TYPES.has(claimed.type)) return 0   // tipo senza push: resta segnata
+  const ttl = SHORT_LIVED_SECONDS[claimed.type]
+  if (ttl && Date.now() - new Date(claimed.show_after).getTime() > ttl * 1000) return 0   // troppo tardi
 
   const { data: profile } = await supabase
     .from('profiles').select('push_enabled').eq('id', claimed.user_id).maybeSingle()
@@ -71,6 +77,7 @@ async function processOne(id: string): Promise<number> {
     ...(claimed.body ? { body: claimed.body } : {}),
     sound: 'default',
     priority: 'high',
+    ...(ttl ? { ttl } : {}),
     data: { notification_id: claimed.id, type: claimed.type, run_id: claimed.run_id },
   }))
 
